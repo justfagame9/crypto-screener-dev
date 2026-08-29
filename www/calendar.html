@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0C10;
+    --panel:#12151B;
+    --panel2:#171B22;
+    --border:#232833;
+    --border-soft:#1B1F28;
+    --text:#E6E9EF;
+    --muted:#8B93A3;
+    --faint:#565F70;
+    --accent:#35E0C0;
+    --red:#FF5470;
+    --amber:#F5A623;
+    --font-display:'Space Grotesk',sans-serif;
+    --font-mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;min-height:100%;}
+  body{padding:30px 24px 60px;background:var(--bg);background-image:radial-gradient(circle at 12% 0%,rgba(53,224,192,.06),transparent 40%),radial-gradient(circle at 92% 15%,rgba(255,84,112,.05),transparent 35%);color:var(--text);font-family:var(--font-display);}
+  .wrap{max-width:1220px;margin:0 auto;}
+  .eyebrow{font:11px var(--font-mono);letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:10px;}
+  h1{font-size:26px;margin:0 0 6px;font-weight:700;}
+  .toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:18px 0 18px;flex-wrap:wrap;}
+  .status{color:var(--muted);font:11.5px var(--font-mono);}
+  .note{color:var(--muted);font-size:12px;line-height:1.5;}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px;overflow:hidden;}
+  .calendar-table-wrap{overflow:auto;max-width:100%;}
+  table{width:100%;border-collapse:separate;border-spacing:0;min-width:980px;}
+  thead th{position:sticky;top:0;z-index:1;background:var(--panel2);color:var(--text);text-align:left;font:600 11px var(--font-mono);letter-spacing:.08em;text-transform:uppercase;padding:12px 10px;border-bottom:1px solid var(--border);}
+  tbody td{padding:12px 10px;border-bottom:1px solid var(--border);vertical-align:top;font-size:13px;color:var(--text);}
+  tbody tr:hover{background:rgba(255,255,255,0.01);}
+  .date-group{white-space:nowrap;font-weight:700;color:var(--accent);}
+  .date-group.today{color:var(--amber);}
+  .time-cell{white-space:nowrap;color:var(--muted);font-family:var(--font-mono);font-size:12px;}
+  .impact-pill{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:4px 8px;font:700 10px var(--font-mono);letter-spacing:.06em;text-transform:uppercase;border:1px solid transparent;}
+  .impact-high{background:rgba(255,84,112,.12);color:#ff9aa9;border-color:rgba(255,84,112,.35);}
+  .impact-medium{background:rgba(245,166,35,.12);color:#f7c867;border-color:rgba(245,166,35,.35);}
+  .impact-low{background:rgba(53,224,192,.12);color:#81f2dd;border-color:rgba(53,224,192,.35);}
+  .impact-none{background:rgba(139,147,163,.10);color:var(--muted);border-color:rgba(139,147,163,.25);}
+  .muted{color:var(--muted);}
+  .empty{padding:28px;color:var(--faint);font:12px var(--font-mono);text-align:center;border:1px dashed var(--border);border-radius:10px;}
+  .error{color:#ffb3c1;border-color:rgba(255,84,112,.35);}
+  .separator-row{background:rgba(139,147,163,.15);border-top:2px solid #FF5470;border-bottom:2px solid #FF5470;height:8px;}
+  .separator-row td{border:none;padding:0;background:rgba(139,147,163,.15);}
+  .upcoming-marker{display:block;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#FF5470;padding:0 10px;line-height:8px;}
+  @media(max-width:620px){body{padding:22px 14px 40px;} .wrap{max-width:100%;} .panel{padding:10px;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">MACRO · CALENDAR</div>
+  <h1>Calendar</h1>
+  <div class="toolbar">
+    <span class="status" id="status">Loading economic calendar...</span>
+  </div>
+  <div class="panel">
+    <div class="calendar-table-wrap">
+      <div id="calendarRoot"><div class="empty">Fetching the latest macro events...</div></div>
+    </div>
+  </div>
+  <p class="note" style="margin-top:14px;">Note: This week's data comes from CryptoCraft's official JSON export (no "Actual" values published there). Next week's data is pulled from their live calendar page and includes Actual where available, but that parsing is best-effort and may silently return nothing if CryptoCraft changes their page layout.</p>
+</div>
+<script>
+// CryptoCraft's calendar feed only publishes the current Mon-Sun week (no
+// lastweek/nextweek files exist on their server - confirmed 404). Forward
+// coverage is therefore capped at whatever remains of the current week; it
+// rolls forward automatically once the source's file rolls over on Monday.
+const SOURCE_URLS = [
+  'https://nfs.faireconomy.media/cc_calendar_thisweek.json'
+];
+const SOURCE_LINK = 'https://www.cryptocraft.com/calendar';
+const TABLE_COLUMNS = ['Date', 'Time', 'Impact', 'Event', 'Actual', 'Forecast', 'Previous'];
+const DAYS_BACK = 2;
+const DAYS_FORWARD = 7;
+const REFRESH_MS = 60 * 60 * 1000; // hourly
+const FETCH_TIMEOUT_MS = 6000; // give up on a slow proxy after 6s and try the next one
+
+// Once you deploy the Cloudflare Worker from calendar-worker.js, paste its URL here.
+// e.g. 'https://calendar-proxy.yoursubdomain.workers.dev'
+// Leave as '' to skip straight to the public-proxy fallbacks.
+const WORKER_PROXY_URL = 'https://calendar-proxy.justfagame9.workers.dev';
+
+const root = document.getElementById('calendarRoot');
+const status = document.getElementById('status');
+let refreshTimer = null;
+
+function escapeHtml(value){
+  return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+}
+function formatDate(date){
+  return new Intl.DateTimeFormat('en-US', {month:'short', day:'numeric', year:'numeric'}).format(date);
+}
+function formatTime(date){
+  return new Intl.DateTimeFormat('en-US', {hour:'2-digit', minute:'2-digit', hour12:true}).format(date);
+}
+function localDayKey(date){
+  return date.getFullYear() + '-' + String(date.getMonth()+1).padStart(2,'0') + '-' + String(date.getDate()).padStart(2,'0');
+}
+function impactClass(impact){
+  const normalized = String(impact ?? '').toLowerCase();
+  if(/high|important|red/.test(normalized)) return 'impact-high';
+  if(/medium|med|yellow/.test(normalized)) return 'impact-medium';
+  if(/low|green/.test(normalized)) return 'impact-low';
+  return 'impact-none';
+}
+function isInDateRange(date){
+  const now = new Date();
+  const rangeStart = new Date(now.getTime() - DAYS_BACK * 86400000);
+  rangeStart.setHours(0,0,0,0);
+  const rangeEnd = new Date(now.getTime() + DAYS_FORWARD * 86400000);
+  rangeEnd.setHours(23,59,59,999);
+  return date >= rangeStart && date <= rangeEnd;
+}
+
+// The source feed does not send CORS headers, so a direct browser fetch is
+// blocked. Fall through a chain of direct -> proxy1 -> proxy2, and only give
+// up (return no data) if every attempt fails.
+function candidateUrls(url){
+  const encoded = encodeURIComponent(url);
+  const candidates = [];
+  if(WORKER_PROXY_URL) candidates.push(WORKER_PROXY_URL.replace(/\/$/, '') + '?url=' + encoded);
+  candidates.push(url);
+  candidates.push('https://api.allorigins.win/raw?url=' + encoded);
+  candidates.push('https://corsproxy.io/?url=' + encoded);
+  return candidates;
+}
+
+async function fetchWithTimeout(url, ms){
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try{
+    return await fetch(url, {cache:'no-store', signal: controller.signal});
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function fetchOne(url){
+  for(const candidate of candidateUrls(url)){
+    try{
+      const res = await fetchWithTimeout(candidate, FETCH_TIMEOUT_MS);
+      if(!res.ok) continue;
+      const data = await res.json();
+      if(Array.isArray(data)) return data;
+    }catch(error){
+      // this candidate failed or timed out - try the next one
+    }
+  }
+  return []; // every attempt failed for this endpoint
+}
+
+const MONTH_ABBR = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+
+// CryptoCraft's calendar weeks run Sunday-Saturday. Given "today", find the
+// token (e.g. "aug30.2026") for the Sunday that starts NEXT week, matching
+// the ?week= format used on their site.
+function nextWeekToken(){
+  const today = new Date();
+  const thisWeekSunday = new Date(today);
+  thisWeekSunday.setDate(today.getDate() - today.getDay());
+  const nextSunday = new Date(thisWeekSunday);
+  nextSunday.setDate(thisWeekSunday.getDate() + 7);
+  return MONTH_ABBR[nextSunday.getMonth()] + nextSunday.getDate() + '.' + nextSunday.getFullYear();
+}
+
+async function fetchNextWeekViaWorker(){
+  if(!WORKER_PROXY_URL) return [];
+  const url = WORKER_PROXY_URL.replace(/\/$/, '') + '?week=' + encodeURIComponent(nextWeekToken());
+  try{
+    const res = await fetchWithTimeout(url, FETCH_TIMEOUT_MS * 2); // scraping is slower than a plain JSON pass-through
+    if(!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  }catch(error){
+    return []; // next-week scrape is best-effort; never let it block this week's data
+  }
+}
+
+async function fetchAllWeeks(){
+  const [thisWeekResults, nextWeekResults] = await Promise.all([
+    Promise.all(SOURCE_URLS.map(fetchOne)),
+    fetchNextWeekViaWorker()
+  ]);
+  const merged = thisWeekResults.flat().concat(nextWeekResults);
+  const seen = new Set();
+  const deduped = [];
+  merged.forEach(item => {
+    if(!item || !item.date || !item.title) return;
+    const key = item.title + '__' + item.date + '__' + (item.country || '');
+    if(seen.has(key)) return;
+    seen.add(key);
+    deduped.push(item);
+  });
+  return deduped;
+}
+
+function normalizeCalendarRows(items){
+  const rows = [];
+  items.forEach(item => {
+    const dateObj = new Date(item.date);
+    if(Number.isNaN(dateObj.getTime())) return;
+    if(!isInDateRange(dateObj)) return;
+    rows.push({
+      dateObj,
+      dayKey: localDayKey(dateObj),
+      impact: item.impact || '',
+      event: item.country && item.country !== 'All' ? '[' + item.country + '] ' + item.title : (item.title || ''),
+      actual: item.actual || '',
+      forecast: item.forecast || '',
+      previous: item.previous || ''
+    });
+  });
+  return rows;
+}
+
+function cell(value, isPill, pillClass){
+  if(!value) return '<td class="muted">—</td>';
+  if(isPill) return `<td><span class="impact-pill ${pillClass}">${escapeHtml(value)}</span></td>`;
+  return `<td>${escapeHtml(value)}</td>`;
+}
+
+function renderRows(rows){
+  const todayKey = localDayKey(new Date());
+  let lastDayKey = '';
+  let lastWasUpcoming = null;
+  let html = '';
+
+  rows.forEach(row => {
+    const isUpcomingEvent = row.dayKey > todayKey;
+    if(lastWasUpcoming !== null && lastWasUpcoming !== isUpcomingEvent && isUpcomingEvent){
+      html += `<tr class="separator-row"><td colspan="7"><span class="upcoming-marker">↓ UPCOMING</span></td></tr>`;
+    }
+    lastWasUpcoming = isUpcomingEvent;
+
+    const showDate = row.dayKey !== lastDayKey;
+    lastDayKey = row.dayKey;
+    const isToday = row.dayKey === todayKey;
+    const dateLabel = showDate ? formatDate(row.dateObj) + (isToday ? ' (Today)' : '') : '';
+    const dateCell = dateLabel
+      ? `<td class="date-group${isToday ? ' today' : ''}">${escapeHtml(dateLabel)}</td>`
+      : '<td class="muted">&nbsp;</td>';
+    const timeCell = `<td class="time-cell">${escapeHtml(formatTime(row.dateObj))}</td>`;
+    const impactCell = row.impact ? cell(row.impact, true, impactClass(row.impact)) : '<td class="muted">—</td>';
+    const eventCell = `<td>${escapeHtml(row.event)}</td>`;
+
+    html += `<tr>${dateCell}${timeCell}${impactCell}${eventCell}${cell(row.actual)}${cell(row.forecast)}${cell(row.previous)}</tr>`;
+  });
+
+  return html;
+}
+
+function scheduleRefresh(){
+  if(refreshTimer) clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(loadCalendar, REFRESH_MS);
+}
+
+async function loadCalendar(){
+  status.textContent = 'Fetching the latest events...';
+  try{
+    const raw = await fetchAllWeeks();
+    if(!raw.length) throw new Error('No data returned from source');
+
+    const rows = normalizeCalendarRows(raw).sort((a, b) => a.dateObj - b.dateObj);
+    if(!rows.length) throw new Error('No events in the selected date range');
+
+    const tableRows = renderRows(rows);
+    root.innerHTML = `
+      <table>
+        <thead>
+          <tr>${TABLE_COLUMNS.map(col => `<th>${escapeHtml(col)}</th>`).join('')}</tr>
+        </thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    `;
+
+    const stamp = new Intl.DateTimeFormat('en-US', {hour:'2-digit', minute:'2-digit', hour12:true}).format(new Date());
+    status.innerHTML = `${rows.length} events · updated ${escapeHtml(stamp)} · Source: <a href="${SOURCE_LINK}" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;">Crypto Craft</a>`;
+  }catch(error){
+    root.innerHTML = '<div class="empty error">Live calendar data could not be loaded right now (network or CORS restriction from the browser). It will retry automatically, or you can open the source directly below.</div>';
+    status.innerHTML = `Unable to load calendar · <a href="${SOURCE_LINK}" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;">Open Crypto Craft</a>`;
+  } finally {
+    scheduleRefresh();
+  }
+}
+
+loadCalendar();
+</script>
+</body>
+</html>
