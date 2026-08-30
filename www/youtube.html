@@ -330,6 +330,15 @@ const CHANNELS = [
 const DAYS_WINDOW = 5;
 const REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 
+// Your own Cloudflare Worker (see cloudflare-worker.js). Not a shared public
+// proxy, so it can't be blocked/rate-limited by other users of that service -
+// this is now the PRIMARY fetch path. Leave blank to skip straight to the
+// public proxies below (e.g. before you've deployed the worker).
+const WORKER_PROXY_URL = 'https://newsyt.justfagame9.workers.dev';
+function buildWorkerProxyUrl(u){
+  return `${WORKER_PROXY_URL}/?url=${encodeURIComponent(u)}`;
+}
+
 // YouTube's RSS feed has no CORS headers, so it can't be fetched directly from
 // the browser. We go through a couple of public read-only CORS proxies and fall
 // back through the list if one is down/rate-limited.
@@ -419,49 +428,59 @@ async function fetchViaRss2Json(channel, feedUrl){
 }
 
 async function fetchChannelFeed(channel){
-  // Append a changing param so rss2json / the CORS proxies can't serve back a
-  // server-side cached copy of this exact URL - each request looks "new" to them.
+  // Append a changing param so any cache along the way (proxy or origin CDN)
+  // is less likely to serve back a stale copy of this exact URL.
   const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channel.id}&_=${Date.now()}`;
+  let lastErr;
 
-  // Query rss2json AND all 3 CORS proxies at once, rather than stopping at the
-  // first one that succeeds. Reason: a source can return HTTP 200 with a
-  // technically-valid-but-outdated copy of the feed (e.g. rss2json serving its
-  // own short-lived server-side cache) - that used to look like "success" and
-  // we'd never even try the other sources, silently missing a brand-new video
-  // that just wasn't in that particular cached copy yet. Now a video only
-  // needs to appear in ANY ONE of the 4 sources to show up.
-  const attempts = [
-    fetchViaRss2Json(channel, feedUrl).catch(err => {
+  // 1) Your own Cloudflare Worker, if configured - the most reliable path since
+  // it isn't a shared public proxy that other users can overload or that an
+  // ISP/network might be blocking.
+  if(WORKER_PROXY_URL){
+    try{
+      const res = await fetchWithTimeout(buildWorkerProxyUrl(feedUrl), PROXY_TIMEOUT_MS);
+      if(!res.ok) throw new Error('worker responded ' + res.status);
+      const text = await res.text();
+      if(!text || text.indexOf('<feed') === -1) throw new Error('unexpected feed response');
+      return parseFeed(text, channel);
+    }catch(err){
       const msg = err && err.name === 'AbortError' ? 'timed out' : err.message;
-      console.warn(`[${channel.name}] rss2json failed:`, msg);
-      return [];
-    }),
-    ...CORS_PROXIES.map(buildProxyUrl => (async () => {
-      try{
-        const res = await fetchWithTimeout(buildProxyUrl(feedUrl), PROXY_TIMEOUT_MS);
-        if(!res.ok) throw new Error('proxy responded ' + res.status);
-        const text = await res.text();
-        if(!text || text.indexOf('<feed') === -1) throw new Error('unexpected feed response');
-        return parseFeed(text, channel);
-      }catch(err){
-        const msg = err && err.name === 'AbortError' ? 'timed out' : err.message;
-        console.warn(`[${channel.name}] proxy ${buildProxyUrl('')} failed:`, msg);
-        return [];
-      }
-    })())
-  ];
+      console.warn(`[${channel.name}] worker failed:`, msg);
+      lastErr = err;
+    }
+  }
 
-  const results = await Promise.all(attempts);
-  const merged = results.flat();
-  if(!merged.length) throw new Error('all sources failed');
+  // 2) Race the public CORS proxies - they fetch YouTube's feed directly, so
+  // whichever responds first gives us live data straight from the source.
+  try{
+    return await Promise.any(CORS_PROXIES.map(buildProxyUrl => (async () => {
+      const res = await fetchWithTimeout(buildProxyUrl(feedUrl), PROXY_TIMEOUT_MS);
+      if(!res.ok) throw new Error('proxy responded ' + res.status);
+      const text = await res.text();
+      if(!text || text.indexOf('<feed') === -1) throw new Error('unexpected feed response');
+      return parseFeed(text, channel);
+    })()));
+  }catch(err){
+    const reasons = (err && err.errors) ? err.errors.map(e => e.message).join('; ') : (err && err.message);
+    console.warn(`[${channel.name}] all proxies failed (${reasons})`);
+    lastErr = err;
+  }
 
-  // Dedupe by videoId, keeping whichever copy has the (equal-or-later) published date.
-  const byId = new Map();
-  merged.forEach(v => {
-    const existing = byId.get(v.videoId);
-    if(!existing || v.published >= existing.published) byId.set(v.videoId, v);
-  });
-  return Array.from(byId.values());
+  // 3) rss2json last resort. It runs its own backend crawler on its own
+  // schedule rather than live-proxying each request, so it can return an
+  // already-stale snapshot on a normal-looking 200 response - it used to be
+  // tried FIRST here, which meant a stale-but-"successful" response could win
+  // out over genuinely fresh data from a working proxy on every single
+  // refresh. Only used now if the worker and every live proxy have failed.
+  try{
+    return await fetchViaRss2Json(channel, feedUrl);
+  }catch(err){
+    const msg = err && err.name === 'AbortError' ? 'timed out' : err.message;
+    console.warn(`[${channel.name}] rss2json fallback also failed:`, msg);
+    lastErr = err;
+  }
+
+  throw lastErr || new Error('all sources failed');
 }
 
 function timeAgo(date){
