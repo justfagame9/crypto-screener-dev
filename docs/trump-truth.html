@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trump's Truth Social</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0C10;
+    --panel:#12151B;
+    --panel2:#171B22;
+    --border:#232833;
+    --border-soft:#1B1F28;
+    --text:#E6E9EF;
+    --muted:#8B93A3;
+    --faint:#565F70;
+    --accent:#FF5470;
+    --accent-light:#FFB3C1;
+    --font-display:'Space Grotesk',sans-serif;
+    --font-mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;min-height:100%;}
+  body{
+    padding:30px 24px 60px;
+    background:var(--bg);
+    background-image:radial-gradient(circle at 12% 0%,rgba(255,84,112,.06),transparent 40%),radial-gradient(circle at 92% 15%,rgba(255,84,112,.05),transparent 35%);
+    color:var(--text);
+    font-family:var(--font-display);
+  }
+  
+  .wrap{max-width:1000px;margin:0 auto;}
+  .eyebrow{font:11px var(--font-mono);letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:10px;}
+  h1{font-size:26px;margin:0 0 6px;font-weight:700;}
+  .sub{color:var(--muted);font-size:13.5px;line-height:1.5;margin-bottom:24px;}
+  
+  .toolbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    margin-bottom:24px;
+    flex-wrap:wrap;
+  }
+  .status{color:var(--muted);font:11.5px var(--font-mono);}
+  button{
+    background:transparent;
+    border:1px solid var(--border);
+    border-radius:8px;
+    color:var(--text);
+    cursor:pointer;
+    font:600 12px var(--font-mono);
+    padding:8px 12px;
+  }
+  button:hover{border-color:var(--accent);color:var(--accent);}
+  button:disabled{cursor:wait;opacity:.55;}
+
+  /* ---- Refresh button ---- */
+  .refresh-btn{
+    background:var(--panel);
+    border:1px solid var(--border);
+    color:var(--text);
+    width:32px;
+    height:32px;
+    padding:0;
+    border-radius:8px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+  }
+  .refresh-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .refresh-btn svg{width:14px;height:14px;transition:transform .4s;}
+  .refresh-btn.spinning svg{transform:rotate(360deg);}
+  
+  .filters{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:20px;
+  }
+  .filter-chip{
+    background:rgba(255,84,112,.15);
+    border:1px solid rgba(255,84,112,.3);
+    color:var(--accent-light);
+    padding:6px 12px;
+    border-radius:20px;
+    font-size:12px;
+    cursor:pointer;
+    transition:all .2s;
+  }
+  .filter-chip:hover{
+    background:rgba(255,84,112,.25);
+    border-color:var(--accent);
+  }
+  .filter-chip.active{
+    background:var(--accent);
+    color:#000;
+    border-color:var(--accent);
+  }
+  
+  .tweets-container{
+    display:grid;
+    gap:14px;
+  }
+  
+  .tweet-card{
+    padding:20px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:12px;
+    transition:all .2s;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .tweet-card:hover{
+    border-color:var(--accent);
+    transform:translateY(-2px);
+    box-shadow:0 8px 24px rgba(255,84,112,.12);
+  }
+  
+  .tweet-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .tweet-author{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex:1;
+  }
+  .tweet-avatar{
+    width:40px;
+    height:40px;
+    border-radius:50%;
+    background:linear-gradient(135deg, #FF5470, #FF8AA2);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:18px;
+    flex-shrink:0;
+  }
+  .author-info{
+    display:flex;
+    flex-direction:column;
+  }
+  .author-name{
+    font-weight:600;
+    font-size:14px;
+    color:var(--text);
+  }
+  .author-handle{
+    font-size:12px;
+    color:var(--muted);
+    font-family:var(--font-mono);
+  }
+  .tweet-time{
+    color:var(--faint);
+    font:11px var(--font-mono);
+    white-space:nowrap;
+  }
+  
+  .tweet-content{
+    line-height:1.6;
+    font-size:15px;
+    color:var(--text);
+    word-break:break-word;
+  }
+  
+  .tweet-keywords{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .keyword-badge{
+    background:rgba(255,84,112,.2);
+    border:1px solid rgba(255,84,112,.4);
+    color:var(--accent-light);
+    padding:4px 10px;
+    border-radius:16px;
+    font-size:11px;
+    font-weight:600;
+    font-family:var(--font-mono);
+  }
+  
+  .tweet-stats{
+    display:flex;
+    gap:20px;
+    font-size:12px;
+    color:var(--muted);
+    border-top:1px solid var(--border-soft);
+    padding-top:12px;
+    margin-top:8px;
+  }
+  .stat-item{
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  
+  .empty{
+    padding:40px 28px;
+    color:var(--faint);
+    font:13px var(--font-mono);
+    text-align:center;
+    border:1px dashed var(--border);
+    border-radius:10px;
+  }
+  
+  .error{
+    padding:20px;
+    background:rgba(255,84,112,.1);
+    border:1px solid rgba(255,84,112,.3);
+    border-radius:10px;
+    color:var(--accent-light);
+    font-size:13px;
+    margin-bottom:20px;
+  }
+  
+  .tweet-count{
+    color:var(--muted);
+    font-size:12px;
+    font-family:var(--font-mono);
+  }
+  
+  @media(max-width:600px){
+    body{padding:20px 16px 40px;}
+    .tweet-card{padding:16px;}
+    .tweet-header{flex-direction:column;align-items:flex-start;}
+    .tweet-time{order:3;width:100%;}
+    .tweet-content{font-size:14px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="eyebrow">SOCIAL MEDIA · TRUTH SOCIAL</div>
+  <h1>Trump's Truth Social Posts</h1>
+  <p class="sub">Latest posts from Donald J. Trump containing crypto-related keywords</p>
+  
+  <div class="toolbar">
+    <span class="status" id="status">Loading posts…</span>
+    <button class="refresh-btn" id="refreshBtn" aria-label="Refresh">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+    </button>
+  </div>
+  
+  <div class="filters">
+    <div class="filter-chip active" data-filter="crypto">Crypto</div>
+    <div class="filter-chip active" data-filter="clarity">Clarity Act</div>
+    <div class="filter-chip active" data-filter="bitcoin">Bitcoin</div>
+    <div class="filter-chip active" data-filter="hype">Hype</div>
+    <div class="filter-chip active" data-filter="genius">Genius Act</div>
+    <div class="filter-chip active" data-filter="prediction">Prediction Market</div>
+  </div>
+  
+  <div class="tweet-count" id="tweetCount"></div>
+  <main class="tweets-container" id="tweetsContainer">
+    <div class="empty">Fetching the latest posts from Truth Social…</div>
+  </main>
+</div>
+
+<script>
+// Mock data - Replace with actual API call to fetch Trump's Truth Social posts
+// This demonstrates the expected data structure
+const MOCK_POSTS = [
+  {
+    id: '1001',
+    author: 'Donald J. Trump',
+    handle: '@realDonaldTrump',
+    timestamp: new Date(Date.now() - 1*24*60*60*1000),
+    content: 'Bitcoin and crypto are the future of finance. We need clear regulatory framework that supports innovation. The cryptocurrency industry has tremendous potential for American prosperity and global leadership.',
+    keywords: ['crypto', 'clarity'],
+    likes: 15420,
+    reposts: 3280,
+    replies: 1205
+  },
+  {
+    id: '1002',
+    author: 'Donald J. Trump',
+    handle: '@realDonaldTrump',
+    timestamp: new Date(Date.now() - 2*24*60*60*1000),
+    content: 'Crypto companies are leaving America because of Biden\'s anti-crypto policies. We need the Clarity Act now to give the industry the certainty it needs. Strong crypto policy = American Jobs!',
+    keywords: ['crypto', 'clarity'],
+    likes: 12890,
+    reposts: 2410,
+    replies: 890
+  },
+  {
+    id: '1003',
+    author: 'Donald J. Trump',
+    handle: '@realDonaldTrump',
+    timestamp: new Date(Date.now() - 3*24*60*60*1000),
+    content: 'The Clarity Act will be transformational for blockchain and cryptocurrency innovation. Entrepreneurs deserve clear rules, not constant uncertainty from regulators. Let\'s make crypto great!',
+    keywords: ['crypto', 'clarity'],
+    likes: 18750,
+    reposts: 4120,
+    replies: 1640
+  },
+  {
+    id: '1004',
+    author: 'Donald J. Trump',
+    handle: '@realDonaldTrump',
+    timestamp: new Date(Date.now() - 5*24*60*60*1000),
+    content: 'Bitcoin is at record highs because smart money knows crypto will be the global standard. The Clarity Act will ensure America leads the digital asset revolution, not China or Singapore.',
+    keywords: ['crypto', 'clarity'],
+    likes: 22410,
+    reposts: 5890,
+    replies: 2150
+  },
+  {
+    id: '1005',
+    author: 'Donald J. Trump',
+    handle: '@realDonaldTrump',
+    timestamp: new Date(Date.now() - 6*24*60*60*1000),
+    content: 'We need to protect crypto innovation while fighting crime. The Clarity Act does exactly that - it gives regulators the tools they need while letting builders build. That\'s real leadership.',
+    keywords: ['crypto', 'clarity'],
+    likes: 14560,
+    reposts: 3250,
+    replies: 945
+  },
+  {
+    id: '1006',
+    author: 'Donald J. Trump',
+    handle: '@realDonaldTrump',
+    timestamp: new Date(Date.now() - 7*24*60*60*1000),
+    content: 'Crypto investors are the backbone of the digital economy. They deserve a government that supports them, not punishes them. The Clarity Act is that support. Vote for strong crypto leadership!',
+    keywords: ['crypto', 'clarity'],
+    likes: 16780,
+    reposts: 3920,
+    replies: 1120
+  },
+  {
+    id: '1007',
+    author: 'Donald J. Trump',
+    handle: '@realDonaldTrump',
+    timestamp: new Date(Date.now() - 9*24*60*60*1000),
+    content: 'My administration will be crypto-friendly from day one. The Clarity Act will pass quickly, and we\'ll build the world\'s strongest digital asset infrastructure right here in America.',
+    keywords: ['crypto', 'clarity'],
+    likes: 24120,
+    reposts: 6780,
+    replies: 2480
+  },
+  {
+    id: '1008',
+    author: 'Donald J. Trump',
+    handle: '@realDonaldTrump',
+    timestamp: new Date(Date.now() - 11*24*60*60*1000),
+    content: 'The crypto community has been incredible supporters of free speech and economic freedom. We will never abandon you. Clarity Act incoming! Build, innovate, create wealth!',
+    keywords: ['crypto', 'clarity'],
+    likes: 19340,
+    reposts: 4560,
+    replies: 1780
+  },
+  {
+    id: '1009',
+    author: 'Donald J. Trump',
+    handle: '@realDonaldTrump',
+    timestamp: new Date(Date.now() - 13*24*60*60*1000),
+    content: 'Bitcoin mining will boom in America under our administration. We\'ll unleash energy independence and crypto innovation together. The Clarity Act makes it all possible.',
+    keywords: ['crypto', 'clarity'],
+    likes: 17890,
+    reposts: 4120,
+    replies: 1340
+  },
+  {
+    id: '1010',
+    author: 'Donald J. Trump',
+    handle: '@realDonaldTrump',
+    timestamp: new Date(Date.now() - 15*24*60*60*1000),
+    content: 'Stablecoins are the future of payments. We need the Clarity Act to ensure they can operate safely in America. This is about financial sovereignty and American competitiveness.',
+    keywords: ['crypto', 'clarity'],
+    likes: 13450,
+    reposts: 3120,
+    replies: 890
+  },
+  {
+    id: '1011',
+    author: 'Donald J. Trump',
+    handle: '@realDonaldTrump',
+    timestamp: new Date(Date.now() - 17*24*60*60*1000),
+    content: 'Crypto creates jobs, innovation, and wealth. Biden\'s crypto war is costing America billions. The Clarity Act reverses that - we\'ll lead the digital economy!',
+    keywords: ['crypto', 'clarity'],
+    likes: 21670,
+    reposts: 5340,
+    replies: 1920
+  },
+  {
+    id: '1012',
+    author: 'Donald J. Trump',
+    handle: '@realDonaldTrump',
+    timestamp: new Date(Date.now() - 19*24*60*60*1000),
+    content: 'NFTs and tokenization will transform business. The Clarity Act creates the legal framework for this revolution. America will lead, not follow.',
+    keywords: ['crypto', 'clarity'],
+    likes: 11230,
+    reposts: 2450,
+    replies: 670
+  },
+  {
+    id: '1013',
+    author: 'Donald J. Trump',
+    handle: '@realDonaldTrump',
+    timestamp: new Date(Date.now() - 21*24*60*60*1000),
+    content: 'Crypto wallets should be private and secure. The Clarity Act protects user rights while fighting terrorism. That\'s the balance we need.',
+    keywords: ['crypto', 'clarity'],
+    likes: 15890,
+    reposts: 3670,
+    replies: 1120
+  },
+  {
+    id: '1014',
+    author: 'Donald J. Trump',
+    handle: '@realDonaldTrump',
+    timestamp: new Date(Date.now() - 23*24*60*60*1000),
+    content: 'DeFi protocols represent the future of finance. They need clear rules to thrive. The Clarity Act gives them exactly that. American DeFi leadership incoming!',
+    keywords: ['crypto', 'clarity'],
+    likes: 18340,
+    reposts: 4120,
+    replies: 1450
+  },
+  {
+    id: '1015',
+    author: 'Donald J. Trump',
+    handle: '@realDonaldTrump',
+    timestamp: new Date(Date.now() - 25*24*60*60*1000),
+    content: 'The Clarity Act will be the most pro-innovation legislation in crypto history. Exchanges, custodians, and developers - everyone wins. That\'s the Trump effect!',
+    keywords: ['crypto', 'clarity'],
+    likes: 20120,
+    reposts: 5670,
+    replies: 1890
+  }
+];
+
+const container = document.getElementById('tweetsContainer');
+const status = document.getElementById('status');
+const tweetCount = document.getElementById('tweetCount');
+const filterChips = document.querySelectorAll('.filter-chip');
+let allPosts = [...MOCK_POSTS];
+let activeFilters = new Set(['crypto', 'clarity']);
+
+// Filter chip toggle
+filterChips.forEach(chip => {
+  chip.addEventListener('click', () => {
+    const filter = chip.dataset.filter;
+    if(activeFilters.has(filter)){
+      activeFilters.delete(filter);
+      chip.classList.remove('active');
+    } else {
+      activeFilters.add(filter);
+      chip.classList.add('active');
+    }
+    renderPosts();
+  });
+});
+
+function formatDate(date) {
+  const now = new Date();
+  const diff = now - date;
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+  
+  if(minutes < 60) return `${minutes}m ago`;
+  if(hours < 24) return `${hours}h ago`;
+  if(days < 7) return `${days}d ago`;
+  
+  return new Intl.DateTimeFormat(undefined, {month:'short', day:'numeric', year:'2-digit'}).format(date);
+}
+
+function getMatchingKeywords(content) {
+  const lowerContent = content.toLowerCase();
+  const matching = [];
+  if(lowerContent.includes('crypto') || lowerContent.includes('cryptocurrency')) matching.push('crypto');
+  if(lowerContent.includes('clarity act')) matching.push('clarity');
+  if(lowerContent.includes('bitcoin')) matching.push('bitcoin');
+  if(lowerContent.includes('hype')) matching.push('hype');
+  if(lowerContent.includes('genius act')) matching.push('genius');
+  if(lowerContent.includes('prediction market')) matching.push('prediction');
+  return matching;
+}
+
+function renderPosts(){
+  if(!allPosts || allPosts.length === 0){
+    container.innerHTML = '<div class="empty">No posts found. Try adjusting filters.</div>';
+    status.textContent = 'No posts';
+    tweetCount.textContent = '';
+    return;
+  }
+  
+  const filtered = allPosts.filter(post => {
+    const keywords = getMatchingKeywords(post.content);
+    return keywords.some(k => activeFilters.has(k));
+  });
+  
+  if(filtered.length === 0){
+    container.innerHTML = '<div class="empty">No posts match the selected filters.</div>';
+    status.textContent = 'No results';
+    tweetCount.textContent = '';
+    return;
+  }
+  
+  const html = filtered.map(post => `
+    <div class="tweet-card">
+      <div class="tweet-header">
+        <div class="tweet-author">
+          <div class="tweet-avatar">🇺🇸</div>
+          <div class="author-info">
+            <div class="author-name">${post.author}</div>
+            <div class="author-handle">${post.handle}</div>
+          </div>
+        </div>
+        <div class="tweet-time">${formatDate(post.timestamp)}</div>
+      </div>
+      <div class="tweet-content">${post.content}</div>
+      <div class="tweet-keywords">
+        ${post.keywords.map(kw => `<span class="keyword-badge">${kw.toUpperCase()}</span>`).join('')}
+      </div>
+      <div class="tweet-stats">
+        <span class="stat-item">❤️ ${post.likes.toLocaleString()} likes</span>
+        <span class="stat-item">🔄 ${post.reposts.toLocaleString()} reposts</span>
+        <span class="stat-item">💬 ${post.replies.toLocaleString()} replies</span>
+      </div>
+    </div>
+  `).join('');
+  
+  container.innerHTML = html;
+  status.textContent = `Showing ${filtered.length} posts`;
+  tweetCount.textContent = `${filtered.length} of ${allPosts.length} posts match your filters`;
+}
+
+async function refreshPosts(){
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('spinning');
+  status.textContent = 'Refreshing…';
+
+  // TODO: Replace with actual API call to fetch Trump's Truth Social posts
+  // Example API endpoints to consider:
+  // - Truth Social official API (if available)
+  // - Third-party API that tracks Truth Social posts
+  // - RSS feed parsing
+
+  // Simulate network delay
+  await new Promise(resolve => setTimeout(resolve, 1500));
+
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString(undefined, {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  status.textContent = `Updated at ${timeStr}`;
+
+  // In production, merge new posts with existing and re-render
+  renderPosts();
+  setTimeout(() => btn.classList.remove('spinning'), 400);
+}
+
+document.getElementById('refreshBtn').addEventListener('click', refreshPosts);
+
+// Auto-refresh every 15 minutes (900000 ms)
+let autoRefreshInterval = setInterval(() => {
+  refreshPosts();
+}, 15 * 60 * 1000);
+
+// Initial render
+document.addEventListener('DOMContentLoaded', () => {
+  renderPosts();
+});
+</script>
+
+</body>
+</html>
