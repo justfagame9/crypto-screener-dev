@@ -31,6 +31,17 @@ const NEWS_SOURCES = [
   {name:'Blockworks', feed:'https://blockworks.co/feed'},
   {name:'The Block', feed:'https://www.theblock.co/rss.xml'}
 ];
+// rss2json is tried first (dedicated feed-reading API, usually fastest). But it's
+// the ONLY source this page had - if it's slow/rate-limited/serving a stale
+// server-side cache for a given feed, there was no fallback and that source
+// would silently lag by hours. These CORS proxies (same ones used by the
+// YouTube page) fetch the raw feed XML directly as a backup path.
+const CORS_PROXIES = [
+  (u) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+  (u) => `https://proxy.corsfix.com/?${u}`,
+  (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+];
+const PROXY_TIMEOUT_MS = 7000;
 const list = document.getElementById('newsList');
 const status = document.getElementById('status');
 let refreshTimer;
@@ -40,6 +51,76 @@ function formatDate(value){
 }
 function escapeHtml(value){
   return String(value).replace(/[&<>'"]/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[character]));
+}
+function getText(el, tag){
+  const node = el.getElementsByTagName(tag)[0];
+  return node ? node.textContent.trim() : '';
+}
+function parseGenericFeed(xmlText, sourceName){
+  const doc = new DOMParser().parseFromString(xmlText, 'application/xml');
+  if(doc.getElementsByTagName('parsererror').length) throw new Error('feed parse error');
+  const rssItems = Array.from(doc.getElementsByTagName('item'));
+  if(rssItems.length){
+    return rssItems.map(item => ({
+      title: getText(item, 'title'),
+      link: getText(item, 'link'),
+      pubDate: getText(item, 'pubDate'),
+      source: sourceName
+    })).filter(a => a.title && a.link);
+  }
+  const entries = Array.from(doc.getElementsByTagName('entry'));
+  return entries.map(entry => {
+    const linkEl = entry.getElementsByTagName('link')[0];
+    return {
+      title: getText(entry, 'title'),
+      link: linkEl ? (linkEl.getAttribute('href') || linkEl.textContent.trim()) : '',
+      pubDate: getText(entry, 'updated') || getText(entry, 'published'),
+      source: sourceName
+    };
+  }).filter(a => a.title && a.link);
+}
+async function fetchWithTimeout(url, ms){
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try{
+    return await fetch(url, {cache:'no-store', signal: controller.signal});
+  }finally{
+    clearTimeout(timer);
+  }
+}
+async function fetchViaRss2Json(source, bustedFeed){
+  const url = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(bustedFeed)}`;
+  const response = await fetchWithTimeout(url, PROXY_TIMEOUT_MS);
+  if(!response.ok) throw new Error(`rss2json responded ${response.status}`);
+  const data = await response.json();
+  if(!Array.isArray(data.items)) throw new Error('rss2json returned no items');
+  return data.items.filter(article => article.title && article.link)
+    .map(article => ({...article, source: source.name}));
+}
+async function fetchSourceArticles(source){
+  // Append a changing param so rss2json can't serve back a server-side
+  // cached copy of this exact feed URL - each request looks "new" to it.
+  const bustedFeed = `${source.feed}${source.feed.includes('?') ? '&' : '?'}_=${Date.now()}`;
+  try{
+    return await fetchViaRss2Json(source, bustedFeed);
+  }catch(err){
+    const msg = err && err.name === 'AbortError' ? 'timed out' : err.message;
+    console.warn(`[${source.name}] rss2json failed:`, msg);
+  }
+  for(const buildProxyUrl of CORS_PROXIES){
+    try{
+      const res = await fetchWithTimeout(buildProxyUrl(bustedFeed), PROXY_TIMEOUT_MS);
+      if(!res.ok) throw new Error('proxy responded ' + res.status);
+      const text = await res.text();
+      const items = parseGenericFeed(text, source.name);
+      if(!items.length) throw new Error('empty feed');
+      return items;
+    }catch(err){
+      const msg = err && err.name === 'AbortError' ? 'timed out' : err.message;
+      console.warn(`[${source.name}] proxy failed:`, msg);
+    }
+  }
+  throw new Error(`${source.name} unavailable`);
 }
 function normalizeTitle(value){
   return String(value).toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
@@ -67,27 +148,24 @@ function renderArticles(articles){
 }
 async function loadNews(){
   status.textContent = 'Refreshing latest articles...';
+  const failedSources = [];
   try{
-    const results = await Promise.allSettled(NEWS_SOURCES.map(async source => {
-      // Append a changing param so rss2json can't serve back a server-side
-      // cached copy of this exact feed URL - each request looks "new" to it.
-      const bustedFeed = `${source.feed}${source.feed.includes('?') ? '&' : '?'}_=${Date.now()}`;
-      const url = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(bustedFeed)}`;
-      const response = await fetch(url, {cache:'no-store'});
-      if(!response.ok) throw new Error(`News request failed (${response.status})`);
-      const data = await response.json();
-      return Array.isArray(data.items) ? data.items
-        .filter(article => article.title && article.link)
-        .map(article => ({...article, source:source.name})) : [];
-    }));
+    const results = await Promise.allSettled(NEWS_SOURCES.map(source =>
+      fetchSourceArticles(source).catch(err => { failedSources.push(source.name); throw err; })
+    ));
     const articles = removeSimilarArticles(results
       .filter(result => result.status === 'fulfilled')
       .flatMap(result => result.value));
     if(!articles.length) throw new Error('No articles returned');
     renderArticles(articles);
-    status.textContent = `Updated ${new Intl.DateTimeFormat(undefined,{hour:'2-digit',minute:'2-digit'}).format(new Date())}`;
+    const now = new Intl.DateTimeFormat(undefined,{hour:'2-digit',minute:'2-digit'}).format(new Date());
+    status.textContent = failedSources.length
+      ? `Updated ${now} · ${failedSources.join(', ')} unavailable this refresh`
+      : `Updated ${now}`;
   }catch(error){
-    list.innerHTML = '<div class="empty error">News could not be loaded. Try refreshing again.</div>';
+    if(!list.querySelector('.article')){
+      list.innerHTML = '<div class="empty error">News could not be loaded. Try refreshing again.</div>';
+    }
     status.textContent = 'Unable to load news';
   }finally{
     scheduleRefresh();

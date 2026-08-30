@@ -59,6 +59,7 @@
   @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
   .header-right{display:flex;align-items:center;gap:10px;}
   .updated-label{font-family:var(--font-mono);font-size:10.5px;color:var(--faint);white-space:nowrap;}
+  .updated-label.warn{color:var(--red);}
 
   .refresh-btn{
     background:var(--panel2);
@@ -347,6 +348,8 @@ const CACHE_KEY = 'crypto-youtube-cache-v1';
 let activeFilter = 'all';
 let allVideos = [];
 let lastUpdated = null;
+let lastRefreshFailed = false;
+let lastFailedChannels = [];
 
 function getText(el, tag){
   const node = el.getElementsByTagName(tag)[0];
@@ -579,8 +582,15 @@ function renderErrorState(err){
 
 function updateLastUpdatedLabel(){
   const el = document.getElementById('updatedLabel');
-  if(!lastUpdated){ el.textContent = ''; return; }
-  el.textContent = 'Updated ' + timeAgo(lastUpdated);
+  if(!lastUpdated){ el.textContent = ''; el.classList.remove('warn'); return; }
+  if(lastRefreshFailed){
+    const who = lastFailedChannels.length ? ` (${lastFailedChannels.join(', ')})` : '';
+    el.textContent = `Refresh failed${who} · showing data from ${timeAgo(lastUpdated)}`;
+    el.classList.add('warn');
+  }else{
+    el.textContent = 'Updated ' + timeAgo(lastUpdated);
+    el.classList.remove('warn');
+  }
 }
 
 function saveCache(){
@@ -616,17 +626,32 @@ async function loadAll(){
     renderSkeleton();
   }
 
+  const failedChannels = [];
   try{
     const results = await Promise.all(CHANNELS.map(c =>
-      fetchChannelFeed(c).catch(err => { console.warn('feed failed for', c.name, err); return []; })
+      fetchChannelFeed(c).catch(err => {
+        console.warn('feed failed for', c.name, err);
+        failedChannels.push(c.name);
+        return [];
+      })
     ));
     const merged = results.flat();
-    if(!merged.length && !allVideos.length){
-      throw new Error('no channels returned data');
-    }
-    if(merged.length){
+
+    if(!merged.length){
+      // Every single channel failed this refresh. This is the case that used to
+      // be swallowed silently: if we already had cached videos, the old code
+      // skipped updating allVideos/lastUpdated and just re-rendered the stale
+      // list with no sign anything went wrong. Now we flag it explicitly.
+      lastRefreshFailed = true;
+      lastFailedChannels = failedChannels;
+      if(!allVideos.length){
+        throw new Error('no channels returned data');
+      }
+    }else{
       allVideos = merged;
       lastUpdated = new Date();
+      lastRefreshFailed = failedChannels.length > 0;
+      lastFailedChannels = failedChannels;
       saveCache();
     }
     render();
