@@ -352,6 +352,7 @@
   .home-card[data-page="youtube"] .home-icon{background:linear-gradient(135deg,#ff5f5f,#c22626);}
   .home-card[data-page="predictions"] .home-icon{background:linear-gradient(135deg,#a78bfa,#6d28d9);}
   .home-card[data-page="oil"] .home-icon{background:linear-gradient(135deg,#ff8a4c,#c2501a);}
+  .home-card[data-page="season"] .home-icon{background:linear-gradient(135deg,#f5a623,#35e0c0);}
   .home-card[data-page="settings"] .home-icon{background:linear-gradient(135deg,#9aa5b8,#5b6478);}
 </style>
 </head>
@@ -418,6 +419,11 @@
     <div class="nav-item" data-page="oil">
       <span class="nav-icon">🛢️</span>
       <span class="nav-label">Oil & Energy<small>Brent, WTI prices & the spread</small></span>
+    </div>
+
+    <div class="nav-item" data-page="season">
+      <span class="nav-icon">🌗</span>
+      <span class="nav-label">Season Index<small>Bitcoin vs Altcoin season</small></span>
     </div>
 
     <div class="drawer-tools">
@@ -511,6 +517,10 @@
             <span class="home-icon">🛢️</span>
             <span><span class="home-title">Oil & Energy</span><span class="home-desc">Live Brent & WTI crude prices</span></span>
           </button>
+          <button class="home-card" type="button" data-page="season">
+            <span class="home-icon">🌗</span>
+            <span><span class="home-title">Season Index</span><span class="home-desc">Bitcoin vs Altcoin season, live</span></span>
+          </button>
           <button class="home-card" type="button" data-page="settings">
             <span class="home-icon">⚙️</span>
             <span><span class="home-title">Trading Settings</span><span class="home-desc">Portfolio, exchange & YouTube channels</span></span>
@@ -559,6 +569,11 @@
       <!-- lazy-loaded on first open -->
       <iframe id="iframe-oil" data-src="oil.html"></iframe>
     </div>
+    <div class="page" data-page="season">
+      <div class="page-loading" id="loading-season">Loading season index…</div>
+      <!-- lazy-loaded on first open -->
+      <iframe id="iframe-season" data-src="season-index.html"></iframe>
+    </div>
     <div class="page" data-page="settings">
       <div class="page-loading" id="loading-settings">Loading settings…</div>
       <iframe id="iframe-settings" data-src="trading-settings.html"></iframe>
@@ -577,6 +592,7 @@ const PAGE_TITLES = {
   youtube: 'YouTube Crypto',
   predictions: 'Prediction Markets',
   oil: 'Oil & Energy',
+  season: 'Season Index',
   settings: 'Trading Settings'
 };
 
