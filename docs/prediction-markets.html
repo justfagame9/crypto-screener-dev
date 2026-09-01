@@ -95,15 +95,15 @@
 
   .poll{
     background:var(--panel2);border:1px solid var(--border-soft);border-radius:10px;
-    padding:12px 13px;display:flex;flex-direction:column;gap:9px;
+    padding:11px 12px;display:flex;flex-direction:column;gap:7px;
     transition:border-color .15s;
   }
   .poll:hover{border-color:var(--border);}
-  .poll-top{display:flex;align-items:center;justify-content:flex-end;gap:8px;}
-  .poll-meta{font:11px var(--font-mono);color:var(--faint);white-space:nowrap;}
-  .poll-question{font-size:14.5px;font-weight:600;line-height:1.4;color:var(--text);}
+  .poll-head-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;}
+  .poll-meta{font:11px var(--font-mono);color:var(--faint);white-space:nowrap;flex-shrink:0;}
+  .poll-question{font-size:14.5px;font-weight:600;line-height:1.4;color:var(--text);flex:1;min-width:0;}
 
-  .outcome-row{display:flex;flex-direction:column;gap:4px;}
+  .outcome-row{display:flex;flex-direction:column;gap:3px;}
   .outcome-label-row{display:flex;justify-content:space-between;align-items:baseline;font:13px var(--font-mono);}
   .outcome-label-row .lbl{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70%;}
   .outcome-label-row .pct{color:var(--text);font-weight:700;flex-shrink:0;}
@@ -385,10 +385,10 @@ function renderPoll(poll){
 
   return `
     <div class="poll">
-      <div class="poll-top">
+      <div class="poll-head-row">
+        <div class="poll-question">${escapeHtml(poll.question)}</div>
         <span class="poll-meta">${escapeHtml(fmtEndDate(poll.endDate))}</span>
       </div>
-      <div class="poll-question">${escapeHtml(poll.question)}</div>
       ${outcomeRows}
       <div class="poll-foot">
         <span class="poll-vol">${escapeHtml(fmtVolume(poll.volume))}</span>
