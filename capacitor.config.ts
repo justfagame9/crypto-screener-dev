@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.cryptoscreener.ichimoku',
-  appName: 'Crypto Screener',
+  appName: 'TradeSphere',
   webDir: 'www'
 };
 

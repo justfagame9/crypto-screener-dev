@@ -1,6 +1,6 @@
 {
-  "name": "Crypto Screener",
-  "short_name": "Crypto Screener",
+  "name": "TradeSphere",
+  "short_name": "TradeSphere",
   "description": "Ichimoku breakout screener and position sizing tools",
   "start_url": "./",
   "scope": "./",
