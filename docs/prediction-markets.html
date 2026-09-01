@@ -71,7 +71,6 @@
   }
   .src-tag .dot{width:6px;height:6px;border-radius:50%;}
   .src-tag.polymarket .dot{background:var(--blue);}
-  .src-tag.kalshi .dot{background:var(--accent);}
 
   .degraded-banner{
     background:rgba(255,84,112,.08);border:1px solid rgba(255,84,112,.25);color:#ffb3c1;
@@ -107,7 +106,6 @@
   }
   .poll-source .dot{width:6px;height:6px;border-radius:50%;}
   .poll-source.polymarket .dot{background:var(--blue);}
-  .poll-source.kalshi .dot{background:var(--accent);}
   .poll-meta{font:11px var(--font-mono);color:var(--faint);white-space:nowrap;}
   .poll-question{font-size:14.5px;font-weight:600;line-height:1.4;color:var(--text);}
 
@@ -168,24 +166,20 @@
   <div id="content"></div>
 
   <div class="notice">
-    <b>Read-only market data, not a trading venue.</b> Odds shown are implied probabilities (the current price of a "Yes" contract) pulled directly from each exchange's public data feed, for research and context only — this page doesn't place trades or hold funds. Kalshi is a US-only, CFTC-regulated exchange and isn't available for trading in India; its odds are shown here purely as public reference data. Polymarket's own availability varies by jurisdiction. Check local rules before trading on either platform.
+    <b>Read-only market data, not a trading venue.</b> Odds shown are implied probabilities (the current price of a "Yes" contract) pulled directly from Polymarket's public data feed, for research and context only — this page doesn't place trades or hold funds. Polymarket's own availability varies by jurisdiction. Check local rules before trading.
     <div class="src-tags">
       <span class="src-tag polymarket"><span class="dot"></span>Polymarket · gamma-api.polymarket.com</span>
-      <span class="src-tag kalshi"><span class="dot"></span>Kalshi · public markets API</span>
     </div>
   </div>
 
-  <div class="page-footer">Each card shows the single most actively-traded matching market per topic per source. Refreshes automatically on open and every 15 minutes, or tap the refresh button any time. Not financial advice.</div>
+  <div class="page-footer">Each card shows the single most actively-traded matching market per topic on Polymarket. Refreshes automatically on open and every 15 minutes, or tap the refresh button any time. Not financial advice.</div>
 </div>
 
 <script>
 // ============================================================================
 // TOPICS - hand-picked, crypto-relevant prediction-market subjects. Polymarket
 // is queried live via free-text search (its /public-search endpoint actually
-// supports this, unlike its /events endpoint). Kalshi has no public free-text
-// search, so relevant topics carry a curated list of known series tickers
-// instead (e.g. KXFED, KXCPI) - topics without a good Kalshi series just show
-// a Polymarket-only card, which is expected and fine.
+// supports this, unlike its /events endpoint).
 // ============================================================================
 const TOPICS = [
   {
@@ -193,77 +187,66 @@ const TOPICS = [
     label: 'Next Fed rate decision',
     blurb: 'Cuts/hikes drive risk appetite and crypto liquidity directly.',
     pmQuery: 'fed interest rate decision',
-    kalshiSeries: ['KXFED', 'KXFEDDECISION'],
   },
   {
     id: 'cpi',
     label: 'CPI / inflation print',
     blurb: 'Hot CPI = fewer cuts priced in = usually risk-off for crypto.',
     pmQuery: 'CPI inflation report',
-    kalshiSeries: ['KXCPI', 'KXCPIYOY'],
   },
   {
     id: 'recession',
     label: 'US recession odds',
     blurb: 'Recession calls reprice risk assets broadly, crypto included.',
     pmQuery: 'US recession 2026',
-    kalshiSeries: ['KXRECSSNBER'],
   },
   {
     id: 'btc-price',
     label: 'Bitcoin price targets',
     blurb: 'Where the market thinks BTC ends up by a given date.',
     pmQuery: 'bitcoin price by end of year',
-    kalshiSeries: ['KXBTCY'],
   },
   {
     id: 'eth-price',
     label: 'Ethereum price targets',
     blurb: 'ETH-specific price milestones traders are pricing in.',
     pmQuery: 'ethereum price by end of year',
-    kalshiSeries: ['KXETHY'],
   },
   {
     id: 'sol-price',
     label: 'Solana price targets',
     blurb: 'SOL price milestones and comparative strength vs ETH.',
     pmQuery: 'solana price target',
-    kalshiSeries: [],
   },
   {
     id: 'stablecoin-act',
     label: 'Stablecoin regulation (GENIUS Act)',
     blurb: 'Federal stablecoin framework — direct impact on USDT/USDC rails.',
     pmQuery: 'GENIUS Act stablecoin regulation',
-    kalshiSeries: [],
   },
   {
     id: 'market-structure-act',
     label: 'Crypto market structure bill (CLARITY Act)',
     blurb: 'Defines SEC vs CFTC jurisdiction over crypto assets.',
     pmQuery: 'CLARITY Act crypto market structure bill',
-    kalshiSeries: [],
   },
   {
     id: 'crypto-etf',
     label: 'New crypto ETF approvals',
     blurb: 'Spot ETF decisions for altcoins beyond BTC/ETH (SOL, XRP, etc).',
     pmQuery: 'SEC crypto ETF approval',
-    kalshiSeries: [],
   },
   {
     id: 'gov-shutdown',
     label: 'US government shutdown',
     blurb: 'Shutdowns delay economic data releases the market trades around.',
     pmQuery: 'government shutdown',
-    kalshiSeries: [],
   },
   {
     id: 'fed-chair',
     label: 'Fed leadership / chair outlook',
     blurb: 'Who runs the Fed shapes the rate path markets price in.',
     pmQuery: 'next Federal Reserve chair',
-    kalshiSeries: [],
   },
 ];
 
@@ -273,8 +256,8 @@ const CACHE_KEY = 'crypto-prediction-markets-cache-v1';
 
 // Reuse the same personal Cloudflare Worker already used by youtube.html/news.html
 // for CORS passthrough. IMPORTANT: if your Worker has a target-domain allowlist,
-// add gamma-api.polymarket.com and external-api.kalshi.com to it, or these
-// requests will be rejected by the Worker itself even though the Worker is reachable.
+// make sure gamma-api.polymarket.com is on it, or these requests will be
+// rejected by the Worker itself even though the Worker is reachable.
 const WORKER_PROXY_URL = 'https://newsyt.justfagame9.workers.dev';
 function buildWorkerProxyUrl(u){
   return `${WORKER_PROXY_URL}/?url=${encodeURIComponent(u)}`;
@@ -374,64 +357,6 @@ function safeParseArray(value){
   catch(err){ return []; }
 }
 
-// ---------------- Kalshi ----------------
-// No direct-fetch attempt here on purpose: even where CORS would allow it,
-// Kalshi is blocked at the ISP level in some regions (e.g. India), so a direct
-// browser fetch would just fail there regardless of CORS. Going straight
-// through the proxy chain means the request leaves from the proxy's network,
-// not the user's, sidestepping that block entirely.
-const KALSHI_HOST = 'https://external-api.kalshi.com'; // Kalshi's public/no-auth market-data host (serves ALL markets, not just elections, despite the old subdomain name)
-async function fetchKalshi(topic){
-  if(!topic.kalshiSeries || !topic.kalshiSeries.length) return null;
-
-  for(const seriesTicker of topic.kalshiSeries){
-    try{
-      const url = `${KALSHI_HOST}/trade-api/v2/markets?series_ticker=${seriesTicker}&status=open&limit=50`;
-      const data = await fetchJSONViaProxyChain(url);
-      const markets = Array.isArray(data && data.markets) ? data.markets : [];
-      if(!markets.length) continue;
-
-      // Group by event_ticker (a ladder of strike/bucket markets sharing one
-      // event, e.g. "Fed funds rate after the Oct meeting" with 8 buckets).
-      const byEvent = {};
-      markets.forEach(m => {
-        const key = m.event_ticker || m.ticker;
-        if(!byEvent[key]) byEvent[key] = [];
-        byEvent[key].push(m);
-      });
-      const eventTickers = Object.keys(byEvent);
-      if(!eventTickers.length) continue;
-
-      const bestKey = eventTickers.reduce((best, key) => {
-        const vol = arr => arr.reduce((sum, m) => sum + (parseFloat(m.volume_24h_fp) || parseFloat(m.volume_fp) || 0), 0);
-        return vol(byEvent[key]) > vol(byEvent[best]) ? key : best;
-      }, eventTickers[0]);
-      const group = byEvent[bestKey];
-
-      const outcomes = group.map(m => ({
-        label: m.yes_sub_title || m.title || m.ticker,
-        prob: parseFloat(m.yes_bid_dollars ?? m.last_price_dollars ?? 0) || 0
-      })).sort((a, b) => b.prob - a.prob).slice(0, 4);
-      if(!outcomes.length) continue;
-
-      const totalVolume = group.reduce((sum, m) => sum + (parseFloat(m.volume_fp) || 0), 0);
-      const closeTime = group.map(m => m.close_time).filter(Boolean).sort()[0] || null;
-
-      return {
-        source: 'Kalshi',
-        question: group[0].title || topic.label,
-        outcomes,
-        volume: totalVolume,
-        endDate: closeTime,
-        url: `https://kalshi.com/markets/${seriesTicker.toLowerCase()}`
-      };
-    }catch(err){
-      console.warn(`[Kalshi] ${seriesTicker} failed:`, err && err.message);
-    }
-  }
-  return null;
-}
-
 // ---------------- Formatting ----------------
 function fmtPct(p){ return Math.round((p || 0) * 100) + '%'; }
 function fmtVolume(v){
@@ -464,11 +389,10 @@ function renderPoll(poll){
       <div class="outcome-bar-bg"><div class="outcome-bar-fill ${barColors[i % barColors.length]}" style="width:${Math.max(2, Math.round(o.prob * 100))}%"></div></div>
     </div>`).join('');
 
-  const sourceClass = poll.source === 'Kalshi' ? 'kalshi' : 'polymarket';
   return `
     <div class="poll">
       <div class="poll-top">
-        <span class="poll-source ${sourceClass}"><span class="dot"></span>${poll.source}</span>
+        <span class="poll-source polymarket"><span class="dot"></span>${poll.source}</span>
         <span class="poll-meta">${escapeHtml(fmtEndDate(poll.endDate))}</span>
       </div>
       <div class="poll-question">${escapeHtml(poll.question)}</div>
@@ -484,8 +408,8 @@ function renderTopics(results){
   const el = document.getElementById('content');
   const cards = TOPICS.map(topic => {
     const r = results[topic.id];
-    if(!r || (!r.polymarket && !r.kalshi)) return '';
-    const polls = [r.polymarket, r.kalshi].filter(Boolean).map(renderPoll).join('');
+    if(!r || !r.polymarket) return '';
+    const polls = renderPoll(r.polymarket);
     return `
       <div class="topic-card">
         <div class="topic-head">
@@ -559,27 +483,21 @@ async function loadAll(){
     renderSkeleton();
   }
 
-  let pmFailures = 0, kalshiAttempts = 0, kalshiFailures = 0;
+  let pmFailures = 0;
   const results = {};
 
   await Promise.all(TOPICS.map(async topic => {
-    const [pmSettled, kalshiSettled] = await Promise.allSettled([
-      fetchPolymarket(topic),
-      fetchKalshi(topic)
-    ]);
-    const pm = pmSettled.status === 'fulfilled' ? pmSettled.value : null;
-    if(pmSettled.status === 'rejected'){ pmFailures++; console.warn(`[${topic.label}] Polymarket failed:`, pmSettled.reason && pmSettled.reason.message); }
-
-    let kalshi = null;
-    if(topic.kalshiSeries && topic.kalshiSeries.length){
-      kalshiAttempts++;
-      kalshi = kalshiSettled.status === 'fulfilled' ? kalshiSettled.value : null;
-      if(kalshiSettled.status === 'rejected' || !kalshi) kalshiFailures++;
+    let pm = null;
+    try{
+      pm = await fetchPolymarket(topic);
+    }catch(err){
+      pmFailures++;
+      console.warn(`[${topic.label}] Polymarket failed:`, err && err.message);
     }
-    results[topic.id] = { polymarket: pm, kalshi };
+    results[topic.id] = { polymarket: pm };
   }));
 
-  const anyResult = Object.values(results).some(r => r.polymarket || r.kalshi);
+  const anyResult = Object.values(results).some(r => r.polymarket);
   let failed = false;
 
   if(!anyResult){
@@ -587,9 +505,9 @@ async function loadAll(){
     if(!lastResults){
       document.getElementById('content').innerHTML = `
         <div class="error-state">
-          Couldn't load any prediction-market data right now (Polymarket and Kalshi both failed).<br>
-          If you have a Cloudflare Worker configured for this app, make sure gamma-api.polymarket.com and
-          external-api.kalshi.com are allowed through it. Check the console for per-topic errors.
+          Couldn't load any prediction-market data right now (Polymarket unavailable).<br>
+          If you have a Cloudflare Worker configured for this app, make sure gamma-api.polymarket.com
+          is allowed through it. Check the console for per-topic errors.
           <br><button class="retry-btn" id="retryBtn" type="button">Try again</button>
         </div>`;
       document.getElementById('retryBtn').addEventListener('click', loadAll);
@@ -601,11 +519,11 @@ async function loadAll(){
     renderTopics(results);
   }
 
-  // Non-blocking heads-up if one whole source is down while the other still works.
-  if(pmFailures === TOPICS.length && kalshiAttempts > 0 && kalshiFailures < kalshiAttempts){
-    showDegradedBanner('Polymarket data unavailable this refresh - showing Kalshi results only where available.');
-  }else if(kalshiAttempts > 0 && kalshiFailures === kalshiAttempts && pmFailures < TOPICS.length){
-    showDegradedBanner('Kalshi data unavailable this refresh (common if your proxy Worker needs external-api.kalshi.com allow-listed) - showing Polymarket results only.');
+  // Non-blocking heads-up if Polymarket failed for some (but not all) topics
+  // this refresh - the full-failure case is already covered by the error
+  // state above, so no banner needed there.
+  if(pmFailures > 0 && anyResult){
+    showDegradedBanner(`Polymarket data unavailable for ${pmFailures} of ${TOPICS.length} topics this refresh.`);
   }else{
     showDegradedBanner(null);
   }
