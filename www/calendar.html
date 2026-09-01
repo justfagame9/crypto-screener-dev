@@ -138,6 +138,43 @@
   .events-toggle[open] > summary::after{content:'−';}
   .events-toggle-body{margin-top:16px;}
 
+  /* ---- Events row (toggle left, CC Calendar link right) ---- */
+  .events-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+  .events-row .events-toggle{margin-bottom:0;}
+  .cc-calendar-link{
+    display:inline-flex;align-items:center;gap:6px;
+    background:var(--panel2);border:1px solid var(--border);border-radius:20px;
+    padding:8px 14px;font-family:var(--font-mono);font-size:11px;font-weight:700;
+    text-transform:uppercase;letter-spacing:.08em;color:var(--text);
+    cursor:pointer;transition:border-color .15s,color .15s;
+  }
+  .cc-calendar-link:hover{border-color:var(--accent);color:var(--accent);}
+  .cc-calendar-link svg{width:13px;height:13px;flex-shrink:0;}
+
+  /* ---- CC Calendar modal ---- */
+  .cc-modal-overlay{
+    position:fixed;inset:0;background:rgba(5,6,9,.72);backdrop-filter:blur(3px);
+    z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;
+  }
+  .cc-modal-overlay.open{display:flex;}
+  .cc-modal{
+    position:relative;width:100%;max-width:700px;height:88vh;max-height:840px;
+    background:var(--bg);border:1px solid var(--border);border-radius:16px;
+    overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,.55);
+    animation:cc-modal-in .18s ease;
+  }
+  @keyframes cc-modal-in{from{opacity:0;transform:translateY(8px) scale(.98);}to{opacity:1;transform:translateY(0) scale(1);}}
+  .cc-modal iframe{width:100%;height:100%;border:0;display:block;background:var(--bg);}
+  .cc-modal-close{
+    position:absolute;top:10px;right:10px;z-index:2;
+    width:30px;height:30px;border-radius:8px;
+    background:var(--panel2);border:1px solid var(--border);color:var(--muted);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    transition:border-color .15s,color .15s;
+  }
+  .cc-modal-close:hover{border-color:var(--accent);color:var(--accent);}
+  .cc-modal-close svg{width:15px;height:15px;}
+
   /* ---- Filters ---- */
   .filters{
     display:flex;
@@ -302,12 +339,19 @@
 
   <div id="hero"></div>
 
-  <details class="events-toggle">
-    <summary>Events</summary>
-    <div class="events-toggle-body">
-      <div class="filters" id="filters"></div>
-    </div>
-  </details>
+  <div class="events-row">
+    <details class="events-toggle">
+      <summary>Events</summary>
+      <div class="events-toggle-body">
+        <div class="filters" id="filters"></div>
+      </div>
+    </details>
+
+    <a class="cc-calendar-link" id="ccCalendarLink" href="calendar-sub.html" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      CC Calendar
+    </a>
+  </div>
 
   <div id="eventList"></div>
 
@@ -321,6 +365,15 @@
 
   <div class="page-footer">Macro releases, Fed decisions, U.S. crypto regulation, network upgrades, options expiries, and the major industry conferences — curated and cross-checked against primary sources.</div>
 
+</div>
+
+<div class="cc-modal-overlay" id="ccModalOverlay">
+  <div class="cc-modal">
+    <button class="cc-modal-close" id="ccModalClose" aria-label="Close CC Calendar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+    <iframe id="ccModalFrame" title="Crypto Craft Calendar"></iframe>
+  </div>
 </div>
 
 <script>
@@ -890,6 +943,43 @@ document.getElementById('refreshBtn').addEventListener('click', (e) => {
 renderSources();
 refreshAll();
 setInterval(refreshAll, 30000);
+
+// ---- CC Calendar modal ----
+// Opens calendar-sub.html in an overlay on top of this page. The iframe src
+// is only set the first time it's opened (lazy load) so calendar-sub.html
+// doesn't fetch/run until the user actually wants it.
+(function(){
+  const link = document.getElementById('ccCalendarLink');
+  const overlay = document.getElementById('ccModalOverlay');
+  const closeBtn = document.getElementById('ccModalClose');
+  const frame = document.getElementById('ccModalFrame');
+  let loaded = false;
+
+  function openModal(){
+    if(!loaded){
+      frame.src = 'calendar-sub.html';
+      loaded = true;
+    }
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal(){
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  link.addEventListener('click', (e) => {
+    e.preventDefault(); // stop the plain <a href> navigation; open in-page instead
+    openModal();
+  });
+  closeBtn.addEventListener('click', closeModal);
+  overlay.addEventListener('click', (e) => {
+    if(e.target === overlay) closeModal(); // click outside the modal card
+  });
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape' && overlay.classList.contains('open')) closeModal();
+  });
+})();
 </script>
 
 </body>

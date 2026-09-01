@@ -242,7 +242,10 @@
     border-bottom:1px solid var(--border);
   }
   th:first-child,td:first-child{text-align:left;}
-  td:nth-child(2),td:nth-child(3){text-align:center;}
+  th:nth-child(2),td:nth-child(2),
+  th:nth-child(3),td:nth-child(3),
+  th:nth-child(4),td:nth-child(4),
+  th:nth-child(5),td:nth-child(5){text-align:center;}
   tr:hover{background:var(--panel2);}
   .sym-link{color:var(--text);text-decoration:none;font-weight:700;}
   .sym-link:hover{color:var(--accent);}
@@ -261,6 +264,19 @@
   .pill-long{background:rgba(53,224,192,.14);color:var(--accent);}
   .pill-short{background:rgba(255,84,112,.14);color:var(--red);}
   .pill-none{color:var(--faint);}
+  .bybit-tag{
+    display:inline-block;
+    margin-left:6px;
+    padding:2px 7px;
+    border-radius:999px;
+    font-family:var(--font-mono);
+    font-size:9px;
+    font-weight:700;
+    letter-spacing:.04em;
+    background:rgba(245,166,35,.14);
+    color:var(--amber);
+    vertical-align:middle;
+  }
   .table-wrap{overflow-x:auto;}
   .count-badge{
     background:var(--panel2);
@@ -328,6 +344,10 @@
   .analysis-ltp{display:inline-flex;align-items:baseline;gap:6px;background:rgba(53,224,192,.1);border:1px solid rgba(53,224,192,.3);border-radius:7px;padding:4px 9px;font-family:var(--font-mono);white-space:nowrap;}
   .analysis-ltp .ltp-label{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-dim);}
   .analysis-ltp .ltp-value{font-size:13px;font-weight:700;color:var(--accent);}
+  .analysis-setup{display:inline-flex;align-items:center;font-family:var(--font-mono);font-size:12px;font-weight:700;border-radius:7px;padding:4px 10px;white-space:nowrap;text-transform:uppercase;letter-spacing:.04em;}
+  .analysis-setup.setup-long{background:rgba(53,224,192,.1);border:1px solid rgba(53,224,192,.3);color:var(--accent);}
+  .analysis-setup.setup-short{background:rgba(255,84,112,.1);border:1px solid rgba(255,84,112,.3);color:var(--red);}
+  .analysis-setup.setup-none{background:rgba(139,147,163,.08);border:1px solid rgba(139,147,163,.25);color:var(--faint);}
   .analysis-actions{display:flex;flex-direction:column;align-items:flex-end;gap:8px;}
   .exchange-btn{width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:rgba(139,92,246,.12);color:var(--text);font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04);}
   .exchange-btn:hover{border-color:var(--purple);background:rgba(139,92,246,.2);}
@@ -357,10 +377,15 @@
   .analysis-level.entry span{color:var(--accent);}
   .analysis-level.stop span{color:var(--red);}
   .analysis-level.target span{color:var(--amber);}
+  .funding-row{font:600 12px var(--font-mono);color:var(--muted);margin:0 0 10px;}
+  .funding-row span{font-weight:700;color:var(--text);}
+  .funding-row span.funding-pos{color:var(--red);}
+  .funding-row span.funding-neg{color:var(--accent);}
   @media(max-width:700px){.analysis-grid{grid-template-columns:1fr;}.chart-wrap{height:340px;}}
   .analysis-cell{display:flex;align-items:center;gap:6px;}
   .info-btn{width:28px;height:28px;flex:0 0 28px;padding:0;border-radius:6px;border:1px solid var(--border);background:var(--panel2);color:var(--text);font-family:var(--font-mono);font-weight:700;font-size:12px;font-style:italic;cursor:pointer;display:flex;align-items:center;justify-content:center;}
   .info-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .twitter-btn{font-style:normal;font-size:13px;margin-left:6px;}
   .coininfo-modal{position:fixed;inset:0;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center;padding:20px;z-index:12;}
   .coininfo-modal.open{display:flex;}
   .coininfo-dialog{width:min(560px,100%);max-height:calc(100vh - 40px);overflow:auto;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:0 22px 22px;box-shadow:0 20px 60px rgba(0,0,0,.5);}
@@ -549,8 +574,9 @@
     <div class="trade-head">
       <div class="header-title-wrap">
         <button class="exchange-btn" type="button" aria-label="Open trading exchange" onclick="openSelectedTradingExchange()">₿</button>
-        <div><h2 id="analysisTitle"><a class="analysis-symbol-link" id="analysisSymbolLink" target="_blank" rel="noopener">Market analysis</a><span>&nbsp;analysis</span><button class="info-btn" type="button" onclick="openCoinInfo(currentExchangeSymbol)" aria-label="Coin info">i</button></h2><p id="analysisSubtitle"></p></div>
+        <div><h2 id="analysisTitle"><a class="analysis-symbol-link" id="analysisSymbolLink" target="_blank" rel="noopener">Market analysis</a><span>&nbsp;analysis</span><button class="info-btn" type="button" onclick="openCoinInfo(currentExchangeSymbol)" aria-label="Coin info">i</button><button class="info-btn twitter-btn" type="button" onclick="openTwitterSearch(currentExchangeSymbol)" aria-label="Search coin on X (Twitter)" title="Search on X">𝕏</button></h2><p id="analysisSubtitle"></p></div>
         <span class="analysis-ltp"><span class="ltp-label">LTP</span><span class="ltp-value" id="analysisLTP">—</span></span>
+        <span class="analysis-setup setup-none" id="analysisSetupBox">—</span>
       </div>
       <div class="analysis-actions"><button class="close-btn" type="button" aria-label="Close" onclick="closeAnalysis()">×</button><button class="plan-btn" type="button" id="analysisTradePlan" onclick="openTradePlan()" style="display:none;">Trade Plan</button></div>
     </div>
@@ -750,6 +776,71 @@ async function fetchJSON(path){
   throw lastErr;
 }
 
+// ---------------- Bybit USDT perpetual (fallback source, used only when a
+// symbol isn't found on Binance USDT-M futures) ----------------
+const BYBIT_HOST = 'https://api.bybit.com';
+const BYBIT_INTERVAL_MAP = { '1d': 'D', '1w': 'W', '4h': '240' };
+
+async function fetchBybitJSON(path){
+  const res = await fetchWithTimeout(BYBIT_HOST + path);
+  if(!res.ok) throw new Error(`HTTP ${res.status} on Bybit${path}`);
+  const data = await res.json();
+  if(data.retCode !== 0) throw new Error(data.retMsg || 'Bybit API error');
+  return data;
+}
+
+async function getBybitKlines(symbol, interval, limit){
+  const bybitInterval = BYBIT_INTERVAL_MAP[interval];
+  if(!bybitInterval) throw new Error(`unsupported interval for Bybit: ${interval}`);
+  const data = await fetchBybitJSON(`/v5/market/kline?category=linear&symbol=${symbol}&interval=${bybitInterval}&limit=${limit}`);
+  const list = data.result && data.result.list;
+  if(!list || !list.length) throw new Error('symbol not found on Bybit');
+  // Bybit returns most-recent-first; reverse to ascending chronological order like Binance's klines.
+  return list.slice().reverse().map(k => ({
+    openTime: Number(k[0]), open: parseFloat(k[1]), high: parseFloat(k[2]),
+    low: parseFloat(k[3]), close: parseFloat(k[4]), volume: parseFloat(k[5]),
+    closeTime: Number(k[0]), quoteVolume: parseFloat(k[6])
+  }));
+}
+
+async function getBybitCurrentPrice(symbol){
+  const data = await fetchBybitJSON(`/v5/market/tickers?category=linear&symbol=${symbol}`);
+  const ticker = data.result && data.result.list && data.result.list[0];
+  const price = ticker ? parseFloat(ticker.lastPrice) : NaN;
+  if(!Number.isFinite(price)) throw new Error('symbol not found on Bybit');
+  return price;
+}
+
+// Perpetual funding rate + the next funding timestamp, for the "Funding: <rate> in
+// <time>" line on the analysis card's Levels section. Binance's premiumIndex and
+// Bybit's linear tickers both carry this directly - no extra endpoint needed.
+async function getFundingInfo(symbol, source){
+  if(source === 'Bybit'){
+    const data = await fetchBybitJSON(`/v5/market/tickers?category=linear&symbol=${symbol}`);
+    const ticker = data.result && data.result.list && data.result.list[0];
+    if(!ticker) throw new Error('funding not found on Bybit');
+    return { rate: parseFloat(ticker.fundingRate), nextFundingTime: Number(ticker.nextFundingTime) };
+  }
+  const data = await fetchJSON(`/fapi/v1/premiumIndex?symbol=${symbol}`);
+  return { rate: parseFloat(data.lastFundingRate), nextFundingTime: Number(data.nextFundingTime) };
+}
+
+// "3h 42m" / "45m" / "now" - compact countdown to the next funding timestamp.
+function formatFundingCountdown(targetMs){
+  if(!Number.isFinite(targetMs)) return null;
+  const diffMin = Math.round((targetMs - Date.now()) / 60000);
+  if(diffMin <= 0) return 'now';
+  const h = Math.floor(diffMin / 60), m = diffMin % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+// Dispatches to whichever exchange a given screened row actually came from,
+// so the analysis modal (candles/RSI/MACD/EMA/higher-timeframe) keeps working
+// for a coin that was only ever found via the Bybit fallback.
+async function getKlinesAny(symbol, interval, limit, source){
+  return source === 'Bybit' ? getBybitKlines(symbol, interval, limit) : getKlines(symbol, interval, limit);
+}
+
 async function getUSDTPerpetualSymbols(){
   const info = await fetchJSON(`/fapi/v1/exchangeInfo`);
   return info.symbols
@@ -811,10 +902,8 @@ async function runPool(items, worker, concurrency, onProgress){
 //   cloudAtChikouBar(t) -> the cloud sitting under/over the chikou plotted from bar t
 //                          (i.e. the cloud displayed at bar (t - kijunLen)), which is
 //                          computed from raw values at index (t - 2*kijunLen)
-async function screenSymbol(symbol, params, currentPrices){
+function computeIchimokuSignal(symbol, daily, currentPrice, params){
   const needed = 2 * params.kijunLen + params.senkouBLen + 10;
-  const daily = await getKlines(symbol, params.interval, Math.max(needed, 150));
-  const currentPrice = currentPrices[symbol];
   if(!Number.isFinite(currentPrice)) throw new Error("current price unavailable");
   if(daily.length < needed) throw new Error("insufficient daily history");
 
@@ -919,6 +1008,28 @@ async function screenSymbol(symbol, params, currentPrices){
   };
 }
 
+async function screenSymbol(symbol, params, currentPrices){
+  const needed = 2 * params.kijunLen + params.senkouBLen + 10;
+  const daily = await getKlines(symbol, params.interval, Math.max(needed, 150));
+  const currentPrice = currentPrices[symbol];
+  return computeIchimokuSignal(symbol, daily, currentPrice, params);
+}
+
+// Same calculation, sourced from Bybit USDT perpetual instead - used only as
+// a fallback when a symbol isn't found on Binance USDT-M futures (see
+// searchAndAnalyze). Tags the returned row with source:'Bybit' so the
+// analysis modal knows to keep fetching candles/RSI/MACD/EMA from Bybit too.
+async function screenSymbolViaBybit(symbol, params){
+  const needed = 2 * params.kijunLen + params.senkouBLen + 10;
+  const [daily, currentPrice] = await Promise.all([
+    getBybitKlines(symbol, params.interval, Math.max(needed, 150)),
+    getBybitCurrentPrice(symbol)
+  ]);
+  const row = computeIchimokuSignal(symbol, daily, currentPrice, params);
+  row.source = 'Bybit';
+  return row;
+}
+
 function getParams(){
   return {
     tenkanLen: parseInt(document.getElementById('tenkanLen').value),
@@ -971,13 +1082,27 @@ async function searchAndAnalyze(){
     // out by the min-volume threshold, or before any scan has been run).
     let row = allResults.find(r => r.symbol === symbol && r.interval === params.interval);
     if(!row){
-      const currentPrices = await getCurrentPrices();
-      row = await screenSymbol(symbol, params, currentPrices);
+      let binanceErr = null;
+      try{
+        const currentPrices = await getCurrentPrices();
+        row = await screenSymbol(symbol, params, currentPrices);
+      }catch(err){
+        binanceErr = err;
+      }
+      if(!row){
+        // Not found (or failed) on Binance USDT-M futures - check Bybit USDT
+        // perpetual only now, as a fallback, not in parallel.
+        try{
+          row = await screenSymbolViaBybit(symbol, params);
+        }catch(bybitErr){
+          throw new Error(`not found on Binance (${binanceErr ? binanceErr.message : 'unknown error'}) or Bybit (${bybitErr.message})`);
+        }
+      }
       allResults = allResults.filter(r => r.symbol !== symbol).concat([row]);
     }
     await openAnalysis(symbol);
   }catch(error){
-    showError(`Couldn't analyze <b>${symbol}</b>: ${error.message}. Make sure it's a valid Binance USDT-M perpetual futures symbol (e.g. "ETH", "BTCUSDT").`);
+    showError(`Couldn't analyze <b>${symbol}</b>: ${error.message}. Make sure it's a valid Binance USDT-M or Bybit USDT perpetual futures symbol (e.g. "ETH", "BTCUSDT").`);
   }finally{
     btn.disabled = false;
     btn.textContent = originalLabel;
@@ -1101,11 +1226,11 @@ function renderTable(rows){
     return;
   }
   const cols = [
-    {k:'confirmed', label:'Confirmed'},
-    {k:'symbol', label:'Symbol'},
-    {k:'breakout', label:'Breakout'},
+    {k:'confirmed', label:'CFM'},
     {k:'setup', label:'Setup'},
+    {k:'symbol', label:'Coin'},
     {k:'analysis', label:'Analysis'},
+    {k:'breakout', label:'Breakout'},
     {k:'priceToday', label:'Price'},
     {k:'breakoutPrice', label:'Breakout Price'},
     {k:'cloudTop', label:'Cloud Top'},
@@ -1120,10 +1245,13 @@ function renderTable(rows){
   rows.forEach(r => {
     html += '<tr>';
     html += `<td>${r.confirmed ? '<span class="pill pill-both" title="Yesterday\'s breakout confirmed by today\'s candle">✓</span>' : '<span class="pill-none">—</span>'}</td>`;
-    html += `<td><a class="sym-link" target="_blank" href="https://www.binance.com/en/futures/${r.symbol}">${r.symbol}</a></td>`;
-    html += `<td>${breakoutPill(r.breakout)}</td>`;
     html += `<td>${setupPill(r.setup)}</td>`;
+    const exchangeUrl = r.source === 'Bybit'
+      ? `https://www.bybit.com/trade/usdt/${r.symbol}`
+      : `https://www.binance.com/en/futures/${r.symbol}`;
+    html += `<td><a class="sym-link" target="_blank" href="${exchangeUrl}">${r.symbol}</a>${r.source === 'Bybit' ? '<span class="bybit-tag" title="Not found on Binance - found via Bybit fallback">BYBIT</span>' : ''}</td>`;
     html += `<td><button class="plan-btn" type="button" onclick="openAnalysis('${r.symbol}')">Analysis</button></td>`;
+    html += `<td>${breakoutPill(r.breakout)}</td>`;
     html += `<td>${fmt(r.priceToday)}</td>`;
     html += `<td>${fmt(r.breakoutPrice)}</td>`;
     html += `<td>${fmt(r.cloudTop)}</td>`;
@@ -1309,8 +1437,8 @@ function findOrderBlocks(candles){
 function higherTimeframe(interval){
   return {'4h':'1d','1d':'1w'}[interval] || null;
 }
-async function higherTimeframeAnalysis(symbol, htfInterval){
-  const candles = await getKlines(symbol, htfInterval, 260);
+async function higherTimeframeAnalysis(symbol, htfInterval, source){
+  const candles = await getKlinesAny(symbol, htfInterval, 260, source);
   const closes = candles.map(c => c.close);
   const e20 = ema(closes,20), e50 = ema(closes,50), e200 = ema(closes,200);
   const price = closes[closes.length - 1];
@@ -1328,8 +1456,9 @@ function tradingViewInterval(tf){
 function timeframeLabel(tf){
   return tf === '1w' ? 'Weekly' : (tf === '4h' ? '4-Hour' : 'Daily');
 }
-function tradingViewChartUrl(symbol, tf){
-  const tvSymbol = `BINANCE:${symbol}.P`;
+function tradingViewChartUrl(symbol, tf, source){
+  const exchangePrefix = source === 'Bybit' ? 'BYBIT' : 'BINANCE';
+  const tvSymbol = `${exchangePrefix}:${symbol}.P`;
   return `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(tvSymbol)}&interval=${encodeURIComponent(tradingViewInterval(tf))}`;
 }
 // Golden Cross = EMA50 crosses ABOVE EMA200 (bullish). Death Cross = EMA50 crosses BELOW EMA200 (bearish).
@@ -1376,29 +1505,35 @@ async function openAnalysis(symbol){
   currentExchangeSymbol = symbol;
   const row = allResults.find(result => result.symbol === symbol);
   if(!row) return;
+  const source = row.source === 'Bybit' ? 'Bybit' : 'Binance';
   // Use the interval the row was actually screened on (not whatever the timeframe
   // dropdown currently shows) so the Ichimoku setup label and the freshly-fetched
   // RSI/MACD/EMA/candles below are always describing the same timeframe.
   const interval = row.interval || analysisInterval();
   const symbolLink = document.getElementById('analysisSymbolLink');
   symbolLink.textContent = symbol;
-  symbolLink.href = tradingViewChartUrl(symbol, interval);
+  symbolLink.href = tradingViewChartUrl(symbol, interval, source);
   symbolLink.removeAttribute('target');
   symbolLink.rel = 'noopener';
   symbolLink.onclick = (event) => {
     event.preventDefault();
-    openExternalLink(tradingViewChartUrl(symbol, interval), TRADINGVIEW_APP_PACKAGE);
+    openExternalLink(tradingViewChartUrl(symbol, interval, source), TRADINGVIEW_APP_PACKAGE);
   };
-  document.getElementById('analysisSubtitle').textContent = `${timeframeLabel(interval)} · Binance USDT-M Perpetual · 180 bars`;
-  document.getElementById('analysisStatus').textContent = 'Loading Binance candles...';
+  const exchangeLabel = source === 'Bybit' ? 'Bybit USDT Perpetual (found via Bybit fallback)' : 'Binance USDT-M Perpetual';
+  document.getElementById('analysisSubtitle').textContent = `${timeframeLabel(interval)} · ${exchangeLabel} · 180 bars`;
+  document.getElementById('analysisStatus').textContent = `Loading ${source} candles...`;
   document.getElementById('analysisLTP').textContent = '—';
   document.getElementById('analysisDetails').innerHTML = '';
+  const setupBox = document.getElementById('analysisSetupBox');
+  setupBox.textContent = row.setup ? row.setup : 'None';
+  setupBox.className = 'analysis-setup ' + (row.setup === 'Long' ? 'setup-long' : row.setup === 'Short' ? 'setup-short' : 'setup-none');
   const tradePlanButton = document.getElementById('analysisTradePlan');
   tradePlanButton.style.display = row.setup ? 'inline-block' : 'none';
   tradePlanButton.onclick = () => openTradePlan(symbol);
   document.getElementById('analysisModal').classList.add('open');
   try{
-    const warmupCandles = await getKlines(symbol, interval, 380);
+    const fundingPromise = getFundingInfo(symbol, source).catch(() => null);
+    const warmupCandles = await getKlinesAny(symbol, interval, 380, source);
     const candles = warmupCandles.slice(-180);
     if(candles.length < 30) throw new Error('Not enough candles available');
     const closes = candles.map(candle => candle.close), warmupCloses = warmupCandles.map(candle => candle.close), swings = findSwings(candles), swingMove = latestSwingMove(swings);
@@ -1444,7 +1579,7 @@ async function openAnalysis(symbol){
     const htfInterval = higherTimeframe(interval);
     let htf = null;
     if(htfInterval){
-      try{ htf = await higherTimeframeAnalysis(symbol, htfInterval); }catch(e){ htf = null; }
+      try{ htf = await higherTimeframeAnalysis(symbol, htfInterval, source); }catch(e){ htf = null; }
     }
     const htfSide = htf ? htf.side : null;
     const htfLabel = htfInterval ? timeframeLabel(htfInterval) : null;
@@ -1453,38 +1588,107 @@ async function openAnalysis(symbol){
     const keyLevels = nearestLevels(swings, currentPrice);
     const orderBlocks = findOrderBlocks(candles);
 
+    // ---- Extra Ichimoku components for the card copy: Chikou-vs-its-own-cloud,
+    // the Tenkan/Kijun cross, and the future (leading) Kumo — computed fresh
+    // from the same candles used everywhere else on this screen, using the
+    // same tenkan/kijun/senkouB lengths as the screener.
+    const tenkanLen = parseInt(document.getElementById('tenkanLen').value);
+    const kijunLen = parseInt(document.getElementById('kijunLen').value);
+    const senkouBLen = parseInt(document.getElementById('senkouBLen').value);
+    const ichHighs = candles.map(c => c.high), ichLows = candles.map(c => c.low);
+    const ichLastIdx = candles.length - 1;
+    const ichSenkouA = i => { const t = donchianMid(ichHighs, ichLows, tenkanLen, i), k = donchianMid(ichHighs, ichLows, kijunLen, i); return (isNaN(t) || isNaN(k)) ? NaN : (t + k) / 2; };
+    const ichSenkouB = i => donchianMid(ichHighs, ichLows, senkouBLen, i);
+    const futureA = ichSenkouA(ichLastIdx), futureB = ichSenkouB(ichLastIdx);
+    const futureSide = (Number.isFinite(futureA) && Number.isFinite(futureB)) ? (futureA > futureB ? 1 : (futureA < futureB ? -1 : 0)) : null;
+    const chikouBarIdx = ichLastIdx - 2 * kijunLen;
+    const chikouCloudTop = chikouBarIdx >= 0 ? Math.max(ichSenkouA(chikouBarIdx), ichSenkouB(chikouBarIdx)) : NaN;
+    const chikouCloudBottom = chikouBarIdx >= 0 ? Math.min(ichSenkouA(chikouBarIdx), ichSenkouB(chikouBarIdx)) : NaN;
+    const chikouSide = Number.isFinite(chikouCloudTop) ? (currentPrice > chikouCloudTop ? 1 : (currentPrice < chikouCloudBottom ? -1 : 0)) : null;
+    const tkWindow = 20;
+    const tenkanArr = [], kijunArr = [];
+    for(let i = Math.max(0, ichLastIdx - tkWindow); i <= ichLastIdx; i++){
+      tenkanArr.push(donchianMid(ichHighs, ichLows, tenkanLen, i));
+      kijunArr.push(donchianMid(ichHighs, ichLows, kijunLen, i));
+    }
+    const tenkanLive = tenkanArr[tenkanArr.length - 1], kijunLive = kijunArr[kijunArr.length - 1];
+    const tkSide = (Number.isFinite(tenkanLive) && Number.isFinite(kijunLive)) ? (tenkanLive > kijunLive ? 1 : (tenkanLive < kijunLive ? -1 : 0)) : null;
+    let tkCross = null;
+    for(let i = tenkanArr.length - 1; i >= 1; i--){
+      const pt = tenkanArr[i-1], pk = kijunArr[i-1], ct = tenkanArr[i], ck = kijunArr[i];
+      if(![pt,pk,ct,ck].every(Number.isFinite)) continue;
+      const bullishCross = pt <= pk && ct > ck;
+      const bearishCross = pt >= pk && ct < ck;
+      if(bullishCross || bearishCross){ tkCross = {barsAgo: tenkanArr.length - 1 - i, type: bullishCross ? 'Bullish' : 'Bearish'}; break; }
+    }
+
     drawAnalysisChart(candles,retracement,currentPrice,ema50Values,ema200Values);
     document.getElementById('analysisStatus').textContent = `${candles.length} candles · ${timeframeLabel(interval)} · latest ${new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(candles[candles.length - 1].openTime))}`;
 
     // ================= Card copy (crisp, terminal-style) =================
 
     // Ichimoku
+    const dirWord = isLong ? 'above' : 'below';
     const ichimokuHeadline = row.breakout ? `${row.setup} — ${row.breakout} trigger` : (cloudSide === 1 ? 'Above Kumo, no trigger' : (cloudSide === -1 ? 'Below Kumo, no trigger' : 'Inside Kumo — no edge'));
-    const ichimokuLine = row.breakout === 'CK, PK' ? 'Price and Chikou both broke the cloud — full confirmation.'
-      : row.breakout === 'CK' ? 'Chikou broke out, price hasn\'t — partial signal, wait for price confirmation.'
-      : row.breakout === 'PK' ? 'Price broke the Kumo, Chikou hasn\'t — partial signal, wait for Chikou confirmation.'
-      : cloudSide === 1 ? 'Trending above the cloud but no fresh CK/PK trigger fired.'
-      : cloudSide === -1 ? 'Trending below the cloud but no fresh CK/PK trigger fired.'
-      : 'Price is chopping inside the cloud — no directional edge here.';
+    let ichimokuLine;
+    if(hasSetup){
+      // CK and PK both require price AND Chikou to already agree with the direction —
+      // the only difference is which of the two legs is the one flipping today.
+      if(row.breakout === 'CK, PK'){
+        ichimokuLine = `Price broke ${dirWord} the Kumo and Chikou cleared ${dirWord} its own cloud on the same candle — full, simultaneous confirmation, the strongest version of this breakout.`;
+      } else if(row.breakout === 'CK'){
+        ichimokuLine = `Price had already broken ${dirWord} the Kumo on an earlier candle; today it's the Chikou span crossing ${dirWord} its own cloud — the lagging leg catching up to confirm a move that was already underway, not a fresh price trigger.`;
+      } else if(row.breakout === 'PK'){
+        ichimokuLine = `Chikou was already sitting ${dirWord} its own cloud from an earlier candle; today it's price breaking ${dirWord} the current Kumo — the fresh, leading leg of the move, with lagging confirmation already in place.`;
+      } else {
+        ichimokuLine = `${row.setup} setup active.`;
+      }
+      // Post-breakout price action: how far has price run since the trigger, and is
+      // it worth chasing now or better to wait for a pullback (ATR-based, see the
+      // Pullback Zone card below for the numbers behind this call).
+      if(needsPullback){
+        ichimokuLine += ` Since triggering, price has run ${breakoutAtrX !== null ? breakoutAtrX.toFixed(1) : retraceAtrX.toFixed(1)}x ATR beyond the trigger/midpoint — extended. Chasing here is poor risk/reward; wait for a pullback toward the breakout zone before entering.`;
+      } else if(retraceGood){
+        ichimokuLine += ` Price is still within a reasonable distance of the trigger (inside 1x ATR) — acceptable to engage without waiting for a deeper pullback.`;
+      } else {
+        ichimokuLine += ` Price has slipped back through the swing midpoint against the ${row.setup.toLowerCase()} idea — follow-through has been weak, so treat this as unconfirmed until it reclaims that zone.`;
+      }
+    } else {
+      // No CK/PK trigger — give a full textbook read of where every Ichimoku
+      // component currently sits, since there's no single headline number to lean on.
+      const sideWord = (side, up='bullish', down='bearish', flat='flat') => side === 1 ? up : (side === -1 ? down : flat);
+      const cloudPhrase = cloudSide === 1 ? 'Price is above the Kumo (bullish)' : (cloudSide === -1 ? 'Price is below the Kumo (bearish)' : 'Price is inside the Kumo (no directional edge)');
+      const chikouPhrase = chikouSide === null ? 'Chikou can\'t be placed yet (not enough history)' : `Chikou is ${chikouSide === 1 ? 'above' : (chikouSide === -1 ? 'below' : 'inside')} its own cloud (${sideWord(chikouSide)})`;
+      const tkPhrase = tkSide === null ? 'Tenkan/Kijun unavailable' : `Tenkan is ${tkSide === 1 ? 'above' : (tkSide === -1 ? 'below' : 'equal to')} Kijun (${sideWord(tkSide)})${tkCross ? `, a ${tkCross.type.toLowerCase()} cross ${tkCross.barsAgo === 0 ? 'just printed' : `${tkCross.barsAgo} bars ago`}` : ', no recent cross'}`;
+      const futurePhrase = futureSide === null ? 'the future cloud is unavailable' : `the future Kumo is ${sideWord(futureSide)} (Senkou A ${futureSide === 1 ? 'above' : (futureSide === -1 ? 'below' : 'equal to')} Senkou B)`;
+      const ichSides = [cloudSide, chikouSide, tkSide, futureSide].filter(v => v !== null);
+      const ichBull = ichSides.filter(v => v === 1).length, ichBear = ichSides.filter(v => v === -1).length;
+      let alignmentNote;
+      if(ichBull > 0 && ichBear === 0) alignmentNote = 'Every available Ichimoku component leans bullish, but no fresh CK/PK trigger has fired yet — a bullish backdrop worth watching, not a signal to act on.';
+      else if(ichBear > 0 && ichBull === 0) alignmentNote = 'Every available Ichimoku component leans bearish, but no fresh CK/PK trigger has fired yet — a bearish backdrop worth watching, not a signal to act on.';
+      else alignmentNote = 'Price/Cloud, Chikou, Tenkan/Kijun and the future cloud aren\'t all pointing the same way right now — this reads as chop. Wait for the components to align with a confirmed CK/PK breakout before treating it as tradeable.';
+      ichimokuLine = `${cloudPhrase}. ${chikouPhrase}. ${tkPhrase}. Looking ahead, ${futurePhrase}. ${alignmentNote}`;
+    }
 
     // Momentum (RSI + MACD merged)
     const rsiTag = !Number.isFinite(rsiValue) ? '—' : rsiValue >= 70 ? 'overbought' : (rsiValue <= 30 ? 'oversold' : (rsiValue >= 50 ? 'bullish' : 'bearish'));
     const macdTag = macdSide === 1 ? 'rising' : 'falling';
-    const momentumHeadline = `RSI ${formatAnalysisValue(rsiValue)} (${rsiTag}) · MACD ${macdTag}`;
+    const momentumHeadline = `RSI ${formatAnalysisValue(rsiValue)} (${rsiTag}) | MACD ${macdTag}`;
     const momentumAgree = rsiSide !== null && rsiSide === macdSide;
     let momentumLine = momentumAgree ? `RSI and MACD agree — momentum is ${rsiSide === 1 ? 'bullish' : 'bearish'}.` : 'RSI and MACD disagree — momentum is indecisive.';
     if((rsiTag === 'overbought' || rsiTag === 'oversold')) momentumLine += ` RSI is stretched, so a cooldown before the next leg wouldn't be unusual.`;
     if(hasSetup){ const aligned = rsiSide === dir && macdSide === dir; momentumLine += ` ${aligned ? 'Aligned with' : 'Not fully aligned with'} the ${row.setup} idea.`; }
 
     // Trend & Structure (EMA + BOS/CHoCH merged)
-    const trendHeadline = `${emaSide === 1 ? 'Bullish' : emaSide === -1 ? 'Bearish' : 'Mixed'} EMA stack · ${marketStructure.state}`;
-    let trendLine = emaSide === 1 ? 'Price is above a rising 20>50>200 stack — trend is up.' : emaSide === -1 ? 'Price is below a falling 20>50>200 stack — trend is down.' : 'EMAs are tangled — no clean trend.';
+    const trendHeadline = `${emaSide === 1 ? 'Bullish' : emaSide === -1 ? 'Bearish' : 'Mixed'} EMA stack | ${marketStructure.state}`;
+    const emaTriplet = `${formatAnalysisValue(ema20)}/${formatAnalysisValue(ema50)}/${formatAnalysisValue(ema200)}`;
+    let trendLine = emaSide === 1 ? `EMAs (${emaTriplet}) are stacked bullish (20>50>200) — trend is up.` : emaSide === -1 ? `EMAs (${emaTriplet}) are stacked bearish (20<50<200) — trend is down.` : `EMAs (${emaTriplet}) are tangled — no clean trend.`;
     trendLine += ` ${marketStructure.detail.split('.')[0]}.`;
     if(emaCross) trendLine += ` ${emaCross.type} ${emaCross.barsAgo === 0 ? 'just printed' : `${emaCross.barsAgo} bars ago`} near price — reinforces the move.`;
     if(hasSetup && structureSide !== null && structureSide !== dir) trendLine += ` Note: structure disagrees with the ${row.setup} idea.`;
 
     // Pullback zone (swing range + ATR distance)
-    const pullbackHeadline = `Range ${formatAnalysisValue(recentLow)}–${formatAnalysisValue(recentHigh)} · mid ${formatAnalysisValue(retracement)} · ATR14 ${formatAnalysisValue(atrValue)}`;
+    const pullbackHeadline = `Range ${formatAnalysisValue(recentLow)}–${formatAnalysisValue(recentHigh)} | mid ${formatAnalysisValue(retracement)} | ATR14 ${formatAnalysisValue(atrValue)}`;
     let pullbackLine;
     if(!hasSetup){
       pullbackLine = `Price is ${retraceAtrX !== null ? retraceAtrX.toFixed(1) : '—'}× ATR from the swing midpoint — for reference if a trigger fires.`;
@@ -1499,18 +1703,24 @@ async function openAnalysis(symbol){
     // Support/Resistance & Order Blocks (current TF + one glance at higher TF)
     const relevantOB = hasSetup ? (isLong ? orderBlocks.bullishOB : orderBlocks.bearishOB) : (biasDir === 1 ? orderBlocks.bullishOB : (biasDir === -1 ? orderBlocks.bearishOB : (orderBlocks.bullishOB || orderBlocks.bearishOB)));
     const obInZone = relevantOB ? (currentPrice >= relevantOB.bottom && currentPrice <= relevantOB.top) : false;
-    const srHeadline = `Sup ${keyLevels.support ? formatAnalysisValue(keyLevels.support.price) : '—'} · Res ${keyLevels.resistance ? formatAnalysisValue(keyLevels.resistance.price) : '—'}`;
+    const srHeadline = `Support ${keyLevels.support ? formatAnalysisValue(keyLevels.support.price) : '—'} | Resistance ${keyLevels.resistance ? formatAnalysisValue(keyLevels.resistance.price) : '—'}`;
     let srLine = `${timeframeLabel(interval)}: support ${keyLevels.support ? formatAnalysisValue(keyLevels.support.price) : 'none nearby'}, resistance ${keyLevels.resistance ? formatAnalysisValue(keyLevels.resistance.price) : 'none nearby'}.`;
-    srLine += relevantOB ? ` ${(isLong || (!hasSetup && biasDir===1)) ? 'Bullish' : 'Bearish'} order block ${formatAnalysisValue(relevantOB.bottom)}–${formatAnalysisValue(relevantOB.top)}${obInZone ? ' — price is inside it now, a common re-test entry zone.' : '.'}` : ' No fresh order block nearby.';
+    srLine += relevantOB ? ` ${(isLong || (!hasSetup && biasDir===1)) ? 'Bullish' : 'Bearish'} OB ${formatAnalysisValue(relevantOB.bottom)}–${formatAnalysisValue(relevantOB.top)}${obInZone ? ' — price is inside it now, a common re-test entry zone.' : '.'}` : ' No fresh OB nearby.';
     if(htf){
       const htfOB = hasSetup ? (isLong ? htf.ob.bullishOB : htf.ob.bearishOB) : (biasDir === 1 ? htf.ob.bullishOB : (biasDir === -1 ? htf.ob.bearishOB : null));
-      srLine += ` ${htfLabel}: support ${htf.levels.support ? formatAnalysisValue(htf.levels.support.price) : 'none nearby'}, resistance ${htf.levels.resistance ? formatAnalysisValue(htf.levels.resistance.price) : 'none nearby'}.`;
-      if(htfOB) srLine += ` ${htfLabel} order block ${formatAnalysisValue(htfOB.bottom)}–${formatAnalysisValue(htfOB.top)}.`;
+      srLine += `<br>${htfLabel}: support ${htf.levels.support ? formatAnalysisValue(htf.levels.support.price) : 'none nearby'}, resistance ${htf.levels.resistance ? formatAnalysisValue(htf.levels.resistance.price) : 'none nearby'}.`;
+      if(htfOB) srLine += ` ${htfLabel} OB ${formatAnalysisValue(htfOB.bottom)}–${formatAnalysisValue(htfOB.top)}.`;
     }
 
     // Levels
+    const funding = await fundingPromise;
+    const fundingRate = funding && Number.isFinite(funding.rate) ? funding.rate : null;
+    const fundingCountdown = funding ? formatFundingCountdown(funding.nextFundingTime) : null;
+    const fundingClass = fundingRate === null ? '' : (fundingRate > 0 ? 'funding-pos' : (fundingRate < 0 ? 'funding-neg' : ''));
+    const fundingRateText = fundingRate === null ? '—' : `${fundingRate >= 0 ? '+' : ''}${(fundingRate * 100).toFixed(4)}%`;
+    const fundingLine = `<div class="funding-row">Funding: <span class="${fundingClass}">${fundingRateText}</span>${fundingCountdown ? ` in ${fundingCountdown}` : ''}</div>`;
     const levels = hasSetup ? `<div class="analysis-levels"><div class="analysis-level entry"><b>Entry</b><span>${formatAnalysisValue(entry)}</span></div><div class="analysis-level stop"><b>Invalidation</b><span>${formatAnalysisValue(stop)}</span></div><div class="analysis-level target"><b>Target 2R</b><span>${formatAnalysisValue(target)}</span></div></div>` : '';
-    const levelsHeadline = hasSetup ? `Entry ${formatAnalysisValue(entry)} · Stop ${formatAnalysisValue(stop)} · Target ${formatAnalysisValue(target)}` : `Watch: Cloud ${formatAnalysisValue(row.cloudBottom)}–${formatAnalysisValue(row.cloudTop)} · EMA50 ${formatAnalysisValue(ema50)}`;
+    const levelsHeadline = hasSetup ? `Entry ${formatAnalysisValue(entry)} | Stop ${formatAnalysisValue(stop)} | Target ${formatAnalysisValue(target)}` : `Watch: Cloud ${formatAnalysisValue(row.cloudBottom)}–${formatAnalysisValue(row.cloudTop)} | EMA50 ${formatAnalysisValue(ema50)}`;
     const levelsLine = hasSetup ? 'Stop sits at the cloud boundary; target is a 2R (2x risk) objective. Check liquidity and exchange order rules before sizing.' : 'No active trigger — these are the levels that would need to break for a Long/Short signal to fire.';
 
     // Overall
@@ -1547,7 +1757,7 @@ async function openAnalysis(symbol){
     const cciDirNow = Number.isFinite(cciNow.value) && Number.isFinite(cciNow.prev) ? (cciNow.value > cciNow.prev ? 'rising' : (cciNow.value < cciNow.prev ? 'falling' : 'flat')) : null;
     const cciHtf = htf ? htf.cci : null;
     const cciZoneHtf = cciHtf ? cciZone(cciHtf.value) : null;
-    const cciHeadline = `CCI ${formatAnalysisValue(cciNow.value,1)} (${cciZoneNow.tag})${htfLabel ? ` · ${htfLabel} ${formatAnalysisValue(cciHtf ? cciHtf.value : NaN,1)} (${cciZoneHtf ? cciZoneHtf.tag : '—'})` : ''}`;
+    const cciHeadline = `CCI ${formatAnalysisValue(cciNow.value,1)} (${cciZoneNow.tag})${htfLabel ? ` | ${htfLabel} ${formatAnalysisValue(cciHtf ? cciHtf.value : NaN,1)} (${cciZoneHtf ? cciZoneHtf.tag : '—'})` : ''}`;
     let cciLine = !Number.isFinite(cciNow.value) ? 'Not enough bars yet for a CCI(34) reading.' : `Current TF CCI is ${formatAnalysisValue(cciNow.value,1)} and ${cciDirNow || 'holding'} — ${cciZoneNow.tag}.`;
     if(cciZoneNow.extreme){
       cciLine += ` Past ±300 is a genuine outlier even for crypto — could mean the move is exhausting, or the trend is simply accelerating hard. ${cciDirNow === (cciZoneNow.side === 1 ? 'falling' : 'rising') ? 'It\'s already turning back toward zero, which leans toward exhaustion.' : 'It\'s still pushing further out, which leans toward acceleration rather than a reversal yet.'}`;
@@ -1581,13 +1791,13 @@ async function openAnalysis(symbol){
     const cardHtml = ([label,value,detail]) => `<div class="analysis-card${label === 'Levels' ? ' execution' : ''}"><strong>${label}</strong><span class="analysis-value"><em>${value}</em></span>${label === 'Levels' ? detail : `<p>${detail}</p>`}</div>`;
     const mainCards = [
       ['Ichimoku (9/26/52)', ichimokuHeadline, ichimokuLine],
+      ...(htfInterval ? [[`Higher TF Trend (${htfLabel})`, htfHeadline, htfLine]] : []),
       ['Momentum — RSI(14) / MACD(12,26,9)', momentumHeadline, momentumLine],
       ['Trend & Structure — EMA(20/50/200) / BOS-CHoCH', trendHeadline, trendLine],
-      ...(htfInterval ? [[`Higher TF Trend (${htfLabel})`, htfHeadline, htfLine]] : []),
       ['Support/Resistance & Order Blocks', srHeadline, srLine],
       ['Pullback Zone — Swing Range / ATR(14)', pullbackHeadline, pullbackLine],
       ['CCI(34)', cciHeadline, cciLine],
-      ['Levels', levelsHeadline, `${levels}${levelsLine}`]
+      ['Levels', levelsHeadline, `${levels}${fundingLine}${levelsLine}`]
     ];
     document.getElementById('analysisDetails').innerHTML =
       `<div class="analysis-decision ${decisionClass}"><div><strong>${decisionTitle}</strong><p>${decisionDetail}</p></div><span class="decision-tag">${decisionTag}</span></div>` +
@@ -1599,6 +1809,16 @@ async function openAnalysis(symbol){
 function closeAnalysis(event){
   if(event && event.target !== document.getElementById('analysisModal')) return;
   document.getElementById('analysisModal').classList.remove('open');
+}
+
+// Opens X/Twitter search for the coin's cashtag (e.g. BTCUSDT -> $BTC).
+// Uses the plain x.com web URL, which the X app intercepts via universal
+// links on iOS/Android if installed, otherwise falls back to the browser.
+function openTwitterSearch(symbol){
+  if(!symbol) return;
+  const coin = symbol.replace(/USDT$/i, '');
+  const query = encodeURIComponent(`$${coin}`);
+  window.open(`https://x.com/search?q=${query}&src=typed_query`, '_blank', 'noopener');
 }
 
 async function openCoinInfo(symbol){
@@ -1642,7 +1862,8 @@ async function openCoinInfo(symbol){
     const fmtUsd = (n) => (n === undefined || n === null) ? '—' : '$' + Number(n).toLocaleString('en-US', {maximumFractionDigits:0});
     const fmtNum = (n) => (n === undefined || n === null) ? '—' : Number(n).toLocaleString('en-US', {maximumFractionDigits:0});
 
-    subtitleEl.textContent = coin.name ? `${coin.name} (${(coin.symbol || '').toUpperCase()})` : '';
+    const rankText = coin.market_cap_rank ? ` #${coin.market_cap_rank}` : '';
+    subtitleEl.textContent = coin.name ? `${coin.name} (${(coin.symbol || '').toUpperCase()})${rankText}` : '';
 
     const rawAbout = (coin.description && coin.description.en) || '';
     aboutEl.innerHTML = formatAboutHtml(rawAbout);

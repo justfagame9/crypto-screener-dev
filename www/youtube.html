@@ -315,20 +315,110 @@
 
   <div id="videoGrid"></div>
 
-  <div class="page-footer">Videos published in the last 5 days from 100X Club, Conor Kenny, Benjamin Cowen, and Crypto Casey, pulled from each channel's public feed. Refreshes automatically every hour, or tap the refresh button any time.</div>
+  <div class="page-footer" id="pageFooter"></div>
 
 </div>
 
 <script>
-const CHANNELS = [
-  { id: 'UCJuvMjmY4-KFrBJXx-5aRKQ', name: '100X Club',      color: 'var(--accent)' },
-  { id: 'UCJQY1CkwtFNfJfIzROc8KiA', name: 'Conor Kenny',     color: 'var(--blue)' },
-  { id: 'UCRvqjQPSeaWn-uEx-w0XOIg', name: 'Benjamin Cowen',  color: 'var(--amber)' },
-  { id: 'UCi7RBPfTtRkVchV6qO8PUzg', name: 'Crypto Casey',    color: 'var(--red)' },
+// Default channels the app ships with pre-installed, so the feed is never
+// empty on a fresh install. Shown as normal (removable) rows on the Trading
+// Settings page too — seeded into localStorage the first time either page
+// loads, so removals there are respected everywhere from then on.
+const DEFAULT_CHANNELS = [
+  { id: 'UCJuvMjmY4-KFrBJXx-5aRKQ', name: '100X Club' },
+  { id: 'UCJQY1CkwtFNfJfIzROc8KiA', name: 'Conor Kenny' },
+  { id: 'UCi7RBPfTtRkVchV6qO8PUzg', name: 'Crypto Casey' },
 ];
 
-const DAYS_WINDOW = 5;
-const REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+// Shared with the Trading Settings page via this same localStorage key.
+const CHANNELS_STORAGE_KEY = 'crypto-screener-youtube-channels';
+// Separate marker for "have we ever seeded the defaults", kept apart from
+// the channels list itself so an already-empty list (e.g. from before this
+// feature existed) doesn't get mistaken for a deliberate removal.
+const CHANNELS_SEEDED_KEY = 'crypto-screener-youtube-channels-seeded';
+const CHANNEL_COLOR_PALETTE = [
+  'var(--accent)', 'var(--blue)', 'var(--amber)', 'var(--red)',
+  'var(--purple, #8b5cf6)', '#35A7FF', '#FF9F5B', '#6BE675'
+];
+
+function loadChannels(){
+  let list = [];
+  try{
+    if(localStorage.getItem(CHANNELS_SEEDED_KEY) !== 'true'){
+      // Never seeded before (fresh install, or an existing save from before
+      // this feature existed) — seed the defaults so the feed isn't empty,
+      // then mark it seeded so future removals (even down to zero) stick.
+      list = DEFAULT_CHANNELS;
+      localStorage.setItem(CHANNELS_STORAGE_KEY, JSON.stringify(DEFAULT_CHANNELS));
+      localStorage.setItem(CHANNELS_SEEDED_KEY, 'true');
+    } else {
+      const raw = localStorage.getItem(CHANNELS_STORAGE_KEY);
+      if(raw){
+        const parsed = JSON.parse(raw);
+        if(Array.isArray(parsed)){
+          list = parsed.filter(c => c && typeof c.id === 'string' && c.id.trim());
+        }
+      }
+    }
+  }catch(err){
+    console.warn('Unable to load saved channels, using defaults', err);
+    list = DEFAULT_CHANNELS;
+  }
+  return list.map((c, i) => {
+    const hasCustomName = !!(c.name && c.name.trim());
+    return {
+      id: c.id.trim(),
+      name: hasCustomName ? c.name.trim() : c.id.trim(),
+      customName: hasCustomName, // true if the user typed a label; false = still needs resolving
+      color: CHANNEL_COLOR_PALETTE[i % CHANNEL_COLOR_PALETTE.length]
+    };
+  });
+}
+
+// After a channel's real name is resolved from its feed, write it back into
+// localStorage (only for channels the user didn't already label themselves)
+// so the Trading Settings page picks up the real name too, and we don't have
+// to re-resolve it on every load.
+function persistResolvedChannelNames(){
+  try{
+    const raw = localStorage.getItem(CHANNELS_STORAGE_KEY);
+    if(!raw) return;
+    const stored = JSON.parse(raw);
+    if(!Array.isArray(stored)) return;
+    let changed = false;
+    const updated = stored.map(sc => {
+      const match = CHANNELS.find(c => c.id === sc.id);
+      if(match && !match.customName && match.name && match.name !== sc.id && match.name !== sc.name){
+        changed = true;
+        return { ...sc, name: match.name };
+      }
+      return sc;
+    });
+    if(changed) localStorage.setItem(CHANNELS_STORAGE_KEY, JSON.stringify(updated));
+  }catch(err){ /* not critical */ }
+}
+
+const CHANNELS = loadChannels();
+
+const DAYS_WINDOW = 30;
+const REFRESH_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+
+function updateFooterText(){
+  const names = CHANNELS.map(c => c.name);
+  let namesStr;
+  if(names.length <= 1){
+    namesStr = names.join('');
+  }else if(names.length === 2){
+    namesStr = `${names[0]} and ${names[1]}`;
+  }else{
+    namesStr = `${names.slice(0, -1).join(', ')}, and ${names[names.length - 1]}`;
+  }
+  document.getElementById('pageFooter').textContent =
+    `Videos published in the last ${DAYS_WINDOW} days from ${namesStr}, pulled from each channel's public feed. ` +
+    `Refreshes automatically every 15 minutes, or tap the refresh button any time. ` +
+    `Manage which channels show up on the Trading Settings page.`;
+}
+updateFooterText();
 
 // Your own Cloudflare Worker (see cloudflare-worker.js). Not a shared public
 // proxy, so it can't be blocked/rate-limited by other users of that service -
@@ -365,9 +455,27 @@ function getText(el, tag){
   return node ? node.textContent.trim() : '';
 }
 
+function getFeedChannelName(doc){
+  // YouTube's feed has a top-level <author><name> with the channel's real
+  // display name (and a top-level <title> that matches it too).
+  const authorEl = doc.getElementsByTagName('author')[0];
+  const nameEl = authorEl ? authorEl.getElementsByTagName('name')[0] : null;
+  if(nameEl && nameEl.textContent.trim()) return nameEl.textContent.trim();
+  const titleEl = doc.getElementsByTagName('title')[0];
+  return titleEl ? titleEl.textContent.trim() : '';
+}
+
 function parseFeed(xmlText, channel){
   const doc = new DOMParser().parseFromString(xmlText, 'application/xml');
   if(doc.getElementsByTagName('parsererror').length) throw new Error('feed parse error');
+
+  // Resolve the channel's real display name from the feed itself, unless the
+  // user already gave it a custom label on the Trading Settings page.
+  if(!channel.customName){
+    const resolvedName = getFeedChannelName(doc);
+    if(resolvedName) channel.name = resolvedName;
+  }
+
   const entries = Array.from(doc.getElementsByTagName('entry'));
   return entries.map(entry => {
     let videoId = getText(entry, 'yt:videoId');
@@ -410,6 +518,9 @@ async function fetchViaRss2Json(channel, feedUrl){
   if(!res.ok) throw new Error('rss2json responded ' + res.status);
   const data = await res.json();
   if(data.status !== 'ok' || !Array.isArray(data.items)) throw new Error('rss2json returned an error: ' + (data.message || 'unknown'));
+  if(!channel.customName && data.feed && data.feed.title && data.feed.title.trim()){
+    channel.name = data.feed.title.trim();
+  }
   return data.items.map(item => {
     const link = item.link || '';
     const guid = item.guid || '';
@@ -496,8 +607,10 @@ function timeAgo(date){
 
 function buildFilters(){
   const el = document.getElementById('filters');
-  const counts = { all: allVideos.length };
-  CHANNELS.forEach(c => { counts[c.id] = allVideos.filter(v => v.channel.id === c.id).length; });
+  const cutoff = Date.now() - DAYS_WINDOW * 86400000;
+  const recentVideos = allVideos.filter(v => v.published.getTime() >= cutoff);
+  const counts = { all: recentVideos.length };
+  CHANNELS.forEach(c => { counts[c.id] = recentVideos.filter(v => v.channel.id === c.id).length; });
 
   const chips = [`
     <button class="filter-btn ${activeFilter==='all'?'active':''}" data-ch="all">
@@ -506,7 +619,7 @@ function buildFilters(){
   CHANNELS.forEach(c => {
     chips.push(`
       <button class="filter-btn ${activeFilter===c.id?'active':''}" data-ch="${c.id}">
-        <span class="chdot" style="background:${c.color}"></span>${c.name} <span class="count">${counts[c.id]}</span>
+        <span class="chdot" style="background:${c.color}"></span>${escapeHtml(c.name)} <span class="count">${counts[c.id]}</span>
       </button>`);
   });
   el.innerHTML = chips.join('');
@@ -689,6 +802,8 @@ async function loadAll(){
       lastFailedChannels = failedChannels;
       saveCache();
     }
+    persistResolvedChannelNames();
+    updateFooterText();
     render();
     updateLastUpdatedLabel();
   }catch(err){

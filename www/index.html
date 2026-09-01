@@ -12,11 +12,14 @@
     --panel:#131826;
     --panel2:#1a2033;
     --border:#242c42;
+    --border-soft:#1c2334;
     --text:#e6e9f2;
     --muted:#8b93a8;
+    --faint:#5b6478;
     --purple:#8b5cf6;
+    --accent:#35e0c0;
   }
-  *{box-sizing:border-box;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{
     margin:0;
     height:100%;
@@ -24,6 +27,7 @@
     color:var(--text);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     overflow:hidden;
+    -webkit-font-smoothing:antialiased;
   }
   .app{
     display:flex;
@@ -36,31 +40,36 @@
   .topbar{
     display:flex;
     align-items:center;
-    gap:12px;
-    padding:12px 14px;
+    gap:10px;
+    padding:calc(12px + env(safe-area-inset-top)) 14px 12px calc(10px + env(safe-area-inset-left));
     background:var(--panel);
-    border-bottom:1px solid var(--border);
+    border-bottom:1px solid var(--border-soft);
+    box-shadow:0 2px 16px rgba(0,0,0,.22);
     flex-shrink:0;
     z-index:20;
+    position:relative;
   }
   .hamburger{
     background:transparent;
     border:none;
     color:var(--text);
-    width:36px;
-    height:36px;
-    border-radius:8px;
+    width:38px;
+    height:38px;
+    border-radius:10px;
     cursor:pointer;
     display:flex;
     align-items:center;
     justify-content:center;
     flex-shrink:0;
+    transition:background .15s ease, transform .1s ease;
   }
   .hamburger:hover{background:var(--panel2);}
+  .hamburger:active{transform:scale(.92);background:var(--panel2);}
   .hamburger svg{width:20px;height:20px;}
   .topbar-title{
-    font-size:15px;
+    font-size:15.5px;
     font-weight:700;
+    letter-spacing:-.01em;
     white-space:nowrap;
     overflow:hidden;
     text-overflow:ellipsis;
@@ -76,7 +85,8 @@
   .backdrop{
     position:fixed;
     inset:0;
-    background:rgba(0,0,0,.5);
+    background:rgba(4,6,12,.6);
+    backdrop-filter:blur(2px);
     opacity:0;
     pointer-events:none;
     transition:opacity .2s;
@@ -92,46 +102,50 @@
     width:280px;
     max-width:82vw;
     background:var(--panel);
-    border-right:1px solid var(--border);
+    border-right:1px solid var(--border-soft);
+    box-shadow:8px 0 32px rgba(0,0,0,.35);
     transform:translateX(-100%);
-    transition:transform .22s ease;
+    transition:transform .24s cubic-bezier(.2,.8,.2,1);
     z-index:31;
     display:flex;
     flex-direction:column;
-    padding:16px 12px;
+    padding:calc(16px + env(safe-area-inset-top)) 12px calc(16px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
   }
   .drawer.open{transform:translateX(0);}
 
   .drawer-header{
     display:flex;
     align-items:center;
-    gap:10px;
-    padding:6px 8px 18px 8px;
+    gap:11px;
+    padding:6px 8px 20px 8px;
   }
   .drawer-header .brand-icon{
-    width:30px;height:30px;
-    border-radius:8px;
+    width:34px;height:34px;
+    border-radius:10px;
     background:linear-gradient(135deg, var(--purple), #6d28d9);
+    box-shadow:0 4px 14px rgba(139,92,246,.35);
     display:flex;align-items:center;justify-content:center;
-    font-size:16px;
+    font-size:17px;
     flex-shrink:0;
   }
-  .drawer-header .brand-name{font-size:16px;font-weight:800;}
+  .drawer-header .brand-name{font-size:16.5px;font-weight:800;letter-spacing:-.01em;}
 
   .nav-item{
     display:flex;
     align-items:center;
     gap:12px;
     padding:11px 12px;
-    border-radius:10px;
+    border-radius:12px;
     cursor:pointer;
     color:var(--text);
     font-size:14px;
     font-weight:600;
-    margin-bottom:3px;
+    margin-bottom:2px;
     user-select:none;
+    transition:background .15s ease, transform .1s ease;
   }
   .nav-item:hover{background:var(--panel2);}
+  .nav-item:active{transform:scale(.98);}
   .nav-item.active{
     background:rgba(139,92,246,.16);
     color:#fff;
@@ -157,27 +171,33 @@
   .drawer-tools{
     margin-top:auto;
     padding:0 12px 10px;
+    display:flex;
+    justify-content:flex-end;
   }
   .settings-button{
-    width:100%;
+    width:38px;
+    height:38px;
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
     border:1px solid var(--border);
     background:rgba(139,92,246,.12);
     color:var(--text);
     border-radius:10px;
-    padding:10px 12px;
-    font-size:12px;
-    font-weight:700;
-    letter-spacing:.04em;
-    text-transform:uppercase;
+    padding:0;
     cursor:pointer;
+    transition:background .15s ease, border-color .15s ease, transform .1s ease;
   }
+  .settings-button svg{width:18px;height:18px;}
   .settings-button:hover{border-color:var(--purple);background:rgba(139,92,246,.2);}
+  .settings-button:active{transform:scale(.92);}
 
   .drawer-footer{
     padding:10px 12px 4px;
     font-size:11px;
-    color:var(--muted);
-    border-top:1px solid var(--border);
+    color:var(--faint);
+    border-top:1px solid var(--border-soft);
     padding-top:14px;
   }
 
@@ -209,6 +229,104 @@
     font-size:13px;
     background:var(--bg);
   }
+
+  /* ---- Home menu ---- */
+  .home-wrap{
+    height:100%;
+    overflow-y:auto;
+    overflow-x:hidden;
+    padding:calc(16px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));
+    -webkit-overflow-scrolling:touch;
+    background:
+      radial-gradient(circle at 85% 0%, rgba(139,92,246,.10), transparent 45%),
+      radial-gradient(circle at 0% 25%, rgba(53,224,192,.06), transparent 40%);
+  }
+  .home-header{padding:2px 2px 16px;position:relative;}
+  .home-greeting{font-size:20px;font-weight:800;letter-spacing:-.02em;color:var(--text);max-width:60%;}
+  .home-subtext{font-size:12px;color:var(--muted);margin-top:3px;max-width:60%;}
+
+  /* Small live-looking candlestick + trend chart filling the empty space
+     to the right of the greeting text. Purely decorative (aria-hidden). */
+  .header-chart{
+    position:absolute;
+    top:-4px;
+    right:0;
+    width:108px;
+    height:62px;
+    pointer-events:none;
+  }
+  .header-chart .chart-dot{
+    animation:chartPulse 2.2s ease-in-out infinite;
+    transform-origin:center;
+  }
+  @keyframes chartPulse{
+    0%,100%{opacity:1;r:3.2;}
+    50%{opacity:.45;r:4.4;}
+  }
+
+  /* Large faint watermark trend line behind the whole card grid - very low
+     opacity so it reads as texture, not content. Cards sit above it (z-index).
+     Clipped to the wrapper (overflow:hidden) rather than left with negative
+     left/right offsets, which previously expanded the page's scrollable width
+     and let the layout shift/scroll sideways off-screen on phones. */
+  .home-grid-wrap{position:relative;overflow:hidden;}
+  .grid-watermark{
+    position:absolute;
+    top:-6px;
+    left:0;
+    width:100%;
+    height:calc(100% + 30px);
+    pointer-events:none;
+    opacity:.06;
+    z-index:0;
+  }
+  .home-grid{
+    position:relative;
+    z-index:1;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:9px;
+  }
+  .home-card{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:9px;
+    padding:14px 12px;
+    border-radius:16px;
+    background:var(--panel);
+    border:1px solid var(--border-soft);
+    cursor:pointer;
+    text-align:left;
+    color:inherit;
+    font:inherit;
+    width:100%;
+    transition:transform .12s ease, border-color .15s ease, background .15s ease;
+  }
+  .home-card:hover{border-color:var(--purple);background:var(--panel2);}
+  .home-card:active{transform:scale(.96);}
+  .home-card .home-icon{
+    width:40px;
+    height:40px;
+    flex-shrink:0;
+    border-radius:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:19px;
+    box-shadow:0 6px 16px rgba(0,0,0,.28);
+  }
+  .home-card .home-title{display:block;font-size:13.5px;font-weight:700;color:var(--text);line-height:1.25;}
+  .home-card .home-desc{display:block;font-size:11px;color:var(--muted);margin-top:2px;line-height:1.35;}
+
+  .home-card[data-page="screener"] .home-icon{background:linear-gradient(135deg,#35e0c0,#1c8f79);}
+  .home-card[data-page="sizing"] .home-icon{background:linear-gradient(135deg,#6ea8ff,#3a5fc9);}
+  .home-card[data-page="news"] .home-icon{background:linear-gradient(135deg,#ffb84d,#c9791a);}
+  .home-card[data-page="calendar"] .home-icon{background:linear-gradient(135deg,#ff6b8b,#c22d5c);}
+  .home-card[data-page="trump-truth"] .home-icon{background:linear-gradient(135deg,#ff9a5c,#d95a2b);}
+  .home-card[data-page="youtube"] .home-icon{background:linear-gradient(135deg,#ff5f5f,#c22626);}
+  .home-card[data-page="predictions"] .home-icon{background:linear-gradient(135deg,#a78bfa,#6d28d9);}
+  .home-card[data-page="settings"] .home-icon{background:linear-gradient(135deg,#9aa5b8,#5b6478);}
 </style>
 </head>
 <body>
@@ -229,7 +347,12 @@
       <div class="brand-name">Crypto Screener</div>
     </div>
 
-    <div class="nav-item active" data-page="screener">
+    <div class="nav-item" data-page="home">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">Home</span>
+    </div>
+
+    <div class="nav-item" data-page="screener">
       <span class="nav-icon">☁️</span>
       <span class="nav-label">Screener - Ichimoku<small>CK/PK breakouts, live scan</small></span>
     </div>
@@ -256,20 +379,113 @@
 
     <div class="nav-item" data-page="youtube">
       <span class="nav-icon">▶️</span>
-      <span class="nav-label">YouTube Crypto<small>Recent uploads, last 5 days</small></span>
+      <span class="nav-label">YouTube Crypto<small>Recent uploads</small></span>
+    </div>
+
+    <div class="nav-item" data-page="predictions">
+      <span class="nav-icon">🎯</span>
+      <span class="nav-label">Prediction Markets<small>Fed, CPI, ETFs & crypto policy odds</small></span>
     </div>
 
     <div class="drawer-tools">
-      <button class="settings-button" id="settingsBtn" type="button">Trading Settings</button>
+      <button class="settings-button" id="settingsBtn" type="button" aria-label="Trading Settings" title="Trading Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+      </button>
     </div>
 
     <div class="drawer-footer">Binance public data · no login required</div>
   </div>
 
   <div class="content">
-    <div class="page active" data-page="screener">
+    <div class="page active" data-page="home">
+      <div class="home-wrap">
+        <div class="home-header">
+          <div class="home-greeting">Crypto Screener</div>
+          <div class="home-subtext">Choose a tool to get started</div>
+          <svg class="header-chart" viewBox="0 0 132 76" aria-hidden="true">
+            <defs>
+              <linearGradient id="hcArea" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#35e0c0" stop-opacity=".35"/>
+                <stop offset="100%" stop-color="#35e0c0" stop-opacity="0"/>
+              </linearGradient>
+              <linearGradient id="hcLine" x1="0" y1="1" x2="1" y2="0">
+                <stop offset="0%" stop-color="#8b5cf6"/>
+                <stop offset="100%" stop-color="#35e0c0"/>
+              </linearGradient>
+            </defs>
+            <!-- candlesticks -->
+            <g stroke-width="1.4" stroke-linecap="round">
+              <line x1="10" y1="40" x2="10" y2="58" stroke="#ff6b8b"/>
+              <rect x="7" y="45" width="6" height="9" rx="1.2" fill="#ff6b8b"/>
+              <line x1="26" y1="34" x2="26" y2="52" stroke="#5b6478"/>
+              <rect x="23" y="38" width="6" height="10" rx="1.2" fill="#5b6478"/>
+              <line x1="42" y1="24" x2="42" y2="46" stroke="#35e0c0"/>
+              <rect x="39" y="30" width="6" height="11" rx="1.2" fill="#35e0c0"/>
+              <line x1="58" y1="18" x2="58" y2="38" stroke="#ff6b8b"/>
+              <rect x="55" y="24" width="6" height="8" rx="1.2" fill="#ff6b8b"/>
+              <line x1="74" y1="10" x2="74" y2="32" stroke="#35e0c0"/>
+              <rect x="71" y="14" width="6" height="12" rx="1.2" fill="#35e0c0"/>
+              <line x1="90" y1="6" x2="90" y2="24" stroke="#35e0c0"/>
+              <rect x="87" y="9" width="6" height="9" rx="1.2" fill="#35e0c0"/>
+            </g>
+            <!-- trend line + area over the candles -->
+            <path d="M2,54 L18,44 34,40 50,26 66,20 82,12 98,8 L98,70 2,70 Z" fill="url(#hcArea)"/>
+            <path d="M2,54 L18,44 34,40 50,26 66,20 82,12 98,8" fill="none" stroke="url(#hcLine)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle class="chart-dot" cx="98" cy="8" r="3.2" fill="#35e0c0"/>
+          </svg>
+        </div>
+        <div class="home-grid-wrap">
+          <svg class="grid-watermark" viewBox="0 0 400 460" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <linearGradient id="wmArea" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#8b5cf6" stop-opacity=".9"/>
+                <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <path d="M0,360 C60,340 90,300 140,310 C190,320 210,250 260,230 C300,214 320,150 400,90 L400,460 0,460 Z" fill="url(#wmArea)"/>
+            <path d="M0,360 C60,340 90,300 140,310 C190,320 210,250 260,230 C300,214 320,150 400,90" fill="none" stroke="#35e0c0" stroke-width="2.5"/>
+          </svg>
+          <div class="home-grid">
+          <button class="home-card" type="button" data-page="screener">
+            <span class="home-icon">☁️</span>
+            <span><span class="home-title">Screener - Ichimoku</span><span class="home-desc">CK/PK breakouts, live scan</span></span>
+          </button>
+          <button class="home-card" type="button" data-page="sizing">
+            <span class="home-icon">🧮</span>
+            <span><span class="home-title">Position Sizing</span><span class="home-desc">Risk-based quantity calculator</span></span>
+          </button>
+          <button class="home-card" type="button" data-page="news">
+            <span class="home-icon">📰</span>
+            <span><span class="home-title">News</span><span class="home-desc">Latest crypto market stories</span></span>
+          </button>
+          <button class="home-card" type="button" data-page="calendar">
+            <span class="home-icon">📅</span>
+            <span><span class="home-title">Calendar</span><span class="home-desc">Upcoming macro and crypto events</span></span>
+          </button>
+          <button class="home-card" type="button" data-page="trump-truth">
+            <span class="home-icon">🚀</span>
+            <span><span class="home-title">Trump's Truth SM</span><span class="home-desc">Latest posts on crypto & clarity</span></span>
+          </button>
+          <button class="home-card" type="button" data-page="youtube">
+            <span class="home-icon">▶️</span>
+            <span><span class="home-title">YouTube Crypto</span><span class="home-desc">Recent uploads</span></span>
+          </button>
+          <button class="home-card" type="button" data-page="predictions">
+            <span class="home-icon">🎯</span>
+            <span><span class="home-title">Prediction Markets</span><span class="home-desc">Fed, CPI, ETFs & crypto policy odds</span></span>
+          </button>
+          <button class="home-card" type="button" data-page="settings">
+            <span class="home-icon">⚙️</span>
+            <span><span class="home-title">Trading Settings</span><span class="home-desc">Portfolio, exchange & YouTube channels</span></span>
+          </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="page" data-page="screener">
       <div class="page-loading" id="loading-screener">Loading screener…</div>
-      <iframe id="iframe-screener" src="screener.html"></iframe>
+      <!-- lazy-loaded on first open, same as every other page now -->
+      <iframe id="iframe-screener" data-src="screener.html"></iframe>
     </div>
     <div class="page" data-page="sizing">
       <div class="page-loading" id="loading-sizing">Loading position sizer…</div>
@@ -296,6 +512,11 @@
       <!-- lazy-loaded on first open -->
       <iframe id="iframe-youtube" data-src="youtube.html"></iframe>
     </div>
+    <div class="page" data-page="predictions">
+      <div class="page-loading" id="loading-predictions">Loading prediction markets…</div>
+      <!-- lazy-loaded on first open -->
+      <iframe id="iframe-predictions" data-src="prediction-markets.html"></iframe>
+    </div>
     <div class="page" data-page="settings">
       <div class="page-loading" id="loading-settings">Loading settings…</div>
       <iframe id="iframe-settings" data-src="trading-settings.html"></iframe>
@@ -305,12 +526,14 @@
 
 <script>
 const PAGE_TITLES = {
+  home: '',
   screener: 'Screener - Ichimoku',
   sizing: 'Position Sizing',
   news: 'News',
   calendar: 'Calendar',
   'trump-truth': 'Trump\'s Truth SM',
   youtube: 'YouTube Crypto',
+  predictions: 'Prediction Markets',
   settings: 'Trading Settings'
 };
 
@@ -334,17 +557,20 @@ hamburgerBtn.addEventListener('click', () => {
 });
 backdrop.addEventListener('click', closeDrawer);
 
-let currentPage = 'screener';
+let currentPage = 'home';
 
 function activatePage(pageId){
   currentPage = pageId;
   navItems.forEach(n => n.classList.toggle('active', n.dataset.page === pageId));
   pages.forEach(p => p.classList.toggle('active', p.dataset.page === pageId));
   topbarTitle.textContent = 'Crypto Screener';
-  const sub = document.createElement('span');
-  sub.className = 'page-sub';
-  sub.textContent = PAGE_TITLES[pageId] || '';
-  topbarTitle.appendChild(sub);
+  const pageLabel = PAGE_TITLES[pageId];
+  if(pageLabel){
+    const sub = document.createElement('span');
+    sub.className = 'page-sub';
+    sub.textContent = pageLabel;
+    topbarTitle.appendChild(sub);
+  }
 
   // Lazy-load the iframe the first time its page is opened, so we don't
   // fire both apps' network requests (Binance + CoinGecko) on startup.
@@ -360,6 +586,7 @@ function activatePage(pageId){
     if(loadingEl) loadingEl.style.display = 'none';
   }
 
+  syncHistoryForCurrentPage();
   closeDrawer();
 }
 
@@ -398,8 +625,8 @@ function handleAndroidBack(){
     return;
   }
 
-  if(currentPage !== 'screener'){
-    activatePage('screener');
+  if(currentPage !== 'home'){
+    activatePage('home');
     return;
   }
 
@@ -416,10 +643,9 @@ function handleAndroidBack(){
   }
 }
 
-// Screener iframe is loaded eagerly (default page), just hide its loading label on load
-document.getElementById('iframe-screener').addEventListener('load', () => {
-  document.getElementById('loading-screener').style.display = 'none';
-}, {once:true});
+document.querySelectorAll('.home-card').forEach(card => {
+  card.addEventListener('click', () => activatePage(card.dataset.page));
+});
 
 navItems.forEach(item => {
   item.addEventListener('click', () => activatePage(item.dataset.page));
@@ -427,10 +653,26 @@ navItems.forEach(item => {
 
 document.getElementById('settingsBtn').addEventListener('click', () => activatePage('settings'));
 
+// This app can run in several different shells - a plain browser tab, an
+// installed PWA/TWA (desktop or mobile), or wrapped in Cordova/Capacitor -
+// and each one signals a "back" press differently. Previously only the old
+// Cordova "backbutton" DOM event and Escape were handled, which meant real
+// desktop browser Back, and Capacitor's own back-button plugin (Capacitor
+// does NOT fire the Cordova-style DOM event), fell straight through to a
+// real navigation/exit from every single page. All three are now covered.
+
+// 1) Cordova-style back-button plugin (dispatches a DOM CustomEvent).
 document.addEventListener('backbutton', event => {
   event.preventDefault();
   handleAndroidBack();
 }, { passive: false });
+
+// 2) Capacitor's native back-button listener - separate from the Cordova
+// event above, and the one that actually fires in a Capacitor-wrapped app.
+if(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App && typeof window.Capacitor.Plugins.App.addListener === 'function'){
+  window.Capacitor.Plugins.App.addListener('backButton', () => handleAndroidBack());
+}
+
 window.addEventListener('keydown', event => {
   if(event.key === 'Escape'){
     event.preventDefault();
@@ -438,14 +680,48 @@ window.addEventListener('keydown', event => {
   }
 });
 
-// initial title
-activatePageTitleOnly();
-function activatePageTitleOnly(){
-  const sub = document.createElement('span');
-  sub.className = 'page-sub';
-  sub.textContent = PAGE_TITLES['screener'];
-  topbarTitle.appendChild(sub);
+// 3) Real browser/History-API back - covers a plain browser tab, an
+// installed PWA, and a Trusted Web Activity, where a hardware button or
+// swipe-back gesture is genuine browser navigation ("popstate"), not a
+// custom "backbutton" event. We keep exactly one extra history entry
+// whenever we're away from Home, so a single real Back press anywhere else
+// returns to Home instead of leaving the app; from Home itself, Back is left
+// to behave normally (i.e. actually exit/navigate away).
+function syncHistoryForCurrentPage(){
+  if(currentPage === 'home'){
+    if(!history.state || history.state.page !== 'home'){
+      history.replaceState({ page: 'home' }, '', location.href);
+    }
+    return;
+  }
+  if(!history.state || history.state.page === 'home'){
+    history.pushState({ page: currentPage }, '', location.href);
+  } else {
+    history.replaceState({ page: currentPage }, '', location.href);
+  }
 }
+
+window.addEventListener('popstate', event => {
+  // A real Back navigation already happened by the time this fires, so if the
+  // drawer or an in-page modal was open, close it and restore the history
+  // entry that navigation just consumed - keeping this Back press consistent
+  // with the "close overlays first" behavior above, and leaving a further
+  // Back still available to actually leave the page.
+  if(drawer.classList.contains('open')){
+    closeDrawer();
+    syncHistoryForCurrentPage();
+    return;
+  }
+  if(closeOpenModalInActivePage()){
+    syncHistoryForCurrentPage();
+    return;
+  }
+  const targetPage = (event.state && event.state.page) || 'home';
+  activatePage(targetPage);
+});
+
+// initial state
+activatePage('home');
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));

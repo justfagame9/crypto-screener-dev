@@ -28,6 +28,7 @@
   }
   h1{font-size:20px;margin:0 0 4px 0;}
   .sub{color:var(--muted);font-size:13px;margin-bottom:20px;}
+  .bottom-sub{margin:24px 0 0;}
   .panel{
     background:var(--panel);
     border:1px solid var(--border);
@@ -167,6 +168,7 @@
     margin-top:12px;
   }
   .legend b{color:var(--text);}
+  .legend #csvBtn{flex-basis:100%;width:max-content;}
   .error-box{
     background:rgba(239,68,68,.1);
     border:1px solid rgba(239,68,68,.3);
@@ -204,8 +206,6 @@
 <body>
 
 <h1>☁️ Ichimoku Breakout Screener</h1>
-<div class="sub">Binance USDT-M Perpetual Futures only — USDC and delivery contracts excluded. Detects Chikou-span breakouts (CK) and Price/Kumo breakouts (PK), long and short, computed live from Binance data.</div>
-
 <div class="panel">
   <div class="settings-grid">
     <div class="field"><label>Conversion (Tenkan)</label><input type="number" id="tenkanLen" value="9"></div>
@@ -217,7 +217,6 @@
   </div>
   <div class="actions">
     <button id="runBtn" onclick="runScreener()">▶ Run Screener</button>
-    <button class="secondary" onclick="downloadCSV()" id="csvBtn" disabled>⬇ Export CSV</button>
     <span class="status" id="statusText">Idle</span>
     <span class="count-badge" id="countBadge" style="display:none;"></span>
   </div>
@@ -228,6 +227,7 @@
     <span><b>PK</b> = Price/Kumo breakout (price crosses the current cloud)</span>
     <span><b>CK, PK</b> = both confirmed on the same day</span>
     <span><b>Setup</b> = Long (bullish) or Short (bearish), shown only when fully confirmed</span>
+    <button class="secondary" onclick="downloadCSV()" id="csvBtn" disabled>⬇ Export CSV</button>
   </div>
 </div>
 
@@ -610,7 +610,10 @@ function sortAndRender(){
   renderTable(rows);
 }
 
-function fmt(n, d=4){ return (n===undefined||n===null||isNaN(n)) ? '—' : n.toFixed(d); }
+function fmt(n, d=4){
+  if(n===undefined||n===null||isNaN(n)) return '—';
+  return Math.abs(n) < 0.01 ? String(n) : n.toFixed(d);
+}
 
 function breakoutPill(breakout){
   if(!breakout) return '<span class="pill-none">—</span>';
@@ -648,15 +651,16 @@ function renderTable(rows){
   rows.forEach(r => {
     html += '<tr>';
     html += `<td>${r.confirmed ? '<span class="pill pill-both" title="Yesterday\'s breakout confirmed by today\'s candle">✓</span>' : '<span class="pill-none">—</span>'}</td>`;
-    html += `<td><a class="sym-link" target="_blank" href="https://www.binance.com/en/futures/${r.symbol}">${r.symbol}</a></td>`;
+    const tradingViewSymbol = encodeURIComponent(`BINANCE:${r.symbol}.P`);
+    html += `<td><a class="sym-link" target="_blank" href="tradingview://chart/?symbol=${tradingViewSymbol}">${r.symbol}</a></td>`;
     html += `<td>${breakoutPill(r.breakout)}</td>`;
     html += `<td>${setupPill(r.setup)}</td>`;
-    html += `<td>${fmt(r.priceToday)}</td>`;
-    html += `<td>${fmt(r.breakoutPrice)}</td>`;
-    html += `<td>${fmt(r.cloudTop)}</td>`;
-    html += `<td>${fmt(r.cloudBottom)}</td>`;
-    html += `<td>${fmt(r.tenkanNow)}</td>`;
-    html += `<td>${fmt(r.kijunNow)}</td>`;
+    html += `<td>${fmt(r.priceToday, 2)}</td>`;
+    html += `<td>${fmt(r.breakoutPrice, 2)}</td>`;
+    html += `<td>${fmt(r.cloudTop, 2)}</td>`;
+    html += `<td>${fmt(r.cloudBottom, 2)}</td>`;
+    html += `<td>${fmt(r.tenkanNow, 2)}</td>`;
+    html += `<td>${fmt(r.kijunNow, 2)}</td>`;
     html += `<td>${r.volToday ? Math.round(r.volToday).toLocaleString() : '—'}</td>`;
     html += `<td>${r.setup ? `<button class="plan-btn" type="button" onclick="openTradePlan('${r.symbol}')">Trade Plan</button>` : '<span class="pill-none">—</span>'}</td>`;
     html += '</tr>';
@@ -742,8 +746,38 @@ function closeTradePlan(event){
   activeTrade = null;
 }
 
+function handleScreenerBackButton(){
+  const tradeModal = document.getElementById('tradeModal');
+  const analysisModal = document.getElementById('analysisModal');
+
+  if(tradeModal && tradeModal.classList.contains('open')){
+    closeTradePlan();
+    return true;
+  }
+
+  if(analysisModal && analysisModal.classList.contains('open')){
+    closeAnalysis();
+    return true;
+  }
+
+  if(window.parent && window.parent !== window && typeof window.parent.activatePage === 'function'){
+    window.parent.activatePage('screener');
+    return true;
+  }
+
+  return false;
+}
+
+document.addEventListener('backbutton', event => {
+  event.preventDefault();
+  handleScreenerBackButton();
+}, { passive: false });
+
 document.addEventListener('keydown', event => {
-  if(event.key === 'Escape') closeTradePlan();
+  if(event.key === 'Escape'){
+    event.preventDefault();
+    handleScreenerBackButton();
+  }
 });
 
 function sortBy(key){
@@ -768,6 +802,8 @@ function downloadCSV(){
   a.click();
 }
 </script>
+
+<div class="sub bottom-sub">Binance USDT-M Perpetual Futures only — USDC and delivery contracts excluded. Detects Chikou-span breakouts (CK) and Price/Kumo breakouts (PK), long and short, computed live from Binance data.</div>
 
 </body>
 </html>

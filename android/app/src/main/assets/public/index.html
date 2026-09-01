@@ -221,6 +221,11 @@
       <span class="nav-label">Position Sizing<small>Risk-based quantity calculator</small></span>
     </div>
 
+    <div class="nav-item" data-page="news">
+      <span class="nav-icon">📰</span>
+      <span class="nav-label">News<small>Latest crypto market stories</small></span>
+    </div>
+
     <div class="drawer-footer">Binance &amp; CoinGecko public data · no login required</div>
   </div>
 
@@ -234,13 +239,19 @@
       <!-- lazy-loaded on first open -->
       <iframe id="iframe-sizing" data-src="position-sizing.html"></iframe>
     </div>
+    <div class="page" data-page="news">
+      <div class="page-loading" id="loading-news">Loading news…</div>
+      <!-- lazy-loaded on first open -->
+      <iframe id="iframe-news" data-src="news.html"></iframe>
+    </div>
   </div>
 </div>
 
 <script>
 const PAGE_TITLES = {
   screener: 'Screener - Ichimoku',
-  sizing: 'Position Sizing'
+  sizing: 'Position Sizing',
+  news: 'News'
 };
 
 const hamburgerBtn = document.getElementById('hamburgerBtn');
@@ -263,7 +274,10 @@ hamburgerBtn.addEventListener('click', () => {
 });
 backdrop.addEventListener('click', closeDrawer);
 
+let currentPage = 'screener';
+
 function activatePage(pageId){
+  currentPage = pageId;
   navItems.forEach(n => n.classList.toggle('active', n.dataset.page === pageId));
   pages.forEach(p => p.classList.toggle('active', p.dataset.page === pageId));
   topbarTitle.textContent = 'Crypto Screener';
@@ -289,6 +303,41 @@ function activatePage(pageId){
   closeDrawer();
 }
 
+function handleAndroidBack(){
+  if(drawer.classList.contains('open')){
+    closeDrawer();
+    return;
+  }
+
+  const tradeModal = document.getElementById('tradeModal');
+  const analysisModal = document.getElementById('analysisModal');
+  if(tradeModal && tradeModal.classList.contains('open')){
+    closeTradePlan();
+    return;
+  }
+  if(analysisModal && analysisModal.classList.contains('open')){
+    closeAnalysis();
+    return;
+  }
+
+  if(currentPage !== 'screener'){
+    activatePage('screener');
+    return;
+  }
+
+  if(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App && typeof window.Capacitor.Plugins.App.exitApp === 'function'){
+    window.Capacitor.Plugins.App.exitApp();
+    return;
+  }
+  if(navigator.app && typeof navigator.app.exitApp === 'function'){
+    navigator.app.exitApp();
+    return;
+  }
+  if(window.history.length > 1){
+    window.history.back();
+  }
+}
+
 // Screener iframe is loaded eagerly (default page), just hide its loading label on load
 document.getElementById('iframe-screener').addEventListener('load', () => {
   document.getElementById('loading-screener').style.display = 'none';
@@ -296,6 +345,17 @@ document.getElementById('iframe-screener').addEventListener('load', () => {
 
 navItems.forEach(item => {
   item.addEventListener('click', () => activatePage(item.dataset.page));
+});
+
+document.addEventListener('backbutton', event => {
+  event.preventDefault();
+  handleAndroidBack();
+}, { passive: false });
+window.addEventListener('keydown', event => {
+  if(event.key === 'Escape'){
+    event.preventDefault();
+    handleAndroidBack();
+  }
 });
 
 // initial title
