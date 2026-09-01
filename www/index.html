@@ -326,6 +326,7 @@
   .home-card[data-page="trump-truth"] .home-icon{background:linear-gradient(135deg,#ff9a5c,#d95a2b);}
   .home-card[data-page="youtube"] .home-icon{background:linear-gradient(135deg,#ff5f5f,#c22626);}
   .home-card[data-page="predictions"] .home-icon{background:linear-gradient(135deg,#a78bfa,#6d28d9);}
+  .home-card[data-page="oil"] .home-icon{background:linear-gradient(135deg,#ff8a4c,#c2501a);}
   .home-card[data-page="settings"] .home-icon{background:linear-gradient(135deg,#9aa5b8,#5b6478);}
 </style>
 </head>
@@ -385,6 +386,11 @@
     <div class="nav-item" data-page="predictions">
       <span class="nav-icon">🎯</span>
       <span class="nav-label">Prediction Markets<small>Fed, CPI, ETFs & crypto policy odds</small></span>
+    </div>
+
+    <div class="nav-item" data-page="oil">
+      <span class="nav-icon">🛢️</span>
+      <span class="nav-label">Oil & Energy<small>Brent, WTI prices & the spread</small></span>
     </div>
 
     <div class="drawer-tools">
@@ -474,6 +480,10 @@
             <span class="home-icon">🎯</span>
             <span><span class="home-title">Prediction Markets</span><span class="home-desc">Fed, CPI, ETFs & crypto policy odds</span></span>
           </button>
+          <button class="home-card" type="button" data-page="oil">
+            <span class="home-icon">🛢️</span>
+            <span><span class="home-title">Oil & Energy</span><span class="home-desc">Live Brent & WTI crude prices</span></span>
+          </button>
           <button class="home-card" type="button" data-page="settings">
             <span class="home-icon">⚙️</span>
             <span><span class="home-title">Trading Settings</span><span class="home-desc">Portfolio, exchange & YouTube channels</span></span>
@@ -517,6 +527,11 @@
       <!-- lazy-loaded on first open -->
       <iframe id="iframe-predictions" data-src="prediction-markets.html"></iframe>
     </div>
+    <div class="page" data-page="oil">
+      <div class="page-loading" id="loading-oil">Loading oil prices…</div>
+      <!-- lazy-loaded on first open -->
+      <iframe id="iframe-oil" data-src="oil.html"></iframe>
+    </div>
     <div class="page" data-page="settings">
       <div class="page-loading" id="loading-settings">Loading settings…</div>
       <iframe id="iframe-settings" data-src="trading-settings.html"></iframe>
@@ -534,6 +549,7 @@ const PAGE_TITLES = {
   'trump-truth': 'Trump\'s Truth SM',
   youtube: 'YouTube Crypto',
   predictions: 'Prediction Markets',
+  oil: 'Oil & Energy',
   settings: 'Trading Settings'
 };
 
