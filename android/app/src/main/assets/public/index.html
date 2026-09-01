@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Crypto Screener</title>
+<title>TradeSphere</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0b0e17">
 <style>
@@ -116,7 +116,14 @@
     font-size:16px;
     flex-shrink:0;
   }
-  .drawer-header .brand-name{font-size:16px;font-weight:800;}
+  .drawer-header .brand-name{
+    font-size:16px;
+    font-weight:800;
+    background:linear-gradient(90deg, #ffffff 0%, #edfdf4 32%, #7fe4b6 58%, #2ac78a 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
 
   .nav-item{
     display:flex;
@@ -200,7 +207,9 @@
     <button class="hamburger" id="hamburgerBtn" aria-label="Menu">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
-    <div class="topbar-title" id="topbarTitle">Crypto Screener</div>
+    <div class="topbar-title" id="topbarTitle">
+      <img class="topbar-logo" src="logo.svg" alt="Crypto Screener logo">
+    </div>
   </div>
 
   <div class="backdrop" id="backdrop"></div>
@@ -208,7 +217,7 @@
   <div class="drawer" id="drawer">
     <div class="drawer-header">
       <div class="brand-icon">⚡</div>
-      <div class="brand-name">Crypto Screener</div>
+      <div class="brand-name">TradeSphere</div>
     </div>
 
     <div class="nav-item active" data-page="screener">
@@ -280,7 +289,7 @@ function activatePage(pageId){
   currentPage = pageId;
   navItems.forEach(n => n.classList.toggle('active', n.dataset.page === pageId));
   pages.forEach(p => p.classList.toggle('active', p.dataset.page === pageId));
-  topbarTitle.textContent = 'Crypto Screener';
+  topbarTitle.innerHTML = '<img class="topbar-logo" src="logo.svg" alt="Crypto Screener logo">';
   const sub = document.createElement('span');
   sub.className = 'page-sub';
   sub.textContent = PAGE_TITLES[pageId] || '';
