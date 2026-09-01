@@ -99,13 +99,7 @@
     transition:border-color .15s;
   }
   .poll:hover{border-color:var(--border);}
-  .poll-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}
-  .poll-source{
-    display:inline-flex;align-items:center;gap:6px;font:700 11px var(--font-mono);
-    text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
-  }
-  .poll-source .dot{width:6px;height:6px;border-radius:50%;}
-  .poll-source.polymarket .dot{background:var(--blue);}
+  .poll-top{display:flex;align-items:center;justify-content:flex-end;gap:8px;}
   .poll-meta{font:11px var(--font-mono);color:var(--faint);white-space:nowrap;}
   .poll-question{font-size:14.5px;font-weight:600;line-height:1.4;color:var(--text);}
 
@@ -392,7 +386,6 @@ function renderPoll(poll){
   return `
     <div class="poll">
       <div class="poll-top">
-        <span class="poll-source polymarket"><span class="dot"></span>${poll.source}</span>
         <span class="poll-meta">${escapeHtml(fmtEndDate(poll.endDate))}</span>
       </div>
       <div class="poll-question">${escapeHtml(poll.question)}</div>
