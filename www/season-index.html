@@ -84,7 +84,6 @@
   .toggle-label{font-family:var(--font-mono);font-size:10.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-right:2px;}
   .chip-btn{background:var(--panel2);border:1px solid var(--border);color:var(--muted);font-family:var(--font-mono);padding:6px 12px;font-size:11.5px;font-weight:600;border-radius:20px;cursor:pointer;}
   .chip-btn.active{background:rgba(53,224,192,.12);border-color:var(--accent);color:var(--accent);}
-  .toggle-divider{width:1px;height:16px;background:var(--border);margin:0 2px;}
 
   /* ---- Stat cards ---- */
   .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px;}
@@ -157,7 +156,7 @@
   </div>
 
   <h1>Bitcoin / Altcoin Season Index</h1>
-  <p class="sub">What share of the top coins by market cap (stablecoins and wrapped/staked derivatives excluded) are beating Bitcoin's price change over the selected window. Computed live from CoinGecko's public market data — not scraped from a third-party chart.</p>
+  <p class="sub">What share of the top coins by market cap (stablecoins and wrapped/staked derivatives excluded) are beating Bitcoin's price change over the selected window.</p>
 
   <div class="gauge-card" id="gaugeCard">
     <div class="gauge-loading">Loading market data…</div>
@@ -168,7 +167,8 @@
     <button class="chip-btn" data-window="7d">7D</button>
     <button class="chip-btn active" data-window="30d">30D</button>
     <button class="chip-btn" data-window="200d">200D</button>
-    <span class="toggle-divider"></span>
+  </div>
+  <div class="toggle-row">
     <span class="toggle-label">Pool</span>
     <button class="chip-btn active" data-pool="50">Top 50</button>
     <button class="chip-btn" data-pool="100">Top 100</button>
@@ -265,6 +265,13 @@ async function fetchGlobalData(){
   }
 }
 
+function median(values){
+  if(!values.length) return null;
+  const sorted = values.slice().sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
 function computeSeasonIndex(list, windowKey, poolSize){
   const btc = list.find(c => c.id === 'bitcoin');
   if(!btc) throw new Error('bitcoin missing from market data');
@@ -277,8 +284,11 @@ function computeSeasonIndex(list, windowKey, poolSize){
 
   const beating = pool.filter(c => c[windowKey] > btcChange);
   const score = pool.length ? Math.round((beating.length / pool.length) * 100) : null;
+  // Median (not mean) so one or two outlier pumps in the pool don't distort
+  // what a "typical" altcoin actually did over the window.
+  const altMedianChange = median(pool.map(c => c[windowKey]));
 
-  return { score, btcChange, pool, beatingIds: new Set(beating.map(c => c.id)) };
+  return { score, btcChange, altMedianChange, pool, beatingIds: new Set(beating.map(c => c.id)) };
 }
 
 function zoneFor(score){
@@ -347,6 +357,11 @@ function renderStats(result, windowMeta){
     <div class="stat-card">
       <div class="stat-label">BTC ${windowMeta.label} change</div>
       <div class="stat-value ${result.btcChange >= 0 ? 'pos' : 'neg'}">${formatPct(result.btcChange)}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Median alt ${windowMeta.label} change</div>
+      <div class="stat-value ${result.altMedianChange >= 0 ? 'pos' : 'neg'}">${formatPct(result.altMedianChange)}</div>
+      <div class="stat-sub">of ${result.pool.length} coins in pool</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Beating BTC</div>
