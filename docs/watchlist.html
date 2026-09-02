@@ -170,7 +170,7 @@
 <div class="wrap">
 
   <div class="topheader">
-    <div class="eyebrow"><span class="dot"></span>Watchlist · Live Prices</div>
+    <div class="eyebrow"><span class="dot"></span>Watchlist</div>
     <div class="header-right">
       <span class="updated-label" id="updatedLabel"></span>
       <button class="refresh-btn" id="refreshBtn" aria-label="Refresh">
@@ -178,7 +178,6 @@
       </button>
     </div>
   </div>
-  <p class="sub">Live last-traded price from Binance USDT-M perpetual futures, with 24h change, range, and a 24h sparkline for each coin. Market-cap rank sourced from CoinGecko.</p>
 
   <div class="degraded-banner" id="degradedBanner"></div>
 
@@ -410,7 +409,7 @@ function renderCoinRow(coin, ticker, rankInfo, closes){
       </div>
 
       <div class="watch-foot">
-        <span class="watch-asof">${closeTime ? 'As of ' + closeTime.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'}) + ' · Vol ' + formatVolume(quoteVolume) : ''}</span>
+        <span class="watch-asof">${closeTime ? 'Vol ' + formatVolume(quoteVolume) : ''}</span>
         <a class="watch-link" href="https://www.binance.com/en/futures/${encodeURIComponent(coin.binanceSymbol)}" target="_blank" rel="noopener">View chart ↗</a>
       </div>
     </div>`;
