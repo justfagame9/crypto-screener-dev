@@ -223,12 +223,11 @@
 // Add more coins here later - symbol is the clean display ticker (no USDT
 // suffix), binanceSymbol is the exact USDT-M perpetual contract on Binance
 // Futures, coingeckoId is CoinGecko's internal id (used only for market-cap
-// rank + logo, never for price).
+// rank + logo, never for price). "pinned" coins don't get a remove ("-")
+// button - they're permanent defaults, not removable like custom/other coins.
 const DEFAULT_COINS = [
-  { symbol: 'BTC',  binanceSymbol: 'BTCUSDT',  coingeckoId: 'bitcoin',     name: 'Bitcoin',     gradient: 'linear-gradient(135deg,#f7931a,#c9761a)' },
-  { symbol: 'ETH',  binanceSymbol: 'ETHUSDT',  coingeckoId: 'ethereum',    name: 'Ethereum',    gradient: 'linear-gradient(135deg,#8ea9ff,#5b6fd6)' },
-  { symbol: 'SOL',  binanceSymbol: 'SOLUSDT',  coingeckoId: 'solana',      name: 'Solana',      gradient: 'linear-gradient(135deg,#9945ff,#14f195)' },
-  { symbol: 'HYPE', binanceSymbol: 'HYPEUSDT', coingeckoId: 'hyperliquid', name: 'Hyperliquid', gradient: 'linear-gradient(135deg,#35e0c0,#1c8f79)' },
+  { symbol: 'BTC', binanceSymbol: 'BTCUSDT', coingeckoId: 'bitcoin',  name: 'Bitcoin',  gradient: 'linear-gradient(135deg,#f7931a,#c9761a)', pinned: true },
+  { symbol: 'ETH', binanceSymbol: 'ETHUSDT', coingeckoId: 'ethereum', name: 'Ethereum', gradient: 'linear-gradient(135deg,#8ea9ff,#5b6fd6)', pinned: true },
 ];
 
 // Coins added via screener.html's "+ WL" button live here, shared through
@@ -277,9 +276,14 @@ rebuildCoinsList();
 // Removes a coin from the watchlist immediately (both storage and the visible
 // list) regardless of whether it's one of the built-in defaults or one added
 // via screener.html's "+ WL" button, then re-renders right away so the row's
-// space is reclaimed by the rest of the list rather than left blank.
+// space is reclaimed by the rest of the list rather than left blank. Pinned
+// defaults (BTC/ETH) never expose a remove button in the UI, but this bails
+// out defensively too in case it's ever called some other way.
 function removeCoin(binanceSymbol){
-  const isDefault = DEFAULT_COINS.some(c => c.binanceSymbol === binanceSymbol);
+  const coin = DEFAULT_COINS.find(c => c.binanceSymbol === binanceSymbol);
+  if(coin && coin.pinned) return;
+
+  const isDefault = !!coin;
   if(isDefault){
     const removed = loadRemovedDefaults();
     if(!removed.includes(binanceSymbol)) removed.push(binanceSymbol);
@@ -462,6 +466,8 @@ function rangeBar(low, high, current){
 const lastRenderedPrice = {};
 
 function renderCoinRow(coin, ticker, rankInfo){
+  const removeBtn = coin.pinned ? '' : `<button class="watch-remove" type="button" aria-label="Remove ${coin.symbol} from watchlist" onclick="removeCoin('${coin.binanceSymbol}')">−</button>`;
+
   if(!ticker){
     return `
       <div class="watch-card error">
@@ -472,7 +478,7 @@ function renderCoinRow(coin, ticker, rankInfo){
             <div class="watch-symbol">${coin.symbol}</div>
             <div class="watch-name">${escapeHtml(coin.name)}</div>
           </div>
-          <button class="watch-remove" type="button" aria-label="Remove ${coin.symbol} from watchlist" onclick="removeCoin('${coin.binanceSymbol}')">−</button>
+          ${removeBtn}
         </div>
         <div class="watch-error-msg">Couldn't load ${coin.symbol} price this refresh.</div>
       </div>`;
@@ -512,7 +518,7 @@ function renderCoinRow(coin, ticker, rankInfo){
           <div class="watch-price ${flashClass}">${formatPrice(price)}</div>
           <div class="watch-change ${isUp ? 'up' : 'down'}">${isUp ? '▲' : '▼'} ${Math.abs(changePct).toFixed(2)}%</div>
         </div>
-        <button class="watch-remove" type="button" aria-label="Remove ${coin.symbol} from watchlist" onclick="removeCoin('${coin.binanceSymbol}')">−</button>
+        ${removeBtn}
       </div>
 
       <div class="range-block">
