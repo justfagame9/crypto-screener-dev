@@ -164,6 +164,31 @@
   }
   .retry-btn:hover{border-color:var(--gold);color:var(--gold);}
 
+  /* ---- Analysis modal (reuses screener.html's own analysis view via iframe) ---- */
+  .watch-foot-links{display:flex;align-items:center;gap:14px;}
+  .analysis-modal-overlay{
+    position:fixed;inset:0;background:rgba(5,6,9,.72);backdrop-filter:blur(3px);
+    z-index:1000;display:none;align-items:center;justify-content:center;padding:0;
+  }
+  .analysis-modal-overlay.open{display:flex;}
+  .analysis-modal-card{
+    position:relative;width:100%;height:100%;
+    background:var(--bg);overflow:hidden;
+    animation:analysis-modal-in .18s ease;
+  }
+  @media(min-width:720px){
+    .analysis-modal-card{
+      width:min(1140px,100%);height:92vh;max-height:920px;
+      border-radius:16px; /* no outer border/shadow - screener.html's own analysis dialog already draws its own frame and close button inside the iframe, so this stays an invisible clipping container rather than a second visible "card" */
+    }
+  }
+  @keyframes analysis-modal-in{from{opacity:0;transform:translateY(8px) scale(.99);}to{opacity:1;transform:translateY(0) scale(1);}}
+  .analysis-modal-card iframe{width:100%;height:100%;border:0;display:block;background:var(--bg);}
+  .analysis-modal-loading{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font:12px var(--font-mono);color:var(--faint);pointer-events:none;
+  }
+
 </style>
 </head>
 <body>
@@ -193,6 +218,13 @@
     </div>
   </div>
 
+</div>
+
+<div class="analysis-modal-overlay" id="analysisModalOverlay">
+  <div class="analysis-modal-card">
+    <div class="analysis-modal-loading" id="analysisModalLoading">Loading analysis…</div>
+    <iframe id="analysisModalFrame" title="Symbol analysis"></iframe>
+  </div>
 </div>
 
 <script>
@@ -442,7 +474,10 @@ function renderCoinRow(coin, ticker, rankInfo, closes){
 
       <div class="watch-foot">
         <span class="watch-asof">${closeTime ? 'Vol ' + formatVolume(quoteVolume) : ''}</span>
-        <a class="watch-link" href="${tradingViewChartUrl(coin.binanceSymbol)}" rel="noopener" onclick="event.preventDefault(); openTradingViewChart('${coin.binanceSymbol}')">View chart ↗</a>
+        <span class="watch-foot-links">
+          <a class="watch-link" href="#" onclick="event.preventDefault(); openWatchlistAnalysis('${coin.binanceSymbol}')">Analysis</a>
+          <a class="watch-link" href="${tradingViewChartUrl(coin.binanceSymbol)}" rel="noopener" onclick="event.preventDefault(); openTradingViewChart('${coin.binanceSymbol}')">View chart ↗</a>
+        </span>
       </div>
     </div>`;
 }
@@ -603,6 +638,46 @@ setInterval(loadPrices, PRICE_REFRESH_MS);
 setInterval(loadKlines, KLINE_REFRESH_MS);
 setInterval(loadRanks, RANK_REFRESH_MS);
 setInterval(() => updateLastUpdatedLabel(false), 15000);
+
+// ---------------- Analysis modal ----------------
+// Opens screener.html's own analysis view (same Ichimoku/RSI/MACD/EMA/higher-
+// timeframe breakdown as the screener app) in an overlay on top of this page,
+// deep-linked straight to one symbol via ?analysis=SYMBOL - see the matching
+// code at the bottom of screener.html for the other half of this.
+(function(){
+  const overlay = document.getElementById('analysisModalOverlay');
+  const frame = document.getElementById('analysisModalFrame');
+  const loading = document.getElementById('analysisModalLoading');
+
+  window.openWatchlistAnalysis = function(binanceSymbol){
+    loading.style.display = 'flex';
+    frame.src = `screener.html?analysis=${encodeURIComponent(binanceSymbol)}`;
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  };
+  function closeModal(){
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+    frame.src = ''; // stop the embedded screener from continuing to run in the background
+  }
+  frame.addEventListener('load', () => { loading.style.display = 'none'; });
+
+  // Closing happens via: the × button inside screener.html's own analysis
+  // dialog (see the postMessage listener below), clicking the backdrop
+  // outside the card, or Escape - no second close button out here.
+  overlay.addEventListener('click', (e) => {
+    if(e.target === overlay) closeModal(); // click outside the modal card
+  });
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape' && overlay.classList.contains('open')) closeModal();
+  });
+  // screener.html posts this when its own analysis modal is closed while it's
+  // running inside this overlay, so closing the inner modal closes the whole thing
+  // instead of leaving an empty, un-run screener table visible underneath it.
+  window.addEventListener('message', (e) => {
+    if(e.data && e.data.type === 'closeAnalysisOverlay') closeModal();
+  });
+})();
 </script>
 </body>
 </html>
