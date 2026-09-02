@@ -164,41 +164,6 @@
   }
   .retry-btn:hover{border-color:var(--gold);color:var(--gold);}
 
-  /* ---- Analysis modal (reuses screener.html's own analysis view via iframe) ---- */
-  .watch-foot-links{display:flex;align-items:center;gap:14px;}
-  .analysis-modal-overlay{
-    position:fixed;inset:0;background:rgba(5,6,9,.72);backdrop-filter:blur(3px);
-    z-index:1000;display:none;align-items:center;justify-content:center;padding:0;
-  }
-  .analysis-modal-overlay.open{display:flex;}
-  .analysis-modal-card{
-    position:relative;width:100%;height:100%;
-    background:var(--bg);overflow:hidden;
-    animation:analysis-modal-in .18s ease;
-  }
-  @media(min-width:720px){
-    .analysis-modal-card{
-      width:min(1140px,100%);height:92vh;max-height:920px;
-      border:1px solid var(--border);border-radius:16px;
-      box-shadow:0 24px 70px rgba(0,0,0,.55);
-    }
-  }
-  @keyframes analysis-modal-in{from{opacity:0;transform:translateY(8px) scale(.99);}to{opacity:1;transform:translateY(0) scale(1);}}
-  .analysis-modal-card iframe{width:100%;height:100%;border:0;display:block;background:var(--bg);}
-  .analysis-modal-close{
-    position:absolute;top:10px;right:10px;z-index:2;
-    width:32px;height:32px;border-radius:8px;
-    background:var(--panel2);border:1px solid var(--border);color:var(--muted);
-    display:flex;align-items:center;justify-content:center;cursor:pointer;
-    transition:border-color .15s,color .15s;
-  }
-  .analysis-modal-close:hover{border-color:var(--gold);color:var(--gold);}
-  .analysis-modal-close svg{width:16px;height:16px;}
-  .analysis-modal-loading{
-    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-    font:12px var(--font-mono);color:var(--faint);pointer-events:none;
-  }
-
 </style>
 </head>
 <body>
@@ -228,16 +193,6 @@
     </div>
   </div>
 
-</div>
-
-<div class="analysis-modal-overlay" id="analysisModalOverlay">
-  <div class="analysis-modal-card">
-    <button class="analysis-modal-close" id="analysisModalClose" aria-label="Close analysis">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-    </button>
-    <div class="analysis-modal-loading" id="analysisModalLoading">Loading analysis…</div>
-    <iframe id="analysisModalFrame" title="Symbol analysis"></iframe>
-  </div>
 </div>
 
 <script>
@@ -487,10 +442,7 @@ function renderCoinRow(coin, ticker, rankInfo, closes){
 
       <div class="watch-foot">
         <span class="watch-asof">${closeTime ? 'Vol ' + formatVolume(quoteVolume) : ''}</span>
-        <span class="watch-foot-links">
-          <a class="watch-link" href="#" onclick="event.preventDefault(); openWatchlistAnalysis('${coin.binanceSymbol}')">Analysis</a>
-          <a class="watch-link" href="${tradingViewChartUrl(coin.binanceSymbol)}" rel="noopener" onclick="event.preventDefault(); openTradingViewChart('${coin.binanceSymbol}')">View chart ↗</a>
-        </span>
+        <a class="watch-link" href="${tradingViewChartUrl(coin.binanceSymbol)}" rel="noopener" onclick="event.preventDefault(); openTradingViewChart('${coin.binanceSymbol}')">View chart ↗</a>
       </div>
     </div>`;
 }
@@ -651,45 +603,6 @@ setInterval(loadPrices, PRICE_REFRESH_MS);
 setInterval(loadKlines, KLINE_REFRESH_MS);
 setInterval(loadRanks, RANK_REFRESH_MS);
 setInterval(() => updateLastUpdatedLabel(false), 15000);
-
-// ---------------- Analysis modal ----------------
-// Opens screener.html's own analysis view (same Ichimoku/RSI/MACD/EMA/higher-
-// timeframe breakdown as the screener app) in an overlay on top of this page,
-// deep-linked straight to one symbol via ?analysis=SYMBOL - see the matching
-// code at the bottom of screener.html for the other half of this.
-(function(){
-  const overlay = document.getElementById('analysisModalOverlay');
-  const closeBtn = document.getElementById('analysisModalClose');
-  const frame = document.getElementById('analysisModalFrame');
-  const loading = document.getElementById('analysisModalLoading');
-
-  window.openWatchlistAnalysis = function(binanceSymbol){
-    loading.style.display = 'flex';
-    frame.src = `screener.html?analysis=${encodeURIComponent(binanceSymbol)}`;
-    overlay.classList.add('open');
-    document.body.style.overflow = 'hidden';
-  };
-  function closeModal(){
-    overlay.classList.remove('open');
-    document.body.style.overflow = '';
-    frame.src = ''; // stop the embedded screener from continuing to run in the background
-  }
-  frame.addEventListener('load', () => { loading.style.display = 'none'; });
-
-  closeBtn.addEventListener('click', closeModal);
-  overlay.addEventListener('click', (e) => {
-    if(e.target === overlay) closeModal(); // click outside the modal card
-  });
-  document.addEventListener('keydown', (e) => {
-    if(e.key === 'Escape' && overlay.classList.contains('open')) closeModal();
-  });
-  // screener.html posts this when its own analysis modal is closed while it's
-  // running inside this overlay, so closing the inner modal closes the whole thing
-  // instead of leaving an empty, un-run screener table visible underneath it.
-  window.addEventListener('message', (e) => {
-    if(e.data && e.data.type === 'closeAnalysisOverlay') closeModal();
-  });
-})();
 </script>
 </body>
 </html>
