@@ -354,6 +354,7 @@
   .home-card[data-page="predictions"] .home-icon{background:linear-gradient(135deg,#a78bfa,#6d28d9);}
   .home-card[data-page="oil"] .home-icon{background:linear-gradient(135deg,#ff8a4c,#c2501a);}
   .home-card[data-page="watchlist"] .home-icon{background:linear-gradient(135deg,#f0c24b,#b8860b);}
+  .home-card[data-page="fear-greed"] .home-icon{background:linear-gradient(135deg,#ff5470,#35e0c0);}
   .home-card[data-page="season"] .home-icon{background:linear-gradient(135deg,#f5a623,#35e0c0);}
   .home-card[data-page="settings"] .home-icon{background:linear-gradient(135deg,#9aa5b8,#5b6478);}
 </style>
@@ -421,6 +422,11 @@
     <div class="nav-item" data-page="oil">
       <span class="nav-icon">🛢️</span>
       <span class="nav-label">Oil & Energy<small>Brent, WTI prices & the spread</small></span>
+    </div>
+
+    <div class="nav-item" data-page="fear-greed">
+      <span class="nav-icon">🌡️</span>
+      <span class="nav-label">Fear &amp; Greed Index<small>Crypto market sentiment, 0-100</small></span>
     </div>
 
     <div class="nav-item" data-page="watchlist">
@@ -524,6 +530,10 @@
             <span class="home-icon">🛢️</span>
             <span><span class="home-title">Oil & Energy</span><span class="home-desc">Live Brent & WTI crude prices</span></span>
           </button>
+          <button class="home-card" type="button" data-page="fear-greed">
+            <span class="home-icon">🌡️</span>
+            <span><span class="home-title">Fear &amp; Greed Index</span><span class="home-desc">Crypto market sentiment, 0-100</span></span>
+          </button>
           <button class="home-card" type="button" data-page="watchlist">
             <span class="home-icon">👀</span>
             <span><span class="home-title">Watchlist</span><span class="home-desc">Live BTC, ETH, SOL & HYPE prices</span></span>
@@ -549,6 +559,11 @@
       <div class="page-loading" id="loading-watchlist">Loading watchlist…</div>
       <!-- lazy-loaded on first open -->
       <iframe id="iframe-watchlist" data-src="watchlist.html"></iframe>
+    </div>
+    <div class="page" data-page="fear-greed">
+      <div class="page-loading" id="loading-fear-greed">Loading Fear &amp; Greed Index…</div>
+      <!-- lazy-loaded on first open -->
+      <iframe id="iframe-fear-greed" data-src="fear-greed.html"></iframe>
     </div>
     <div class="page" data-page="sizing">
       <div class="page-loading" id="loading-sizing">Loading position sizer…</div>
@@ -609,6 +624,7 @@ const PAGE_TITLES = {
   predictions: 'Prediction Markets',
   oil: 'Oil & Energy',
   watchlist: 'Watchlist',
+  'fear-greed': 'Fear & Greed Index',
   season: 'Season Index',
   settings: 'Trading Settings'
 };
