@@ -179,11 +179,21 @@
   @media(min-width:720px){
     .analysis-modal-card{
       width:min(1140px,100%);height:92vh;max-height:920px;
-      border-radius:16px; /* no outer border/shadow - screener.html's own analysis dialog already draws its own frame and close button inside the iframe, so this stays an invisible clipping container rather than a second visible "card" */
+      border:1px solid var(--border);border-radius:16px;
+      box-shadow:0 24px 70px rgba(0,0,0,.55);
     }
   }
   @keyframes analysis-modal-in{from{opacity:0;transform:translateY(8px) scale(.99);}to{opacity:1;transform:translateY(0) scale(1);}}
   .analysis-modal-card iframe{width:100%;height:100%;border:0;display:block;background:var(--bg);}
+  .analysis-modal-close{
+    position:absolute;top:10px;right:10px;z-index:2;
+    width:32px;height:32px;border-radius:8px;
+    background:var(--panel2);border:1px solid var(--border);color:var(--muted);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    transition:border-color .15s,color .15s;
+  }
+  .analysis-modal-close:hover{border-color:var(--gold);color:var(--gold);}
+  .analysis-modal-close svg{width:16px;height:16px;}
   .analysis-modal-loading{
     position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
     font:12px var(--font-mono);color:var(--faint);pointer-events:none;
@@ -222,6 +232,9 @@
 
 <div class="analysis-modal-overlay" id="analysisModalOverlay">
   <div class="analysis-modal-card">
+    <button class="analysis-modal-close" id="analysisModalClose" aria-label="Close analysis">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
     <div class="analysis-modal-loading" id="analysisModalLoading">Loading analysis…</div>
     <iframe id="analysisModalFrame" title="Symbol analysis"></iframe>
   </div>
@@ -646,6 +659,7 @@ setInterval(() => updateLastUpdatedLabel(false), 15000);
 // code at the bottom of screener.html for the other half of this.
 (function(){
   const overlay = document.getElementById('analysisModalOverlay');
+  const closeBtn = document.getElementById('analysisModalClose');
   const frame = document.getElementById('analysisModalFrame');
   const loading = document.getElementById('analysisModalLoading');
 
@@ -662,9 +676,7 @@ setInterval(() => updateLastUpdatedLabel(false), 15000);
   }
   frame.addEventListener('load', () => { loading.style.display = 'none'; });
 
-  // Closing happens via: the × button inside screener.html's own analysis
-  // dialog (see the postMessage listener below), clicking the backdrop
-  // outside the card, or Escape - no second close button out here.
+  closeBtn.addEventListener('click', closeModal);
   overlay.addEventListener('click', (e) => {
     if(e.target === overlay) closeModal(); // click outside the modal card
   });
