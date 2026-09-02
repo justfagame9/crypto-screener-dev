@@ -103,6 +103,18 @@
     padding:14px 16px;margin:22px 0 22px;font-size:12px;line-height:1.6;color:var(--muted);
   }
   .notice b{color:var(--text);}
+  .notice-summary{display:flex;align-items:center;gap:8px;}
+  .notice-toggle{
+    flex-shrink:0;width:20px;height:20px;padding:0;border-radius:6px;
+    background:var(--panel2);border:1px solid var(--border);color:var(--muted);
+    font:700 13px var(--font-mono);line-height:1;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    transition:transform .15s, color .15s, border-color .15s;
+  }
+  .notice-toggle:hover{border-color:var(--violet);color:var(--violet);}
+  .notice-toggle.open{transform:rotate(45deg);}
+  .notice-details{margin-top:10px;}
+  .notice-details[hidden]{display:none;}
   .notice .src-tags{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
   .src-tag{
     display:inline-flex;align-items:center;gap:6px;font:600 10.5px var(--font-mono);
@@ -151,9 +163,15 @@
   </div>
 
   <div class="notice">
-    <b>Reference data only, not a trading venue.</b> The Fear &amp; Greed Index is a sentiment snapshot, not a price signal - historically both extremes have preceded moves in either direction. This page doesn't place trades or hold positions. Not financial advice.
-    <div class="src-tags">
-      <span class="src-tag"><span class="dot"></span>Source · Alternative.me (the same feed CoinGecko surfaces)</span>
+    <div class="notice-summary">
+      <b>Reference data only, not a trading venue.</b>
+      <button class="notice-toggle" id="noticeToggle" type="button" aria-expanded="false" aria-controls="noticeDetails" aria-label="Show more details">+</button>
+    </div>
+    <div class="notice-details" id="noticeDetails" hidden>
+      The Fear &amp; Greed Index is a sentiment snapshot, not a price signal - historically both extremes have preceded moves in either direction. This page doesn't place trades or hold positions. Not financial advice.
+      <div class="src-tags">
+        <span class="src-tag"><span class="dot"></span>Source · Alternative.me (the same feed CoinGecko surfaces)</span>
+      </div>
     </div>
   </div>
 
@@ -438,6 +456,15 @@ async function loadAll(){
 }
 
 document.getElementById('refreshBtn').addEventListener('click', loadAll);
+
+document.getElementById('noticeToggle').addEventListener('click', () => {
+  const btn = document.getElementById('noticeToggle');
+  const details = document.getElementById('noticeDetails');
+  const willOpen = details.hidden;
+  details.hidden = !willOpen;
+  btn.classList.toggle('open', willOpen);
+  btn.setAttribute('aria-expanded', String(willOpen));
+});
 
 loadCache();
 loadAll();
