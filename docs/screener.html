@@ -79,32 +79,43 @@
     gap:12px;
   }
   .screener-controls{display:flex;flex-direction:column;gap:14px;}
-  .timeframe-toggle{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
-  .timeframe-toggle button{
+  .timeframe-toggle{
+    display:flex;
     background:var(--panel2);
     border:1px solid var(--border);
+    border-radius:8px;
+    padding:3px;
+    gap:2px;
+  }
+  .timeframe-toggle button{
+    flex:1;
+    background:transparent;
+    border:none;
     color:var(--muted);
     font-family:var(--font-mono);
-    padding:9px 10px;
-    font-size:12.5px;
+    padding:7px 10px;
+    font-size:12px;
     font-weight:600;
-    border-radius:8px;
+    border-radius:6px;
     cursor:pointer;
-    text-transform:uppercase;
-    letter-spacing:.04em;
-    transition:border-color .15s,color .15s,background .15s;
+    transition:background .15s,color .15s;
   }
-  .timeframe-toggle button:hover{border-color:var(--accent);color:var(--accent);}
+  .timeframe-toggle button:hover{color:var(--accent);}
   .timeframe-toggle button.active{
-    background:rgba(53,224,192,.12);
-    border-color:var(--accent);
-    color:var(--accent);
+    background:var(--accent);
+    color:#07130f;
   }
-  .volume-search-row{display:flex;gap:12px;align-items:end;flex-wrap:wrap;}
-  .volume-search-row .volume-field{flex:1;min-width:160px;margin-bottom:0;}
-  .volume-search-row .coin-search{flex:1;min-width:160px;}
-  .volume-search-row .coin-search input{width:100%;flex:1;}
-  @media(max-width:520px){.volume-search-row .coin-search{width:100%;}}
+  .timeframe-toggle button.active:hover{color:#07130f;}
+  .volume-search-row{display:flex;gap:10px;align-items:end;flex-wrap:nowrap;}
+  .volume-search-row .volume-field{flex:1;min-width:0;margin-bottom:0;}
+  .volume-search-row .coin-search{flex:1;min-width:0;}
+  .volume-search-row .coin-search input{width:100%;flex:1;min-width:0;}
+  @media(max-width:520px){
+    .volume-search-row{gap:8px;}
+    .volume-field input{padding:9px 8px;font-size:12.5px;}
+    .volume-search-row .coin-search input{padding:9px 8px;font-size:12.5px;}
+    .coin-search-btn{width:33px;height:33px;flex-shrink:0;}
+  }
   .settings-details > summary,
   .info-details > summary{
     list-style:none;
