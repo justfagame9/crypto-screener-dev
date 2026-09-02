@@ -161,7 +161,6 @@
   }
   .retry-btn:hover{border-color:var(--orange);color:var(--orange);}
 
-  .page-footer{color:var(--faint);font-size:11.5px;line-height:1.6;margin-top:8px;padding-top:16px;border-top:1px solid var(--border-soft);max-width:700px;}
 </style>
 </head>
 <body>
@@ -190,7 +189,6 @@
     </div>
   </div>
 
-  <div class="page-footer">WTI and Brent are the world's two benchmark crude oil grades — WTI prices US production, Brent prices roughly two-thirds of internationally traded crude. Both move on OPEC+ output decisions, US EIA inventory data (weekly, Wednesdays), and geopolitical supply risk. Refreshes automatically on open and every 15 minutes, or tap the refresh button any time.</div>
 </div>
 
 <script>
@@ -403,8 +401,8 @@ function renderAll(results){
   const { wti, brent } = results;
   el.innerHTML = `
     <div class="oil-grid">
-      ${renderQuoteCard(SYMBOLS.wti, wti)}
       ${renderQuoteCard(SYMBOLS.brent, brent)}
+      ${renderQuoteCard(SYMBOLS.wti, wti)}
     </div>
     ${renderSpreadCard(wti, brent)}`;
 }
