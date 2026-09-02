@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Watchlist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0C10;
+    --panel:#12151B;
+    --panel2:#171B22;
+    --border:#232833;
+    --border-soft:#1B1F28;
+    --text:#E6E9EF;
+    --muted:#8B93A3;
+    --faint:#565F70;
+    --accent:#35E0C0;
+    --accent-dim:#1E7F6F;
+    --red:#FF5470;
+    --red-dim:#7A2E3B;
+    --amber:#F5A623;
+    --blue:#5B8CFF;
+    --violet:#A78BFA;
+    --orange:#FF8A4C;
+    --gold:#F0C24B;
+    --font-display:'Space Grotesk', sans-serif;
+    --font-mono:'JetBrains Mono', monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--font-display);
+    background:var(--bg);
+    color:var(--text);
+    padding:28px 20px 70px;
+    background-image:
+      radial-gradient(circle at 12% 0%, rgba(240,194,75,0.07), transparent 40%),
+      radial-gradient(circle at 92% 15%, rgba(91,140,255,0.05), transparent 35%);
+  }
+  .wrap{max-width:820px;margin:0 auto;}
+
+  /* ---- Top header ---- */
+  .topheader{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:10px;}
+  .eyebrow{display:flex;align-items:center;gap:8px;font:700 12px var(--font-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--text);}
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 8px var(--gold);animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+  .header-right{display:flex;align-items:center;gap:10px;}
+  .updated-label{font-family:var(--font-mono);font-size:10.5px;color:var(--faint);white-space:nowrap;}
+  .updated-label.label-error{color:var(--red);}
+  .refresh-btn{
+    background:var(--panel);border:1px solid var(--border);color:var(--text);
+    width:32px;height:32px;padding:0;border-radius:8px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .refresh-btn:hover{border-color:var(--gold);color:var(--gold);}
+  .refresh-btn svg{width:14px;height:14px;transition:transform .4s;}
+  .refresh-btn.spinning svg{transform:rotate(360deg);}
+  .sub{color:var(--muted);font-size:13px;line-height:1.55;margin:10px 0 16px;max-width:640px;}
+
+  .degraded-banner{
+    background:rgba(255,84,112,.08);border:1px solid rgba(255,84,112,.25);color:#ffb3c1;
+    border-radius:10px;padding:10px 14px;font:12px var(--font-mono);margin-bottom:16px;
+    display:none;
+  }
+  .degraded-banner.show{display:block;}
+
+  /* ---- Market pulse strip ---- */
+  .pulse-strip{
+    display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+    background:var(--panel);border:1px solid var(--border);border-radius:12px;
+    padding:12px 16px;margin-bottom:16px;
+  }
+  .pulse-item{display:flex;align-items:center;gap:7px;font:600 12.5px var(--font-mono);color:var(--muted);}
+  .pulse-item b{color:var(--text);font-size:13.5px;}
+  .pulse-up{color:var(--accent);}
+  .pulse-down{color:var(--red);}
+  .pulse-divider{width:1px;height:16px;background:var(--border);}
+
+  /* ---- Watchlist rows ---- */
+  .watch-list{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;}
+
+  .watch-card{
+    background:var(--panel);border:1px solid var(--border);border-radius:14px;
+    padding:14px 16px;display:flex;flex-direction:column;gap:12px;
+    transition:border-color .15s, transform .15s;
+  }
+  .watch-card:hover{border-color:var(--border-soft);transform:translateY(-1px);}
+  .watch-card.error{gap:8px;}
+
+  .watch-top{display:flex;align-items:center;gap:11px;}
+  .watch-rank{
+    flex-shrink:0;width:30px;height:22px;border-radius:7px;
+    display:flex;align-items:center;justify-content:center;
+    font:700 11px var(--font-mono);color:var(--faint);border:1px solid var(--border);
+  }
+  .watch-rank.top{color:var(--gold);border-color:rgba(240,194,75,.4);background:rgba(240,194,75,.08);}
+  .coin-icon{width:32px;height:32px;border-radius:50%;flex-shrink:0;object-fit:cover;box-shadow:0 4px 12px rgba(0,0,0,.3);}
+  .coin-icon-fallback{
+    width:32px;height:32px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font:700 13px var(--font-display);color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.3);
+  }
+  .watch-id{min-width:0;flex:1;}
+  .watch-symbol{font-size:15px;font-weight:700;line-height:1.25;}
+  .watch-name{font-size:11px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+  .watch-price-block{text-align:right;flex-shrink:0;}
+  .watch-price{
+    font:700 16.5px var(--font-mono);letter-spacing:-.01em;
+    border-radius:5px;padding:1px 4px;margin:-1px -4px;
+  }
+  .watch-price.flash-up{animation:flashUp .9s ease-out;}
+  .watch-price.flash-down{animation:flashDown .9s ease-out;}
+  @keyframes flashUp{0%{background:rgba(53,224,192,.35);}100%{background:transparent;}}
+  @keyframes flashDown{0%{background:rgba(255,84,112,.35);}100%{background:transparent;}}
+  .watch-change{font:600 12px var(--font-mono);margin-top:1px;}
+  .watch-change.up{color:var(--accent);}
+  .watch-change.down{color:var(--red);}
+
+  .sparkline{width:100%;height:40px;display:block;}
+
+  .range-block{display:flex;flex-direction:column;gap:5px;}
+  .range-title{font:10px var(--font-mono);color:var(--faint);text-transform:uppercase;letter-spacing:.06em;}
+  .range-track{position:relative;height:5px;border-radius:4px;background:var(--border-soft);}
+  .range-marker{
+    position:absolute;top:50%;width:9px;height:9px;border-radius:50%;
+    background:var(--gold);border:2px solid var(--bg);transform:translate(-50%,-50%);
+    box-shadow:0 0 0 1px var(--gold);
+  }
+  .range-labels{display:flex;justify-content:space-between;font:11px var(--font-mono);color:var(--muted);}
+
+  .watch-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:10px;border-top:1px solid var(--border-soft);}
+  .watch-asof{font:10.5px var(--font-mono);color:var(--faint);}
+  .watch-link{font:600 11px var(--font-mono);color:var(--gold);text-decoration:none;display:inline-flex;align-items:center;gap:4px;}
+  .watch-link:hover{text-decoration:underline;}
+  .watch-error-msg{color:var(--faint);font:12px var(--font-mono);}
+
+  /* ---- Disclaimer / about panel ---- */
+  .notice{
+    background:var(--panel);border:1px solid var(--border);border-radius:12px;
+    padding:14px 16px;margin:22px 0 22px;font-size:12px;line-height:1.6;color:var(--muted);
+  }
+  .notice b{color:var(--text);}
+  .notice .src-tags{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .src-tag{
+    display:inline-flex;align-items:center;gap:6px;font:600 10.5px var(--font-mono);
+    padding:4px 9px;border-radius:20px;border:1px solid var(--border);color:var(--muted);
+  }
+  .src-tag .dot{width:6px;height:6px;border-radius:50%;background:var(--gold);}
+
+  .page-skeleton{display:flex;flex-direction:column;gap:10px;}
+  .skel-card{height:150px;border-radius:14px;background:linear-gradient(90deg,var(--panel) 25%,var(--panel2) 37%,var(--panel) 63%);background-size:400% 100%;animation:shimmer 1.4s ease infinite;}
+  @keyframes shimmer{0%{background-position:100% 0;}100%{background-position:0 0;}}
+
+  .error-state{
+    padding:34px 20px;text-align:center;color:#ffb3c1;font:12.5px var(--font-mono);
+    border:1px dashed rgba(255,84,112,.3);border-radius:12px;line-height:1.7;
+  }
+  .retry-btn{
+    margin-top:12px;background:transparent;border:1px solid var(--border);color:var(--text);
+    padding:8px 16px;border-radius:8px;font:600 12px var(--font-mono);cursor:pointer;
+  }
+  .retry-btn:hover{border-color:var(--gold);color:var(--gold);}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topheader">
+    <div class="eyebrow"><span class="dot"></span>Watchlist · Live Prices</div>
+    <div class="header-right">
+      <span class="updated-label" id="updatedLabel"></span>
+      <button class="refresh-btn" id="refreshBtn" aria-label="Refresh">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      </button>
+    </div>
+  </div>
+  <p class="sub">Live last-traded price from Binance USDT-M perpetual futures, with 24h change, range, and a 24h sparkline for each coin. Market-cap rank sourced from CoinGecko.</p>
+
+  <div class="degraded-banner" id="degradedBanner"></div>
+
+  <div id="pulseStrip"></div>
+
+  <div id="content"></div>
+
+  <div class="notice">
+    <b>Reference data only, not a trading venue.</b> Prices are the last trade on Binance's USDT-margined perpetual futures market and can differ slightly from spot price. This page doesn't place trades or hold positions. Not financial advice.
+    <div class="src-tags">
+      <span class="src-tag"><span class="dot"></span>Price · Binance USDT-M Futures</span>
+      <span class="src-tag"><span class="dot"></span>Rank · CoinGecko</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ---------------- Config ----------------
+// Add more coins here later - symbol is the clean display ticker (no USDT
+// suffix), binanceSymbol is the exact USDT-M perpetual contract on Binance
+// Futures, coingeckoId is CoinGecko's internal id (used only for market-cap
+// rank + logo, never for price).
+const COINS = [
+  { symbol: 'BTC',  binanceSymbol: 'BTCUSDT',  coingeckoId: 'bitcoin',     name: 'Bitcoin',     gradient: 'linear-gradient(135deg,#f7931a,#c9761a)' },
+  { symbol: 'ETH',  binanceSymbol: 'ETHUSDT',  coingeckoId: 'ethereum',    name: 'Ethereum',    gradient: 'linear-gradient(135deg,#8ea9ff,#5b6fd6)' },
+  { symbol: 'SOL',  binanceSymbol: 'SOLUSDT',  coingeckoId: 'solana',      name: 'Solana',      gradient: 'linear-gradient(135deg,#9945ff,#14f195)' },
+  { symbol: 'HYPE', binanceSymbol: 'HYPEUSDT', coingeckoId: 'hyperliquid', name: 'Hyperliquid', gradient: 'linear-gradient(135deg,#35e0c0,#1c8f79)' },
+];
+
+const PRICE_REFRESH_MS  = 30 * 1000;       // ticker price + 24h stats - fast
+const KLINE_REFRESH_MS  = 5 * 60 * 1000;   // sparklines - shape doesn't need second-by-second updates
+const RANK_REFRESH_MS   = 15 * 60 * 1000;  // market-cap rank - changes slowly
+const PROXY_TIMEOUT_MS  = 8000;
+const CACHE_KEY = 'crypto-watchlist-cache-v1';
+
+// Same personal Cloudflare Worker used by the other pages in this app, as a
+// CORS passthrough of last resort. Binance's futures API and CoinGecko's
+// free markets endpoint are both normally directly fetchable (CORS-open), so
+// this fallback should rarely be needed - but if it ever is, make sure
+// fapi.binance.com and api.coingecko.com are allow-listed on the Worker.
+const WORKER_PROXY_URL = 'https://newsyt.justfagame9.workers.dev';
+function buildWorkerProxyUrl(u){
+  return `${WORKER_PROXY_URL}/?url=${encodeURIComponent(u)}`;
+}
+const CORS_PROXIES = [
+  (u) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+  (u) => `https://proxy.corsfix.com/?${u}`,
+  (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+];
+
+async function fetchWithTimeout(url, ms){
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try{
+    return await fetch(url, { cache: 'no-store', signal: controller.signal });
+  }finally{
+    clearTimeout(timer);
+  }
+}
+async function fetchJSONDirect(url){
+  const res = await fetchWithTimeout(url, PROXY_TIMEOUT_MS);
+  if(!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+async function fetchJSONViaProxyChain(url){
+  if(WORKER_PROXY_URL){
+    try{
+      const res = await fetchWithTimeout(buildWorkerProxyUrl(url), PROXY_TIMEOUT_MS);
+      if(!res.ok) throw new Error('worker HTTP ' + res.status);
+      return await res.json();
+    }catch(err){
+      console.warn('[proxy] worker failed:', err && err.message);
+    }
+  }
+  return await Promise.any(CORS_PROXIES.map(buildProxyUrl => (async () => {
+    const res = await fetchWithTimeout(buildProxyUrl(url), PROXY_TIMEOUT_MS);
+    if(!res.ok) throw new Error('proxy HTTP ' + res.status);
+    return await res.json();
+  })()));
+}
+async function fetchJSON(url){
+  try{
+    return await fetchJSONDirect(url);
+  }catch(err){
+    return await fetchJSONViaProxyChain(url);
+  }
+}
+
+// ---------------- Data fetch ----------------
+// One request for ALL USDT-M perpetual symbols' 24h stats, filtered down to
+// our watchlist client-side - far cheaper than one request per coin.
+async function fetchAllTickers24hr(){
+  const data = await fetchJSON('https://fapi.binance.com/fapi/v1/ticker/24hr');
+  if(!Array.isArray(data)) throw new Error('Unexpected Binance ticker response shape');
+  const wanted = new Set(COINS.map(c => c.binanceSymbol));
+  const map = {};
+  data.forEach(row => { if(wanted.has(row.symbol)) map[row.symbol] = row; });
+  return map;
+}
+async function fetchKlines(binanceSymbol){
+  const url = `https://fapi.binance.com/fapi/v1/klines?symbol=${encodeURIComponent(binanceSymbol)}&interval=1h&limit=24`;
+  const data = await fetchJSON(url);
+  if(!Array.isArray(data)) throw new Error('Unexpected Binance klines response shape');
+  return data.map(row => parseFloat(row[4])).filter(v => isFinite(v)); // close price per candle
+}
+async function fetchRanks(){
+  const ids = COINS.map(c => c.coingeckoId).join(',');
+  const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${encodeURIComponent(ids)}`;
+  const data = await fetchJSON(url);
+  if(!Array.isArray(data)) throw new Error('Unexpected CoinGecko response shape');
+  const map = {};
+  data.forEach(row => { map[row.id] = { rank: row.market_cap_rank, image: row.image }; });
+  return map;
+}
+
+// ---------------- Rendering helpers ----------------
+function escapeHtml(s){
+  return (s || '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function formatPrice(v){
+  if(!isFinite(v)) return '—';
+  const decimals = v >= 100 ? 2 : v >= 1 ? 3 : 5;
+  return '$' + v.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+function formatVolume(v){
+  if(!isFinite(v)) return '—';
+  if(v >= 1e9) return '$' + (v/1e9).toFixed(2) + 'B';
+  if(v >= 1e6) return '$' + (v/1e6).toFixed(2) + 'M';
+  if(v >= 1e3) return '$' + (v/1e3).toFixed(1) + 'K';
+  return '$' + v.toFixed(0);
+}
+function buildSparklineSVG(closes, isUp, gradId){
+  const w = 300, h = 40, padY = 4;
+  const vals = closes.filter(v => typeof v === 'number' && isFinite(v));
+  if(vals.length < 2) return '';
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const range = (max - min) || 1;
+  const stepX = w / (vals.length - 1);
+  const pts = vals.map((v, i) => {
+    const x = i * stepX;
+    const y = padY + (1 - (v - min) / range) * (h - 2 * padY);
+    return [x.toFixed(1), y.toFixed(1)];
+  });
+  const lineD = 'M' + pts.map(p => p.join(',')).join(' L');
+  const areaD = lineD + ` L${w},${h} L0,${h} Z`;
+  const stroke = isUp ? '#35E0C0' : '#FF5470';
+  return `<svg class="sparkline" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
+    <defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${stroke}" stop-opacity=".32"/>
+      <stop offset="100%" stop-color="${stroke}" stop-opacity="0"/>
+    </linearGradient></defs>
+    <path d="${areaD}" fill="url(#${gradId})"/>
+    <path d="${lineD}" fill="none" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+function rangeBar(low, high, current){
+  if(!isFinite(low) || !isFinite(high) || !(high > low)) return '';
+  const pct = Math.min(100, Math.max(0, ((current - low) / (high - low)) * 100));
+  return `
+    <div class="range-track"><div class="range-marker" style="left:${pct.toFixed(1)}%"></div></div>
+    <div class="range-labels"><span>${formatPrice(low)}</span><span>${formatPrice(high)}</span></div>`;
+}
+
+// Tracks the last price we actually rendered for each coin, purely so we can
+// flash green/red on the specific coins that moved this refresh instead of
+// re-flashing every row on every tick.
+const lastRenderedPrice = {};
+
+function renderCoinRow(coin, ticker, rankInfo, closes){
+  if(!ticker){
+    return `
+      <div class="watch-card error">
+        <div class="watch-top">
+          <span class="watch-rank">—</span>
+          <span class="coin-icon-fallback" style="background:${coin.gradient}">${coin.symbol[0]}</span>
+          <div class="watch-id">
+            <div class="watch-symbol">${coin.symbol}</div>
+            <div class="watch-name">${escapeHtml(coin.name)}</div>
+          </div>
+        </div>
+        <div class="watch-error-msg">Couldn't load ${coin.symbol} price this refresh.</div>
+      </div>`;
+  }
+
+  const price = parseFloat(ticker.lastPrice);
+  const changePct = parseFloat(ticker.priceChangePercent);
+  const isUp = changePct >= 0;
+  const high = parseFloat(ticker.highPrice);
+  const low = parseFloat(ticker.lowPrice);
+  const quoteVolume = parseFloat(ticker.quoteVolume);
+  const closeTime = ticker.closeTime ? new Date(ticker.closeTime) : null;
+
+  const prev = lastRenderedPrice[coin.symbol];
+  let flashClass = '';
+  if(typeof prev === 'number' && isFinite(prev) && price !== prev){
+    flashClass = price > prev ? 'flash-up' : 'flash-down';
+  }
+  lastRenderedPrice[coin.symbol] = price;
+
+  const rank = rankInfo && rankInfo.rank;
+  const isTopRank = typeof rank === 'number' && rank <= 10;
+  const icon = (rankInfo && rankInfo.image)
+    ? `<img class="coin-icon" src="${escapeHtml(rankInfo.image)}" alt="${coin.symbol}">`
+    : `<span class="coin-icon-fallback" style="background:${coin.gradient}">${coin.symbol[0]}</span>`;
+
+  const sparkline = closes && closes.length > 1 ? buildSparklineSVG(closes, isUp, `spark-${coin.symbol}`) : '';
+
+  return `
+    <div class="watch-card">
+      <div class="watch-top">
+        <span class="watch-rank ${isTopRank ? 'top' : ''}">${typeof rank === 'number' ? '#' + rank : '—'}</span>
+        ${icon}
+        <div class="watch-id">
+          <div class="watch-symbol">${coin.symbol}</div>
+          <div class="watch-name">${escapeHtml(coin.name)}</div>
+        </div>
+        <div class="watch-price-block">
+          <div class="watch-price ${flashClass}">${formatPrice(price)}</div>
+          <div class="watch-change ${isUp ? 'up' : 'down'}">${isUp ? '▲' : '▼'} ${Math.abs(changePct).toFixed(2)}%</div>
+        </div>
+      </div>
+
+      ${sparkline}
+
+      <div class="range-block">
+        <div class="range-title">24h range</div>
+        ${rangeBar(low, high, price)}
+      </div>
+
+      <div class="watch-foot">
+        <span class="watch-asof">${closeTime ? 'As of ' + closeTime.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'}) + ' · Vol ' + formatVolume(quoteVolume) : ''}</span>
+        <a class="watch-link" href="https://www.binance.com/en/futures/${encodeURIComponent(coin.binanceSymbol)}" target="_blank" rel="noopener">View chart ↗</a>
+      </div>
+    </div>`;
+}
+
+function renderPulseStrip(tickers){
+  const rows = COINS.map(c => tickers[c.binanceSymbol]).filter(Boolean);
+  const el = document.getElementById('pulseStrip');
+  if(!rows.length){ el.innerHTML = ''; return; }
+  const upCount = rows.filter(r => parseFloat(r.priceChangePercent) >= 0).length;
+  const downCount = rows.length - upCount;
+  let biggest = rows[0];
+  rows.forEach(r => { if(Math.abs(parseFloat(r.priceChangePercent)) > Math.abs(parseFloat(biggest.priceChangePercent))) biggest = r; });
+  const biggestCoin = COINS.find(c => c.binanceSymbol === biggest.symbol);
+  const biggestPct = parseFloat(biggest.priceChangePercent);
+
+  el.innerHTML = `
+    <div class="pulse-strip">
+      <span class="pulse-item"><b class="pulse-up">${upCount}</b>&nbsp;up</span>
+      <span class="pulse-divider"></span>
+      <span class="pulse-item"><b class="pulse-down">${downCount}</b>&nbsp;down</span>
+      <span class="pulse-divider"></span>
+      <span class="pulse-item">Biggest mover&nbsp;<b class="${biggestPct >= 0 ? 'pulse-up' : 'pulse-down'}">${biggestCoin ? biggestCoin.symbol : ''} ${biggestPct >= 0 ? '+' : ''}${biggestPct.toFixed(2)}%</b></span>
+    </div>`;
+}
+
+function renderAll(){
+  const el = document.getElementById('content');
+  const sorted = [...COINS].sort((a, b) => {
+    const ra = (state.ranks[a.coingeckoId] && state.ranks[a.coingeckoId].rank) || 999;
+    const rb = (state.ranks[b.coingeckoId] && state.ranks[b.coingeckoId].rank) || 999;
+    return ra - rb;
+  });
+  el.innerHTML = `<div class="watch-list">${
+    sorted.map(coin => renderCoinRow(
+      coin,
+      state.tickers[coin.binanceSymbol],
+      state.ranks[coin.coingeckoId],
+      state.klines[coin.binanceSymbol]
+    )).join('')
+  }</div>`;
+  renderPulseStrip(state.tickers);
+}
+
+function renderSkeleton(){
+  document.getElementById('content').innerHTML = `<div class="page-skeleton">${'<div class="skel-card"></div>'.repeat(COINS.length)}</div>`;
+}
+
+function updateLastUpdatedLabel(failed){
+  const el = document.getElementById('updatedLabel');
+  el.classList.toggle('label-error', !!failed);
+  if(!lastUpdated){ el.textContent = failed ? 'Refresh failed - see console' : ''; return; }
+  const secs = Math.max(0, Math.round((Date.now() - lastUpdated.getTime()) / 1000));
+  const ago = secs < 60 ? `${secs}s ago` : secs < 3600 ? `${Math.round(secs/60)}m ago` : `${Math.round(secs/3600)}h ago`;
+  el.textContent = (failed ? 'Refresh failed, showing cached · ' : 'Updated ') + ago;
+}
+function showDegradedBanner(text){
+  const el = document.getElementById('degradedBanner');
+  if(!text){ el.classList.remove('show'); el.textContent = ''; return; }
+  el.textContent = text;
+  el.classList.add('show');
+}
+
+// ---------------- State + cache (stale-while-revalidate, same pattern as the other pages) ----------------
+const state = { tickers: {}, ranks: {}, klines: {} };
+let lastUpdated = null;
+
+function saveCache(){
+  try{
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ lastUpdated: lastUpdated ? lastUpdated.toISOString() : null, state }));
+  }catch(err){ /* storage unavailable - not critical */ }
+}
+function loadCache(){
+  try{
+    const raw = localStorage.getItem(CACHE_KEY);
+    if(!raw) return false;
+    const cached = JSON.parse(raw);
+    if(!cached.state) return false;
+    Object.assign(state, cached.state);
+    lastUpdated = cached.lastUpdated ? new Date(cached.lastUpdated) : null;
+    return true;
+  }catch(err){ return false; }
+}
+
+// ---------------- Load cycles ----------------
+async function loadPrices(){
+  try{
+    state.tickers = await fetchAllTickers24hr();
+    lastUpdated = new Date();
+    saveCache();
+    renderAll();
+    updateLastUpdatedLabel(false);
+    return true;
+  }catch(err){
+    console.warn('[prices] failed:', err && err.message);
+    updateLastUpdatedLabel(true);
+    return false;
+  }
+}
+async function loadKlines(){
+  const settled = await Promise.allSettled(COINS.map(c => fetchKlines(c.binanceSymbol)));
+  settled.forEach((result, i) => {
+    if(result.status === 'fulfilled') state.klines[COINS[i].binanceSymbol] = result.value;
+    else console.warn(`[klines] ${COINS[i].symbol} failed:`, result.reason && result.reason.message);
+  });
+  saveCache();
+  renderAll();
+}
+async function loadRanks(){
+  try{
+    state.ranks = await fetchRanks();
+    saveCache();
+    renderAll();
+    showDegradedBanner(null);
+  }catch(err){
+    console.warn('[ranks] failed:', err && err.message);
+    if(!Object.keys(state.ranks).length){
+      showDegradedBanner('Couldn\u2019t load CoinGecko rank data this refresh - showing prices without rank.');
+    }
+  }
+}
+
+async function refreshAll(){
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('spinning');
+
+  if(Object.keys(state.tickers).length){
+    renderAll();
+    updateLastUpdatedLabel();
+  }else{
+    renderSkeleton();
+  }
+
+  const priceOk = await loadPrices();
+
+  if(!priceOk && !Object.keys(state.tickers).length){
+    document.getElementById('content').innerHTML = `
+      <div class="error-state">
+        Couldn't load prices right now (Binance futures API unreachable).<br>
+        If you have a Cloudflare Worker configured for this app, make sure
+        fapi.binance.com is allowed through it. Check the console for details.
+        <br><button class="retry-btn" id="retryBtn" type="button">Try again</button>
+      </div>`;
+    document.getElementById('retryBtn').addEventListener('click', refreshAll);
+  }
+
+  if(!Object.keys(state.klines).length) await loadKlines();
+  if(!Object.keys(state.ranks).length) await loadRanks();
+
+  setTimeout(() => btn.classList.remove('spinning'), 400);
+}
+
+document.getElementById('refreshBtn').addEventListener('click', refreshAll);
+
+loadCache();
+if(Object.keys(state.tickers).length) renderAll();
+refreshAll();
+setInterval(loadPrices, PRICE_REFRESH_MS);
+setInterval(loadKlines, KLINE_REFRESH_MS);
+setInterval(loadRanks, RANK_REFRESH_MS);
+setInterval(() => updateLastUpdatedLabel(false), 15000);
+</script>
+</body>
+</html>
