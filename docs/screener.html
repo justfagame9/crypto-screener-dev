@@ -312,6 +312,10 @@
   .empty{color:var(--faint);text-align:center;padding:34px;font-family:var(--font-mono);font-size:12.5px;}
   .filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
   .plan-btn{padding:6px 10px;font-size:11px;font-family:var(--font-mono);font-weight:700;background:var(--accent);color:#07130f;}
+  .wl-btn{padding:6px 10px;font-size:11px;font-family:var(--font-mono);font-weight:700;background:transparent;color:var(--text);border:1px solid var(--border);border-radius:6px;cursor:pointer;}
+  .wl-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .wl-btn.added{background:transparent;border-color:var(--border-soft);color:var(--faint);cursor:default;}
+  .wl-btn.added:hover{border-color:var(--border-soft);color:var(--faint);}
   .trade-modal{position:fixed;inset:0;background:rgba(0,0,0,.68);display:none;align-items:center;justify-content:center;padding:20px;z-index:10;}
   .trade-modal.open{display:flex;}
   .trade-dialog{width:min(640px,100%);max-height:calc(100vh - 40px);overflow:auto;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.5);}
@@ -1219,6 +1223,69 @@ function setupPill(setup){
   return `<span class="pill ${setup === 'Long' ? 'pill-long' : 'pill-short'}">${setup}</span>`;
 }
 
+// ---------------- Add to watchlist ("+ WL" column) ----------------
+// Writes into the same localStorage key watchlist.html reads from, so a coin
+// added here shows up there as the last row - watchlist.html resolves the
+// CoinGecko id/name/logo for it (this page only knows the Binance symbol).
+const WATCHLIST_CUSTOM_KEY = 'crypto-watchlist-custom-coins';
+// Mirrors watchlist.html's own built-in defaults, so a coin that's already
+// there by default shows as already-added instead of offering a duplicate.
+const WATCHLIST_DEFAULT_SYMBOLS = new Set(['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'HYPEUSDT']);
+const WATCHLIST_GRADIENT_PALETTE = [
+  'linear-gradient(135deg,#35e0c0,#1c8f79)',
+  'linear-gradient(135deg,#8ea9ff,#5b6fd6)',
+  'linear-gradient(135deg,#ff8a4c,#c2501a)',
+  'linear-gradient(135deg,#a78bfa,#6d28d9)',
+  'linear-gradient(135deg,#f5a623,#c07a12)',
+  'linear-gradient(135deg,#ff5470,#a3223a)',
+  'linear-gradient(135deg,#5b8cff,#2b4fb0)',
+  'linear-gradient(135deg,#f0c24b,#b8860b)',
+];
+function gradientForSymbol(symbol){
+  let hash = 0;
+  for(let i = 0; i < symbol.length; i++) hash = (hash * 31 + symbol.charCodeAt(i)) >>> 0;
+  return WATCHLIST_GRADIENT_PALETTE[hash % WATCHLIST_GRADIENT_PALETTE.length];
+}
+function loadWatchlistCustomCoins(){
+  try{
+    const raw = localStorage.getItem(WATCHLIST_CUSTOM_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) ? list : [];
+  }catch(err){ return []; }
+}
+function isInWatchlist(binanceSymbol){
+  if(WATCHLIST_DEFAULT_SYMBOLS.has(binanceSymbol)) return true;
+  return loadWatchlistCustomCoins().some(c => c && c.binanceSymbol === binanceSymbol);
+}
+function watchlistButton(binanceSymbol){
+  const already = isInWatchlist(binanceSymbol);
+  return `<button class="wl-btn${already ? ' added' : ''}" type="button" ${already ? 'disabled' : ''} onclick="addToWatchlist('${binanceSymbol}', this)">${already ? '✓ WL' : '+ WL'}</button>`;
+}
+function addToWatchlist(binanceSymbol, btn){
+  if(isInWatchlist(binanceSymbol)) return; // already there - button should already be showing the added state
+  const symbol = binanceSymbol.replace(/USDT$/i, '');
+  const list = loadWatchlistCustomCoins();
+  list.push({
+    symbol,
+    binanceSymbol,
+    name: symbol,        // placeholder - watchlist.html resolves the real CoinGecko name/id/logo on its next load
+    coingeckoId: null,
+    gradient: gradientForSymbol(symbol),
+    addedAt: Date.now()
+  });
+  try{
+    localStorage.setItem(WATCHLIST_CUSTOM_KEY, JSON.stringify(list));
+  }catch(err){
+    console.warn('[watchlist] failed to save:', err && err.message);
+    return;
+  }
+  if(btn){
+    btn.textContent = '✓ WL';
+    btn.disabled = true;
+    btn.classList.add('added');
+  }
+}
+
 function renderTable(rows){
   const container = document.getElementById('tableContainer');
   if(rows.length === 0){
@@ -1230,6 +1297,7 @@ function renderTable(rows){
     {k:'setup', label:'Setup'},
     {k:'symbol', label:'Coin'},
     {k:'analysis', label:'Analysis'},
+    {k:'watchlist', label:'+ WL'},
     {k:'breakout', label:'Breakout'},
     {k:'priceToday', label:'Price'},
     {k:'breakoutPrice', label:'Breakout Price'},
@@ -1240,7 +1308,7 @@ function renderTable(rows){
     {k:'volToday', label:'Volume (USDT)'},
   ];
   let html = '<table><thead><tr>';
-  cols.forEach(c => html += `<th${c.k === 'analysis' ? '' : ` onclick="sortBy('${c.k}')"`}>${c.label}</th>`);
+  cols.forEach(c => html += `<th${(c.k === 'analysis' || c.k === 'watchlist') ? '' : ` onclick="sortBy('${c.k}')"`}>${c.label}</th>`);
   html += '</tr></thead><tbody>';
   rows.forEach(r => {
     html += '<tr>';
@@ -1251,6 +1319,7 @@ function renderTable(rows){
       : `https://www.binance.com/en/futures/${r.symbol}`;
     html += `<td><a class="sym-link" target="_blank" href="${exchangeUrl}">${r.symbol}</a>${r.source === 'Bybit' ? '<span class="bybit-tag" title="Not found on Binance - found via Bybit fallback">BYBIT</span>' : ''}</td>`;
     html += `<td><button class="plan-btn" type="button" onclick="openAnalysis('${r.symbol}')">Analysis</button></td>`;
+    html += `<td>${watchlistButton(r.symbol)}</td>`;
     html += `<td>${breakoutPill(r.breakout)}</td>`;
     html += `<td>${fmt(r.priceToday)}</td>`;
     html += `<td>${fmt(r.breakoutPrice)}</td>`;

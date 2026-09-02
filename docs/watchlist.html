@@ -90,6 +90,13 @@
   .watch-card.error{gap:8px;}
 
   .watch-top{display:flex;align-items:center;gap:11px;}
+  .watch-remove{
+    flex-shrink:0;width:24px;height:24px;padding:0;border-radius:7px;
+    background:var(--panel2);border:1px solid var(--border);color:var(--faint);
+    font:700 15px var(--font-mono);line-height:1;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .watch-remove:hover{border-color:var(--red);color:var(--red);background:rgba(255,84,112,.08);}
   .watch-rank{
     flex-shrink:0;width:30px;height:22px;border-radius:7px;
     display:flex;align-items:center;justify-content:center;
@@ -119,8 +126,6 @@
   .watch-change.up{color:var(--accent);}
   .watch-change.down{color:var(--red);}
 
-  .sparkline{width:100%;height:40px;display:block;}
-
   .range-block{display:flex;flex-direction:column;gap:5px;}
   .range-title{font:10px var(--font-mono);color:var(--faint);text-transform:uppercase;letter-spacing:.06em;}
   .range-track{position:relative;height:5px;border-radius:4px;background:var(--border-soft);}
@@ -143,6 +148,18 @@
     padding:14px 16px;margin:22px 0 22px;font-size:12px;line-height:1.6;color:var(--muted);
   }
   .notice b{color:var(--text);}
+  .notice-summary{display:flex;align-items:center;gap:8px;}
+  .notice-toggle{
+    flex-shrink:0;width:20px;height:20px;padding:0;border-radius:6px;
+    background:var(--panel2);border:1px solid var(--border);color:var(--muted);
+    font:700 13px var(--font-mono);line-height:1;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    transition:transform .15s, color .15s, border-color .15s;
+  }
+  .notice-toggle:hover{border-color:var(--gold);color:var(--gold);}
+  .notice-toggle.open{transform:rotate(45deg);}
+  .notice-details{margin-top:10px;}
+  .notice-details[hidden]{display:none;}
   .notice .src-tags{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
   .src-tag{
     display:inline-flex;align-items:center;gap:6px;font:600 10.5px var(--font-mono);
@@ -186,10 +203,16 @@
   <div id="content"></div>
 
   <div class="notice">
-    <b>Reference data only, not a trading venue.</b> Prices are the last trade on Binance's USDT-margined perpetual futures market and can differ slightly from spot price. This page doesn't place trades or hold positions. Not financial advice.
-    <div class="src-tags">
-      <span class="src-tag"><span class="dot"></span>Price · Binance USDT-M Futures</span>
-      <span class="src-tag"><span class="dot"></span>Rank · CoinGecko</span>
+    <div class="notice-summary">
+      <b>Reference data only, not a trading venue.</b>
+      <button class="notice-toggle" id="noticeToggle" type="button" aria-expanded="false" aria-controls="noticeDetails" aria-label="Show more details">+</button>
+    </div>
+    <div class="notice-details" id="noticeDetails" hidden>
+      Prices are the last trade on Binance's USDT-margined perpetual futures market and can differ slightly from spot price. This page doesn't place trades or hold positions. Not financial advice.
+      <div class="src-tags">
+        <span class="src-tag"><span class="dot"></span>Price · Binance USDT-M Futures</span>
+        <span class="src-tag"><span class="dot"></span>Rank · CoinGecko</span>
+      </div>
     </div>
   </div>
 
@@ -201,15 +224,103 @@
 // suffix), binanceSymbol is the exact USDT-M perpetual contract on Binance
 // Futures, coingeckoId is CoinGecko's internal id (used only for market-cap
 // rank + logo, never for price).
-const COINS = [
+const DEFAULT_COINS = [
   { symbol: 'BTC',  binanceSymbol: 'BTCUSDT',  coingeckoId: 'bitcoin',     name: 'Bitcoin',     gradient: 'linear-gradient(135deg,#f7931a,#c9761a)' },
   { symbol: 'ETH',  binanceSymbol: 'ETHUSDT',  coingeckoId: 'ethereum',    name: 'Ethereum',    gradient: 'linear-gradient(135deg,#8ea9ff,#5b6fd6)' },
   { symbol: 'SOL',  binanceSymbol: 'SOLUSDT',  coingeckoId: 'solana',      name: 'Solana',      gradient: 'linear-gradient(135deg,#9945ff,#14f195)' },
   { symbol: 'HYPE', binanceSymbol: 'HYPEUSDT', coingeckoId: 'hyperliquid', name: 'Hyperliquid', gradient: 'linear-gradient(135deg,#35e0c0,#1c8f79)' },
 ];
 
+// Coins added via screener.html's "+ WL" button live here, shared through
+// localStorage - screener.html writes to this key, this page reads it and
+// appends those coins after DEFAULT_COINS (so a newly-added coin always ends
+// up last), and resolves each one's CoinGecko id/name/logo the first time it
+// loads (screener.html only knows the Binance symbol, not the CoinGecko id).
+const CUSTOM_COINS_KEY = 'crypto-watchlist-custom-coins';
+function loadCustomCoins(){
+  try{
+    const raw = localStorage.getItem(CUSTOM_COINS_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) ? list.filter(c => c && c.binanceSymbol) : [];
+  }catch(err){ return []; }
+}
+function saveCustomCoins(list){
+  try{ localStorage.setItem(CUSTOM_COINS_KEY, JSON.stringify(list)); }catch(err){ /* not critical */ }
+}
+
+// Tracks which of the built-in DEFAULT_COINS the user has removed via the "-"
+// button. DEFAULT_COINS itself is hardcoded in this file, so "removing" one
+// can't delete it from an array literal - instead we keep a small denylist of
+// binanceSymbols to filter out whenever the visible COINS list is rebuilt.
+const REMOVED_DEFAULTS_KEY = 'crypto-watchlist-removed-defaults';
+function loadRemovedDefaults(){
+  try{
+    const raw = localStorage.getItem(REMOVED_DEFAULTS_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) ? list : [];
+  }catch(err){ return []; }
+}
+function saveRemovedDefaults(list){
+  try{ localStorage.setItem(REMOVED_DEFAULTS_KEY, JSON.stringify(list)); }catch(err){ /* not critical */ }
+}
+
+let COINS = [];
+function rebuildCoinsList(){
+  const removedDefaults = new Set(loadRemovedDefaults());
+  const activeDefaults = DEFAULT_COINS.filter(c => !removedDefaults.has(c.binanceSymbol));
+  const defaultSymbols = new Set(DEFAULT_COINS.map(c => c.binanceSymbol));
+  const custom = loadCustomCoins().filter(c => !defaultSymbols.has(c.binanceSymbol));
+  COINS = activeDefaults.concat(custom);
+}
+rebuildCoinsList();
+
+// Removes a coin from the watchlist immediately (both storage and the visible
+// list) regardless of whether it's one of the built-in defaults or one added
+// via screener.html's "+ WL" button, then re-renders right away so the row's
+// space is reclaimed by the rest of the list rather than left blank.
+function removeCoin(binanceSymbol){
+  const isDefault = DEFAULT_COINS.some(c => c.binanceSymbol === binanceSymbol);
+  if(isDefault){
+    const removed = loadRemovedDefaults();
+    if(!removed.includes(binanceSymbol)) removed.push(binanceSymbol);
+    saveRemovedDefaults(removed);
+  }else{
+    saveCustomCoins(loadCustomCoins().filter(c => c.binanceSymbol !== binanceSymbol));
+  }
+  rebuildCoinsList();
+  renderAll();
+}
+
+// Resolves CoinGecko id/name/logo for any custom coin that doesn't have one
+// yet (screener.html only writes the Binance symbol when adding), then
+// persists the resolution back to localStorage so it's a one-time lookup.
+async function resolveCustomCoinMetadata(){
+  const custom = loadCustomCoins();
+  const unresolved = custom.filter(c => !c.coingeckoId);
+  if(!unresolved.length) return false;
+  let changed = false;
+  for(const c of unresolved){
+    try{
+      const data = await fetchJSON(`https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(c.symbol)}`);
+      const results = Array.isArray(data && data.coins) ? data.coins : [];
+      const match = results.find(x => (x.symbol || '').toLowerCase() === c.symbol.toLowerCase()) || results[0];
+      if(match){
+        c.coingeckoId = match.id;
+        if(match.name) c.name = match.name;
+        changed = true;
+      }
+    }catch(err){
+      console.warn(`[watchlist] couldn't resolve CoinGecko id for ${c.symbol}:`, err && err.message);
+    }
+  }
+  if(changed){
+    saveCustomCoins(custom);
+    rebuildCoinsList();
+  }
+  return changed;
+}
+
 const PRICE_REFRESH_MS  = 30 * 1000;       // ticker price + 24h stats - fast
-const KLINE_REFRESH_MS  = 5 * 60 * 1000;   // sparklines - shape doesn't need second-by-second updates
 const RANK_REFRESH_MS   = 15 * 60 * 1000;  // market-cap rank - changes slowly
 const PROXY_TIMEOUT_MS  = 8000;
 const CACHE_KEY = 'crypto-watchlist-cache-v1';
@@ -310,14 +421,9 @@ async function fetchAllTickers24hr(){
   data.forEach(row => { if(wanted.has(row.symbol)) map[row.symbol] = row; });
   return map;
 }
-async function fetchKlines(binanceSymbol){
-  const url = `https://fapi.binance.com/fapi/v1/klines?symbol=${encodeURIComponent(binanceSymbol)}&interval=1h&limit=24`;
-  const data = await fetchJSON(url);
-  if(!Array.isArray(data)) throw new Error('Unexpected Binance klines response shape');
-  return data.map(row => parseFloat(row[4])).filter(v => isFinite(v)); // close price per candle
-}
 async function fetchRanks(){
-  const ids = COINS.map(c => c.coingeckoId).join(',');
+  const ids = COINS.map(c => c.coingeckoId).filter(Boolean).join(',');
+  if(!ids) return {};
   const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${encodeURIComponent(ids)}`;
   const data = await fetchJSON(url);
   if(!Array.isArray(data)) throw new Error('Unexpected CoinGecko response shape');
@@ -342,30 +448,6 @@ function formatVolume(v){
   if(v >= 1e3) return '$' + (v/1e3).toFixed(1) + 'K';
   return '$' + v.toFixed(0);
 }
-function buildSparklineSVG(closes, isUp, gradId){
-  const w = 300, h = 40, padY = 4;
-  const vals = closes.filter(v => typeof v === 'number' && isFinite(v));
-  if(vals.length < 2) return '';
-  const min = Math.min(...vals), max = Math.max(...vals);
-  const range = (max - min) || 1;
-  const stepX = w / (vals.length - 1);
-  const pts = vals.map((v, i) => {
-    const x = i * stepX;
-    const y = padY + (1 - (v - min) / range) * (h - 2 * padY);
-    return [x.toFixed(1), y.toFixed(1)];
-  });
-  const lineD = 'M' + pts.map(p => p.join(',')).join(' L');
-  const areaD = lineD + ` L${w},${h} L0,${h} Z`;
-  const stroke = isUp ? '#35E0C0' : '#FF5470';
-  return `<svg class="sparkline" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
-    <defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="${stroke}" stop-opacity=".32"/>
-      <stop offset="100%" stop-color="${stroke}" stop-opacity="0"/>
-    </linearGradient></defs>
-    <path d="${areaD}" fill="url(#${gradId})"/>
-    <path d="${lineD}" fill="none" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>`;
-}
 function rangeBar(low, high, current){
   if(!isFinite(low) || !isFinite(high) || !(high > low)) return '';
   const pct = Math.min(100, Math.max(0, ((current - low) / (high - low)) * 100));
@@ -379,7 +461,7 @@ function rangeBar(low, high, current){
 // re-flashing every row on every tick.
 const lastRenderedPrice = {};
 
-function renderCoinRow(coin, ticker, rankInfo, closes){
+function renderCoinRow(coin, ticker, rankInfo){
   if(!ticker){
     return `
       <div class="watch-card error">
@@ -390,6 +472,7 @@ function renderCoinRow(coin, ticker, rankInfo, closes){
             <div class="watch-symbol">${coin.symbol}</div>
             <div class="watch-name">${escapeHtml(coin.name)}</div>
           </div>
+          <button class="watch-remove" type="button" aria-label="Remove ${coin.symbol} from watchlist" onclick="removeCoin('${coin.binanceSymbol}')">−</button>
         </div>
         <div class="watch-error-msg">Couldn't load ${coin.symbol} price this refresh.</div>
       </div>`;
@@ -416,8 +499,6 @@ function renderCoinRow(coin, ticker, rankInfo, closes){
     ? `<img class="coin-icon" src="${escapeHtml(rankInfo.image)}" alt="${coin.symbol}">`
     : `<span class="coin-icon-fallback" style="background:${coin.gradient}">${coin.symbol[0]}</span>`;
 
-  const sparkline = closes && closes.length > 1 ? buildSparklineSVG(closes, isUp, `spark-${coin.symbol}`) : '';
-
   return `
     <div class="watch-card">
       <div class="watch-top">
@@ -431,9 +512,8 @@ function renderCoinRow(coin, ticker, rankInfo, closes){
           <div class="watch-price ${flashClass}">${formatPrice(price)}</div>
           <div class="watch-change ${isUp ? 'up' : 'down'}">${isUp ? '▲' : '▼'} ${Math.abs(changePct).toFixed(2)}%</div>
         </div>
+        <button class="watch-remove" type="button" aria-label="Remove ${coin.symbol} from watchlist" onclick="removeCoin('${coin.binanceSymbol}')">−</button>
       </div>
-
-      ${sparkline}
 
       <div class="range-block">
         <div class="range-title">24h range</div>
@@ -479,8 +559,7 @@ function renderAll(){
     sorted.map(coin => renderCoinRow(
       coin,
       state.tickers[coin.binanceSymbol],
-      state.ranks[coin.coingeckoId],
-      state.klines[coin.binanceSymbol]
+      state.ranks[coin.coingeckoId]
     )).join('')
   }</div>`;
   renderPulseStrip(state.tickers);
@@ -506,7 +585,7 @@ function showDegradedBanner(text){
 }
 
 // ---------------- State + cache (stale-while-revalidate, same pattern as the other pages) ----------------
-const state = { tickers: {}, ranks: {}, klines: {} };
+const state = { tickers: {}, ranks: {} };
 let lastUpdated = null;
 
 function saveCache(){
@@ -540,15 +619,6 @@ async function loadPrices(){
     updateLastUpdatedLabel(true);
     return false;
   }
-}
-async function loadKlines(){
-  const settled = await Promise.allSettled(COINS.map(c => fetchKlines(c.binanceSymbol)));
-  settled.forEach((result, i) => {
-    if(result.status === 'fulfilled') state.klines[COINS[i].binanceSymbol] = result.value;
-    else console.warn(`[klines] ${COINS[i].symbol} failed:`, result.reason && result.reason.message);
-  });
-  saveCache();
-  renderAll();
 }
 async function loadRanks(){
   try{
@@ -588,21 +658,45 @@ async function refreshAll(){
     document.getElementById('retryBtn').addEventListener('click', refreshAll);
   }
 
-  if(!Object.keys(state.klines).length) await loadKlines();
-  if(!Object.keys(state.ranks).length) await loadRanks();
+  // Was previously gated on "if state.ranks is completely empty" - which meant
+  // once ANY rank data was cached (e.g. from the default coins), this would
+  // never re-run even after a new custom coin (added via screener.html's
+  // "+ WL") resolved its CoinGecko id. That coin would then permanently show
+  // no rank/logo, since fetchRanks() simply never got called for it. Now it
+  // re-checks whenever any coin currently in COINS is missing a rank entry.
+  const missingRank = COINS.some(c => c.coingeckoId && !state.ranks[c.coingeckoId]);
+  if(missingRank) await loadRanks();
 
   setTimeout(() => btn.classList.remove('spinning'), 400);
 }
 
 document.getElementById('refreshBtn').addEventListener('click', refreshAll);
 
+document.getElementById('noticeToggle').addEventListener('click', () => {
+  const btn = document.getElementById('noticeToggle');
+  const details = document.getElementById('noticeDetails');
+  const willOpen = details.hidden;
+  details.hidden = !willOpen;
+  btn.classList.toggle('open', willOpen);
+  btn.setAttribute('aria-expanded', String(willOpen));
+});
+
 loadCache();
 if(Object.keys(state.tickers).length) renderAll();
-refreshAll();
+resolveCustomCoinMetadata().finally(refreshAll);
 setInterval(loadPrices, PRICE_REFRESH_MS);
-setInterval(loadKlines, KLINE_REFRESH_MS);
 setInterval(loadRanks, RANK_REFRESH_MS);
 setInterval(() => updateLastUpdatedLabel(false), 15000);
+
+// Picks up a coin added from screener.html's "+ WL" button in another tab
+// without needing a manual reload here - both pages share the same
+// CUSTOM_COINS_KEY in localStorage, and the 'storage' event fires in every
+// OTHER tab of the same origin whenever one tab writes to it.
+window.addEventListener('storage', (e) => {
+  if(e.key !== CUSTOM_COINS_KEY) return;
+  rebuildCoinsList();
+  resolveCustomCoinMetadata().finally(refreshAll);
+});
 </script>
 </body>
 </html>
