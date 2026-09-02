@@ -79,92 +79,116 @@
   .pulse-divider{width:1px;height:16px;background:var(--border);}
 
   /* ---- Watchlist rows ---- */
-  .watch-list{display:flex;flex-direction:column;gap:7px;margin-bottom:14px;}
+  .watch-list{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;}
+
+  .watch-item{position:relative;border-radius:14px;overflow:hidden;}
+
+  .watch-delete-bg{
+    position:absolute;inset:0;border-radius:14px;background:var(--red);
+    display:flex;align-items:center;justify-content:flex-start;
+  }
+  .watch-delete-btn{
+    height:100%;padding:0 20px;background:transparent;border:none;color:#fff;
+    font:700 12px var(--font-mono);letter-spacing:.02em;cursor:pointer;
+    display:flex;align-items:center;gap:6px;white-space:nowrap;
+  }
 
   .watch-card{
-    background:var(--panel);border:1px solid var(--border);border-radius:12px;
-    padding:9px 12px;display:flex;flex-direction:column;gap:6px;
-    transition:border-color .15s, transform .15s;
+    position:relative;z-index:1;
+    background:var(--panel);border:1px solid var(--border);border-radius:14px;
+    padding:14px 16px;display:flex;flex-direction:column;
+    transition:border-color .15s, transform .2s ease;
+    touch-action:pan-y;user-select:none;
   }
-  .watch-card:hover{border-color:var(--border-soft);transform:translateY(-1px);}
-  .watch-card.error{gap:6px;}
+  .watch-card:hover{border-color:var(--border-soft);}
+  .watch-card.error{cursor:default;gap:8px;}
+  .watch-item.open .watch-card{border-color:rgba(255,84,112,.4);}
 
-  .watch-top{display:flex;align-items:center;gap:9px;}
-  .watch-remove{
-    flex-shrink:0;width:21px;height:21px;padding:0;border-radius:6px;
-    background:var(--panel2);border:1px solid var(--border);color:var(--faint);
-    font:700 13px var(--font-mono);line-height:1;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;
-  }
-  .watch-remove:hover{border-color:var(--red);color:var(--red);background:rgba(255,84,112,.08);}
+  .watch-top{display:flex;align-items:center;gap:11px;}
   .watch-rank{
-    flex-shrink:0;width:26px;height:19px;border-radius:6px;
+    flex-shrink:0;width:30px;height:22px;border-radius:7px;
     display:flex;align-items:center;justify-content:center;
-    font:700 10px var(--font-mono);color:var(--faint);border:1px solid var(--border);
+    font:700 11px var(--font-mono);color:var(--faint);border:1px solid var(--border);
   }
   .watch-rank.top{color:var(--gold);border-color:rgba(240,194,75,.4);background:rgba(240,194,75,.08);}
-  .coin-icon{width:27px;height:27px;border-radius:50%;flex-shrink:0;object-fit:cover;box-shadow:0 4px 12px rgba(0,0,0,.3);}
+  .coin-icon{width:32px;height:32px;border-radius:50%;flex-shrink:0;object-fit:cover;box-shadow:0 4px 12px rgba(0,0,0,.3);}
   .coin-icon-fallback{
-    width:27px;height:27px;border-radius:50%;flex-shrink:0;
+    width:32px;height:32px;border-radius:50%;flex-shrink:0;
     display:flex;align-items:center;justify-content:center;
-    font:700 12px var(--font-display);color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.3);
+    font:700 13px var(--font-display);color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.3);
   }
   .watch-id{min-width:0;flex:1;}
-  .watch-symbol{font-size:13.5px;font-weight:700;line-height:1.2;}
-  .watch-name{font-size:10px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .watch-symbol{font-size:15px;font-weight:700;line-height:1.25;}
+  .watch-name{font-size:11px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
   .watch-price-block{text-align:right;flex-shrink:0;}
   .watch-price{
-    font:700 14.5px var(--font-mono);letter-spacing:-.01em;
+    font:700 16.5px var(--font-mono);letter-spacing:-.01em;
     border-radius:5px;padding:1px 4px;margin:-1px -4px;
   }
   .watch-price.flash-up{animation:flashUp .9s ease-out;}
   .watch-price.flash-down{animation:flashDown .9s ease-out;}
   @keyframes flashUp{0%{background:rgba(53,224,192,.35);}100%{background:transparent;}}
   @keyframes flashDown{0%{background:rgba(255,84,112,.35);}100%{background:transparent;}}
-  .watch-change{font:600 11px var(--font-mono);margin-top:0;}
+  .watch-change{font:600 12px var(--font-mono);margin-top:1px;}
   .watch-change.up{color:var(--accent);}
   .watch-change.down{color:var(--red);}
 
-  .range-block{display:flex;flex-direction:column;gap:3px;}
-  .range-title{font:9px var(--font-mono);color:var(--faint);text-transform:uppercase;letter-spacing:.06em;}
-  .range-track{position:relative;height:4px;border-radius:4px;background:var(--border-soft);}
+  .watch-chevron{
+    flex-shrink:0;width:26px;height:26px;margin:-5px -6px -5px 2px;color:var(--faint);
+    display:flex;align-items:center;justify-content:center;
+    border-radius:7px;cursor:pointer;
+    transition:transform .2s ease,color .15s,background .15s;
+  }
+  .watch-chevron:hover{color:var(--gold);background:var(--panel2);}
+  .watch-chevron svg{width:12px;height:12px;}
+  .watch-card.expanded .watch-chevron{transform:rotate(180deg);color:var(--muted);}
+
+  .watch-details{
+    max-height:0;opacity:0;overflow:hidden;
+    display:flex;flex-direction:column;gap:10px;
+    transition:max-height .22s ease,opacity .18s ease,margin-top .22s ease;
+  }
+  .watch-card.expanded .watch-details{max-height:160px;opacity:1;margin-top:12px;}
+
+  .range-block{display:flex;flex-direction:column;gap:5px;}
+  .range-title{font:10px var(--font-mono);color:var(--faint);text-transform:uppercase;letter-spacing:.06em;}
+  .range-track{position:relative;height:5px;border-radius:4px;background:var(--border-soft);}
   .range-marker{
-    position:absolute;top:50%;width:8px;height:8px;border-radius:50%;
+    position:absolute;top:50%;width:9px;height:9px;border-radius:50%;
     background:var(--gold);border:2px solid var(--bg);transform:translate(-50%,-50%);
     box-shadow:0 0 0 1px var(--gold);
   }
-  .range-labels{display:flex;justify-content:space-between;font:10px var(--font-mono);color:var(--muted);}
+  .range-labels{display:flex;justify-content:space-between;font:11px var(--font-mono);color:var(--muted);}
 
-  .watch-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:6px;border-top:1px solid var(--border-soft);}
-  .watch-asof{font:10px var(--font-mono);color:var(--faint);}
-  .watch-link{font:600 10.5px var(--font-mono);color:var(--gold);text-decoration:none;display:inline-flex;align-items:center;gap:4px;}
+  .watch-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:10px;border-top:1px solid var(--border-soft);}
+  .watch-asof{font:10.5px var(--font-mono);color:var(--faint);}
+  .watch-link{font:600 11px var(--font-mono);color:var(--gold);text-decoration:none;display:inline-flex;align-items:center;gap:4px;}
   .watch-link:hover{text-decoration:underline;}
-  .watch-error-msg{color:var(--faint);font:12px var(--font-mono);}
-
-  @media(max-width:480px){
-    .watch-list{gap:6px;}
-    .watch-card{padding:8px 10px;gap:5px;border-radius:11px;}
-    .watch-card.error{gap:5px;}
-    .watch-top{gap:7px;}
-    .watch-remove{width:19px;height:19px;font-size:12px;}
-    .watch-rank{width:22px;height:17px;font-size:9px;}
-    .coin-icon,.coin-icon-fallback{width:24px;height:24px;}
-    .coin-icon-fallback{font-size:11px;}
-    .watch-symbol{font-size:12.5px;}
-    .watch-name{font-size:9px;}
-    .watch-price{font-size:13.5px;}
-    .watch-change{font-size:10px;}
-    .range-block{gap:2px;}
-    .range-title{font-size:8.5px;}
-    .range-track{height:3px;}
-    .range-marker{width:7px;height:7px;}
-    .range-labels{font-size:9px;}
-    .watch-foot{padding-top:5px;gap:6px;}
-    .watch-asof{font-size:9px;}
-    .watch-link{font-size:9.5px;}
-    .skel-card{height:92px;}
+  .watch-foot-links{display:flex;align-items:center;gap:14px;}
+  .analysis-btn{
+    font:600 11px var(--font-mono);color:var(--blue);background:none;border:none;padding:0;
+    text-decoration:none;display:inline-flex;align-items:center;gap:4px;cursor:pointer;
   }
+  .analysis-btn:hover{text-decoration:underline;}
+
+  /* ---- Analysis overlay (embeds screener.html's own analysis modal, over this page) ---- */
+  .analysis-overlay{
+    position:fixed;inset:0;background:rgba(5,6,9,.82);z-index:999;
+    display:none;align-items:stretch;justify-content:center;
+  }
+  .analysis-overlay.open{display:flex;}
+  .analysis-overlay-inner{position:relative;width:100%;height:100%;background:var(--bg);}
+  .analysis-overlay-close{
+    position:absolute;top:12px;right:12px;z-index:2;
+    width:34px;height:34px;border-radius:9px;
+    background:var(--panel);border:1px solid var(--border);color:var(--text);
+    font:700 16px var(--font-mono);line-height:1;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .analysis-overlay-close:hover{border-color:var(--red);color:var(--red);}
+  .analysis-overlay-frame{width:100%;height:100%;border:0;display:block;}
+  .watch-error-msg{color:var(--faint);font:12px var(--font-mono);}
 
   /* ---- Disclaimer / about panel ---- */
   .notice{
@@ -192,7 +216,7 @@
   .src-tag .dot{width:6px;height:6px;border-radius:50%;background:var(--gold);}
 
   .page-skeleton{display:flex;flex-direction:column;gap:10px;}
-  .skel-card{height:108px;border-radius:12px;background:linear-gradient(90deg,var(--panel) 25%,var(--panel2) 37%,var(--panel) 63%);background-size:400% 100%;animation:shimmer 1.4s ease infinite;}
+  .skel-card{height:150px;border-radius:14px;background:linear-gradient(90deg,var(--panel) 25%,var(--panel2) 37%,var(--panel) 63%);background-size:400% 100%;animation:shimmer 1.4s ease infinite;}
   @keyframes shimmer{0%{background-position:100% 0;}100%{background-position:0 0;}}
 
   .error-state{
@@ -208,6 +232,14 @@
 </style>
 </head>
 <body>
+
+<div class="analysis-overlay" id="analysisOverlay">
+  <div class="analysis-overlay-inner">
+    <button class="analysis-overlay-close" id="analysisOverlayClose" type="button" aria-label="Close analysis">×</button>
+    <iframe class="analysis-overlay-frame" id="analysisOverlayFrame" title="Coin analysis" src="about:blank"></iframe>
+  </div>
+</div>
+
 <div class="wrap">
 
   <div class="topheader">
@@ -247,8 +279,8 @@
 // Add more coins here later - symbol is the clean display ticker (no USDT
 // suffix), binanceSymbol is the exact USDT-M perpetual contract on Binance
 // Futures, coingeckoId is CoinGecko's internal id (used only for market-cap
-// rank + logo, never for price). "pinned" coins don't get a remove ("-")
-// button - they're permanent defaults, not removable like custom/other coins.
+// rank + logo, never for price). Every coin (including the pinned defaults
+// below) can be removed via the swipe-to-delete gesture on its card.
 const DEFAULT_COINS = [
   { symbol: 'BTC', binanceSymbol: 'BTCUSDT', coingeckoId: 'bitcoin',  name: 'Bitcoin',  gradient: 'linear-gradient(135deg,#f7931a,#c9761a)', pinned: true },
   { symbol: 'ETH', binanceSymbol: 'ETHUSDT', coingeckoId: 'ethereum', name: 'Ethereum', gradient: 'linear-gradient(135deg,#8ea9ff,#5b6fd6)', pinned: true },
@@ -298,14 +330,12 @@ function rebuildCoinsList(){
 rebuildCoinsList();
 
 // Removes a coin from the watchlist immediately (both storage and the visible
-// list) regardless of whether it's one of the built-in defaults or one added
-// via screener.html's "+ WL" button, then re-renders right away so the row's
-// space is reclaimed by the rest of the list rather than left blank. Pinned
-// defaults (BTC/ETH) never expose a remove button in the UI, but this bails
-// out defensively too in case it's ever called some other way.
+// list) regardless of whether it's one of the built-in defaults (including
+// pinned BTC/ETH) or one added via screener.html's "+ WL" button, then
+// re-renders right away so the row's space is reclaimed by the rest of the
+// list rather than left blank.
 function removeCoin(binanceSymbol){
   const coin = DEFAULT_COINS.find(c => c.binanceSymbol === binanceSymbol);
-  if(coin && coin.pinned) return;
 
   const isDefault = !!coin;
   if(isDefault){
@@ -315,6 +345,8 @@ function removeCoin(binanceSymbol){
   }else{
     saveCustomCoins(loadCustomCoins().filter(c => c.binanceSymbol !== binanceSymbol));
   }
+  expandedCoins.delete(binanceSymbol);
+  openSwipeItem = null;
   rebuildCoinsList();
   renderAll();
 }
@@ -489,22 +521,39 @@ function rangeBar(low, high, current){
 // re-flashing every row on every tick.
 const lastRenderedPrice = {};
 
+// Tracks which coins are currently expanded (showing high/low, volume, and
+// chart link) - a plain in-memory Set keyed by binanceSymbol. renderAll()
+// rebuilds the whole list's innerHTML on every price refresh, so this state
+// has to live outside that render call to survive across refreshes; it just
+// resets to "all collapsed" on a full page reload, which is the desired
+// default (matches the compact #rank-line-only view).
+const expandedCoins = new Set();
+// Which .watch-item currently has its swipe-to-delete panel open (if any) -
+// used so opening a new one closes whichever was previously open.
+let openSwipeItem = null;
+
 function renderCoinRow(coin, ticker, rankInfo){
-  const removeBtn = coin.pinned ? '' : `<button class="watch-remove" type="button" aria-label="Remove ${coin.symbol} from watchlist" onclick="removeCoin('${coin.binanceSymbol}')">−</button>`;
+  const isExpanded = expandedCoins.has(coin.binanceSymbol);
+  const deleteBg = `
+    <div class="watch-delete-bg">
+      <button class="watch-delete-btn" type="button" aria-label="Delete ${coin.symbol} from watchlist" onclick="removeCoin('${coin.binanceSymbol}')">Delete</button>
+    </div>`;
 
   if(!ticker){
     return `
-      <div class="watch-card error">
-        <div class="watch-top">
-          <span class="watch-rank">—</span>
-          <span class="coin-icon-fallback" style="background:${coin.gradient}">${coin.symbol[0]}</span>
-          <div class="watch-id">
-            <div class="watch-symbol">${coin.symbol}</div>
-            <div class="watch-name">${escapeHtml(coin.name)}</div>
+      <div class="watch-item" data-symbol="${coin.binanceSymbol}">
+        ${deleteBg}
+        <div class="watch-card error" data-symbol="${coin.binanceSymbol}">
+          <div class="watch-top">
+            <span class="watch-rank">—</span>
+            <span class="coin-icon-fallback" style="background:${coin.gradient}">${coin.symbol[0]}</span>
+            <div class="watch-id">
+              <div class="watch-symbol">${coin.symbol}</div>
+              <div class="watch-name">${escapeHtml(coin.name)}</div>
+            </div>
           </div>
-          ${removeBtn}
+          <div class="watch-error-msg">Couldn't load ${coin.symbol} price this refresh.</div>
         </div>
-        <div class="watch-error-msg">Couldn't load ${coin.symbol} price this refresh.</div>
       </div>`;
   }
 
@@ -530,29 +579,37 @@ function renderCoinRow(coin, ticker, rankInfo){
     : `<span class="coin-icon-fallback" style="background:${coin.gradient}">${coin.symbol[0]}</span>`;
 
   return `
-    <div class="watch-card">
-      <div class="watch-top">
-        <span class="watch-rank ${isTopRank ? 'top' : ''}">${typeof rank === 'number' ? '#' + rank : '—'}</span>
-        ${icon}
-        <div class="watch-id">
-          <div class="watch-symbol">${coin.symbol}</div>
-          <div class="watch-name">${escapeHtml(coin.name)}</div>
+    <div class="watch-item" data-symbol="${coin.binanceSymbol}">
+      ${deleteBg}
+      <div class="watch-card ${isExpanded ? 'expanded' : ''}" data-symbol="${coin.binanceSymbol}">
+        <div class="watch-top">
+          <span class="watch-rank ${isTopRank ? 'top' : ''}">${typeof rank === 'number' ? '#' + rank : '—'}</span>
+          ${icon}
+          <div class="watch-id">
+            <div class="watch-symbol">${coin.symbol}</div>
+            <div class="watch-name">${escapeHtml(coin.name)}</div>
+          </div>
+          <div class="watch-price-block">
+            <div class="watch-price ${flashClass}">${formatPrice(price)}</div>
+            <div class="watch-change ${isUp ? 'up' : 'down'}">${isUp ? '▲' : '▼'} ${Math.abs(changePct).toFixed(2)}%</div>
+          </div>
+          <span class="watch-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
         </div>
-        <div class="watch-price-block">
-          <div class="watch-price ${flashClass}">${formatPrice(price)}</div>
-          <div class="watch-change ${isUp ? 'up' : 'down'}">${isUp ? '▲' : '▼'} ${Math.abs(changePct).toFixed(2)}%</div>
+
+        <div class="watch-details">
+          <div class="range-block">
+            <div class="range-title">24h range</div>
+            ${rangeBar(low, high, price)}
+          </div>
+
+          <div class="watch-foot">
+            <span class="watch-asof">${closeTime ? 'Vol ' + formatVolume(quoteVolume) : ''}</span>
+            <span class="watch-foot-links">
+              <button class="analysis-btn" type="button" onclick="event.preventDefault(); event.stopPropagation(); openAnalysisOverlay('${coin.binanceSymbol}')">Analysis</button>
+              <a class="watch-link" href="${tradingViewChartUrl(coin.binanceSymbol)}" rel="noopener" onclick="event.preventDefault(); event.stopPropagation(); openTradingViewChart('${coin.binanceSymbol}')">View chart ↗</a>
+            </span>
+          </div>
         </div>
-        ${removeBtn}
-      </div>
-
-      <div class="range-block">
-        <div class="range-title">24h range</div>
-        ${rangeBar(low, high, price)}
-      </div>
-
-      <div class="watch-foot">
-        <span class="watch-asof">${closeTime ? 'Vol ' + formatVolume(quoteVolume) : ''}</span>
-        <a class="watch-link" href="${tradingViewChartUrl(coin.binanceSymbol)}" rel="noopener" onclick="event.preventDefault(); openTradingViewChart('${coin.binanceSymbol}')">View chart ↗</a>
       </div>
     </div>`;
 }
@@ -599,6 +656,130 @@ function renderSkeleton(){
   document.getElementById('content').innerHTML = `<div class="page-skeleton">${'<div class="skel-card"></div>'.repeat(COINS.length)}</div>`;
 }
 
+// ---------------- Card gestures: tap to expand/collapse, swipe left->right to reveal delete ----------------
+// Delegated on the #content container (rather than bound per-card) so it
+// keeps working across every renderAll() re-render without needing to be
+// re-attached each time.
+(function setupCardGestures(){
+  const content = document.getElementById('content');
+  const DRAG_THRESHOLD = 6;    // px of horizontal movement before it counts as a drag, not a tap
+  const OPEN_RATIO = 0.4;      // fraction of the delete panel's width needed to snap open on release
+
+  let dragItem = null;      // .watch-item currently being interacted with
+  let dragCard = null;      // its .watch-card
+  let startX = 0, startY = 0;
+  let currentX = 0;
+  let isDragging = false;   // confirmed horizontal drag (vs. tap or vertical scroll)
+  let axisLocked = null;    // 'x' | 'y' | null, decided once movement exceeds threshold
+  let maxReveal = 0;
+  let pointerId = null;
+  let dragOnChevron = false; // whether the pointerdown started on the expand/collapse chevron
+
+  function closeItem(item){
+    if(!item) return;
+    const card = item.querySelector('.watch-card');
+    if(card) card.style.transform = '';
+    item.classList.remove('open');
+    if(openSwipeItem === item) openSwipeItem = null;
+  }
+
+  content.addEventListener('pointerdown', (e) => {
+    // Let real interactive elements (delete button, chart link) handle their own clicks.
+    if(e.target.closest('a, button')) return;
+
+    const card = e.target.closest('.watch-card');
+    if(!card) return;
+    const item = card.closest('.watch-item');
+    if(!item) return;
+
+    // Opening a new card's swipe panel closes whichever one was already open.
+    if(openSwipeItem && openSwipeItem !== item) closeItem(openSwipeItem);
+
+    dragItem = item;
+    dragCard = card;
+    startX = e.clientX;
+    startY = e.clientY;
+    currentX = item.classList.contains('open') ? maxRevealFor(item) : 0;
+    isDragging = false;
+    axisLocked = null;
+    maxReveal = maxRevealFor(item);
+    pointerId = e.pointerId;
+    dragOnChevron = !!e.target.closest('.watch-chevron');
+    dragCard.style.transition = 'none';
+  });
+
+  function maxRevealFor(item){
+    const bg = item.querySelector('.watch-delete-bg');
+    const btn = bg && bg.querySelector('.watch-delete-btn');
+    return btn ? btn.offsetWidth : 84;
+  }
+
+  content.addEventListener('pointermove', (e) => {
+    if(!dragCard || e.pointerId !== pointerId) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+
+    if(axisLocked === null){
+      if(Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) return;
+      axisLocked = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+      if(axisLocked === 'x'){
+        isDragging = true;
+        try{ dragCard.setPointerCapture(pointerId); }catch(err){}
+      }
+    }
+    if(axisLocked !== 'x') return;
+
+    e.preventDefault();
+    const base = dragItem.classList.contains('open') ? maxReveal : 0;
+    let next = base + dx;
+    next = Math.max(0, Math.min(maxReveal, next));
+    dragCard.style.transform = `translateX(${next}px)`;
+  }, { passive: false });
+
+  function endDrag(e){
+    if(!dragCard) return;
+    dragCard.style.transition = '';
+
+    if(isDragging && axisLocked === 'x'){
+      const base = dragItem.classList.contains('open') ? maxReveal : 0;
+      const dx = (e.clientX !== undefined ? e.clientX : startX) - startX;
+      const finalX = Math.max(0, Math.min(maxReveal, base + dx));
+      if(finalX > maxReveal * OPEN_RATIO){
+        dragCard.style.transform = `translateX(${maxReveal}px)`;
+        dragItem.classList.add('open');
+        openSwipeItem = dragItem;
+      }else{
+        closeItem(dragItem);
+      }
+    }else{
+      // A tap (no meaningful drag): if this item's delete panel is open, a tap
+      // anywhere on the card closes it again. Otherwise, only a tap on the
+      // chevron toggles expand/collapse - tapping elsewhere on the card does
+      // nothing, so the row's own price/details aren't dismissed by accident.
+      if(dragItem.classList.contains('open')){
+        closeItem(dragItem);
+      }else if(dragOnChevron){
+        const symbol = dragCard.dataset.symbol;
+        if(symbol && !dragCard.classList.contains('error')){
+          const nowExpanded = !dragCard.classList.contains('expanded');
+          dragCard.classList.toggle('expanded', nowExpanded);
+          if(nowExpanded) expandedCoins.add(symbol); else expandedCoins.delete(symbol);
+        }
+      }
+    }
+
+    dragItem = null; dragCard = null; pointerId = null; axisLocked = null; isDragging = false; dragOnChevron = false;
+  }
+
+  content.addEventListener('pointerup', endDrag);
+  content.addEventListener('pointercancel', endDrag);
+
+  // Tapping anywhere outside the watchlist closes any open swipe panel.
+  document.addEventListener('pointerdown', (e) => {
+    if(openSwipeItem && !openSwipeItem.contains(e.target)) closeItem(openSwipeItem);
+  });
+})();
+
 function updateLastUpdatedLabel(failed){
   const el = document.getElementById('updatedLabel');
   el.classList.toggle('label-error', !!failed);
@@ -613,6 +794,30 @@ function showDegradedBanner(text){
   el.textContent = text;
   el.classList.add('show');
 }
+
+// ---------------- Analysis overlay ----------------
+// Embeds screener.html's own analysis modal (via its ?symbol= deep link)
+// as a full-window overlay, so "Analysis" opens straight into it without
+// leaving this page or losing watchlist state underneath.
+function openAnalysisOverlay(binanceSymbol){
+  if(!binanceSymbol) return;
+  const frame = document.getElementById('analysisOverlayFrame');
+  frame.src = `screener.html?symbol=${encodeURIComponent(binanceSymbol)}`;
+  document.getElementById('analysisOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeAnalysisOverlay(){
+  document.getElementById('analysisOverlay').classList.remove('open');
+  document.getElementById('analysisOverlayFrame').src = 'about:blank';
+  document.body.style.overflow = '';
+}
+document.getElementById('analysisOverlayClose').addEventListener('click', closeAnalysisOverlay);
+document.getElementById('analysisOverlay').addEventListener('click', (e) => {
+  if(e.target.id === 'analysisOverlay') closeAnalysisOverlay();
+});
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape' && document.getElementById('analysisOverlay').classList.contains('open')) closeAnalysisOverlay();
+});
 
 // ---------------- State + cache (stale-while-revalidate, same pattern as the other pages) ----------------
 const state = { tickers: {}, ranks: {} };
