@@ -113,6 +113,8 @@
   .coin-card .coin-pct{font-family:var(--font-mono);font-size:11px;font-weight:600;margin-top:1px;}
   .coin-card .coin-pct.pos{color:var(--accent);}
   .coin-card .coin-pct.neg{color:var(--red);}
+  .coin-card{cursor:pointer;transition:border-color .15s ease, background .15s ease;}
+  .coin-card:hover{border-color:var(--accent);background:var(--panel2);}
   .coin-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
   .coin-dot.pos{background:var(--accent);}
   .coin-dot.neg{background:var(--red-dim);}
@@ -135,6 +137,31 @@
   }
   .page-footer a{color:var(--blue);text-decoration:none;}
   .page-footer a:hover{text-decoration:underline;}
+
+  /* ---- Coin info modal (ported from screener.html's "i" info window) ---- */
+  .coininfo-modal{position:fixed;inset:0;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center;padding:20px;z-index:50;}
+  .coininfo-modal.open{display:flex;}
+  .coininfo-dialog{width:min(560px,100%);max-height:calc(100vh - 40px);overflow:auto;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:0 22px 22px;box-shadow:0 20px 60px rgba(0,0,0,.5);}
+  .coininfo-dialog .trade-head{position:sticky;top:0;z-index:5;background:var(--panel);padding:22px 0 14px;margin-bottom:0;border-bottom:1px solid var(--border-soft);display:flex;align-items:start;justify-content:space-between;gap:16px;}
+  .coininfo-dialog .trade-head h2{font-size:19px;margin:0 0 4px;font-weight:700;}
+  .coininfo-dialog .trade-head p{color:var(--faint);font-family:var(--font-mono);font-size:11.5px;margin:0;text-transform:uppercase;letter-spacing:.04em;}
+  .coininfo-close{background:transparent;border:1px solid var(--border);color:var(--text);padding:5px 9px;font-size:16px;line-height:1;border-radius:6px;cursor:pointer;flex-shrink:0;}
+  .coininfo-close:hover{border-color:var(--accent);color:var(--accent);}
+  .coininfo-status{color:var(--muted);font:11px var(--font-mono);margin:14px 0;}
+  .coininfo-about{color:var(--muted);font:12px/1.6 var(--font-mono);margin:14px 0;}
+  .coininfo-about p{margin:0 0 10px;}
+  .coininfo-about p:last-child{margin-bottom:0;}
+  .coininfo-about .about-heading{font-weight:700;color:var(--text);margin:0 0 6px;}
+  .coininfo-about ul{margin:0 0 10px;padding-left:18px;}
+  .coininfo-section-title{margin:0 0 12px;font-family:var(--font-mono);font-size:11px;text-transform:uppercase;color:var(--faint);letter-spacing:.08em;}
+  .coininfo-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:16px;}
+  .coininfo-card{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:12px;}
+  .coininfo-card .label{display:block;color:var(--faint);font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
+  .coininfo-card .value{font-family:var(--font-mono);font-size:15px;font-weight:600;}
+  .coininfo-link-section{margin-bottom:14px;}
+  .coininfo-link-section h3{margin:0 0 6px;font-size:12.5px;font-weight:700;}
+  .coininfo-website{display:inline-block;color:var(--accent);font-family:var(--font-mono);font-size:12.5px;word-break:break-all;background:transparent;border:none;padding:0;cursor:pointer;text-decoration:underline;}
+  @media(max-width:520px){.coininfo-grid{grid-template-columns:1fr;}}
 
   @media(max-width:480px){
     .gauge-score{font-size:44px;margin-top:-48px;}
@@ -193,6 +220,29 @@
 
 </div>
 
+<div class="coininfo-modal" id="coinInfoModal" onclick="closeCoinInfo(event)">
+  <div class="coininfo-dialog" role="dialog" aria-modal="true" aria-labelledby="coinInfoTitle" onclick="event.stopPropagation()">
+    <div class="trade-head">
+      <div><h2 id="coinInfoTitle">Coin info</h2><p id="coinInfoSubtitle"></p></div>
+      <button class="coininfo-close" type="button" aria-label="Close" onclick="closeCoinInfo()">×</button>
+    </div>
+    <p class="coininfo-status" id="coinInfoStatus">Loading CoinGecko data...</p>
+    <div id="coinInfoDetails" style="display:none;">
+      <h3 class="coininfo-section-title">Overview</h3>
+      <div id="coinInfoAbout" class="coininfo-about"></div>
+      <div class="coininfo-grid" id="coinInfoGrid"></div>
+      <div class="coininfo-link-section">
+        <h3>Website</h3>
+        <button type="button" class="coininfo-website" id="coinInfoWebsite">—</button>
+      </div>
+      <div class="coininfo-link-section">
+        <h3>CoinGecko</h3>
+        <button type="button" class="coininfo-website" id="coinInfoCoingecko">—</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 const CACHE_KEY = 'crypto-season-index-cache-v1';
 const HISTORY_KEY = 'crypto-season-index-history-v1';
@@ -243,12 +293,35 @@ async function fetchWithTimeout(url, ms){
   }
 }
 
+// Same Cloudflare Worker already deployed for news.html/youtube.html/
+// trump-truth.html/trading-settings.html (see cloudflare-worker.js) - a
+// generic `?url=` proxy under your own account. CoinGecko's public API is
+// already directly browser-fetchable (no CORS issue to work around here),
+// so the Worker isn't required the way it is for YouTube/Truth Social - it's
+// used FIRST purely for its small edge cache (so a burst of people/devices
+// hitting the same endpoint within ~2 minutes only costs one real CoinGecko
+// request), falling straight back to a direct fetch if the Worker is ever
+// unreachable.
+const WORKER_PROXY_URL = 'https://newsyt.justfagame9.workers.dev';
+function buildWorkerProxyUrl(u){
+  return `${WORKER_PROXY_URL}/?url=${encodeURIComponent(u)}`;
+}
+async function fetchCoinGecko(targetUrl, ms){
+  try{
+    const res = await fetchWithTimeout(buildWorkerProxyUrl(targetUrl), ms);
+    if(!res.ok) throw new Error('worker responded ' + res.status);
+    return res;
+  }catch(err){
+    console.warn('[coingecko] worker failed, falling back to direct fetch:', err.message);
+    return fetchWithTimeout(targetUrl, ms);
+  }
+}
+
 // One single bulk request covers all 3 windows and up to 200 coins - no
-// per-coin calls, no proxy needed (CoinGecko's public market endpoint is
-// directly browser-fetchable, same as the coin-info lookup in the screener).
+// per-coin calls needed.
 async function fetchMarketData(){
   const url = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=200&page=1&price_change_percentage=7d,30d,200d&sparkline=false&_=' + Date.now();
-  const res = await fetchWithTimeout(url, FETCH_TIMEOUT_MS);
+  const res = await fetchCoinGecko(url, FETCH_TIMEOUT_MS);
   if(!res.ok) throw new Error('CoinGecko market data responded ' + res.status);
   const data = await res.json();
   if(!Array.isArray(data) || !data.length) throw new Error('CoinGecko returned no market data');
@@ -256,7 +329,7 @@ async function fetchMarketData(){
 }
 async function fetchGlobalData(){
   try{
-    const res = await fetchWithTimeout('https://api.coingecko.com/api/v3/global?_=' + Date.now(), FETCH_TIMEOUT_MS);
+    const res = await fetchCoinGecko('https://api.coingecko.com/api/v3/global?_=' + Date.now(), FETCH_TIMEOUT_MS);
     if(!res.ok) return null;
     const data = await res.json();
     return data && data.data ? data.data : null;
@@ -381,7 +454,7 @@ function renderCoinGrid(result, windowKey){
     const change = c[windowKey];
     const beating = change > result.btcChange;
     return `
-      <div class="coin-card">
+      <div class="coin-card" role="button" tabindex="0" onclick="openCoinInfo('${c.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openCoinInfo('${c.id}');}">
         <img src="${c.image}" alt="" loading="lazy" onerror="this.style.display='none'">
         <div class="coin-info">
           <div class="coin-sym">${(c.symbol || '').toUpperCase()}</div>
@@ -582,6 +655,151 @@ document.getElementById('pageFooter').innerHTML = `
   below as Bitcoin Season. For the original 90-day methodology and its long-run chart, see
   <a href="https://www.blockchaincenter.net/en/altcoin-season-index/" target="_blank" rel="noopener">blockchaincenter.net</a>.
 `;
+
+// ---- Coin info modal (ported from screener.html's "i" info window) ----
+// Simpler than screener.html's version: that one starts from a Binance/Bybit
+// ticker symbol and has to /search CoinGecko to guess a matching coin id
+// first. Here every coin card already IS a CoinGecko market object with its
+// real id attached, so this goes straight to the detail endpoint - no
+// search/guessing step, and no risk of matching the wrong coin.
+function openExternalLink(webUrl){
+  window.open(webUrl, '_blank', 'noopener,noreferrer');
+}
+
+function escapeHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function stripInlineMarkdown(s){
+  return s.replace(/\*\*(.*?)\*\*/g, '$1').replace(/(^|[^*])\*([^*]+)\*(?!\*)/g, '$1$2').replace(/\[(.*?)\]\(.*?\)/g, '$1');
+}
+
+// Renders the About text returned by CoinGecko. Modern descriptions are markdown
+// with "## Heading" sections; we keep everything through the end of the FIRST
+// section (its heading, intro paragraph, and any bullet list) and stop before the
+// next "## Heading". Older/legacy descriptions have no markdown headings, so we
+// fall back to the first couple of paragraphs. Raw HTML (very old format) is
+// stripped down to plain text.
+function formatAboutHtml(raw){
+  if(!raw) return '<p>No description available.</p>';
+  let text = raw.replace(/\r\n/g, '\n').trim();
+  if(!text) return '<p>No description available.</p>';
+
+  if(/<[a-z][\s\S]*>/i.test(text)){
+    const firstPara = text.split(/\n{2,}/)[0] || text;
+    const plain = firstPara.replace(/<[^>]*>/g, '').trim();
+    return plain ? `<p>${escapeHtml(plain)}</p>` : '<p>No description available.</p>';
+  }
+
+  const blocks = text.split(/\n{2,}/).map(b => b.trim()).filter(Boolean);
+  const isHeading = (b) => /^#{1,6}\s+/.test(b);
+  const headingIdxs = [];
+  blocks.forEach((b, i) => { if(isHeading(b)) headingIdxs.push(i); });
+
+  let sectionBlocks;
+  if(headingIdxs.length === 0){
+    sectionBlocks = blocks.slice(0, Math.min(blocks.length, 3));
+  } else if(headingIdxs[0] > 0){
+    sectionBlocks = blocks.slice(0, headingIdxs[0]);
+  } else {
+    const nextHeadingIdx = headingIdxs.length >= 2 ? headingIdxs[1] : blocks.length;
+    sectionBlocks = blocks.slice(0, nextHeadingIdx);
+  }
+
+  let html = '';
+  sectionBlocks.forEach(block => {
+    if(isHeading(block)){
+      const headingText = block.replace(/^#{1,6}\s+/, '');
+      html += `<p class="about-heading">${escapeHtml(stripInlineMarkdown(headingText))}</p>`;
+    } else if(/^[-*]\s+/m.test(block)){
+      const items = block.split(/\n/).map(l => l.replace(/^[-*]\s+/, '').trim()).filter(Boolean);
+      html += '<ul>' + items.map(it => `<li>${escapeHtml(stripInlineMarkdown(it))}</li>`).join('') + '</ul>';
+    } else {
+      html += `<p>${escapeHtml(stripInlineMarkdown(block))}</p>`;
+    }
+  });
+  return html || '<p>No description available.</p>';
+}
+
+async function openCoinInfo(coinId){
+  const modal = document.getElementById('coinInfoModal');
+  const statusEl = document.getElementById('coinInfoStatus');
+  const detailsEl = document.getElementById('coinInfoDetails');
+  const titleEl = document.getElementById('coinInfoTitle');
+  const subtitleEl = document.getElementById('coinInfoSubtitle');
+  const gridEl = document.getElementById('coinInfoGrid');
+  const websiteEl = document.getElementById('coinInfoWebsite');
+  const coingeckoEl = document.getElementById('coinInfoCoingecko');
+  const aboutEl = document.getElementById('coinInfoAbout');
+
+  const cached = rawMarketData && rawMarketData.find(c => c.id === coinId);
+  titleEl.textContent = cached ? (cached.symbol || '').toUpperCase() : coinId;
+  subtitleEl.textContent = '';
+  statusEl.textContent = 'Loading CoinGecko data...';
+  statusEl.style.display = 'block';
+  detailsEl.style.display = 'none';
+  gridEl.innerHTML = '';
+  aboutEl.textContent = '';
+  websiteEl.textContent = '—';
+  websiteEl.onclick = null;
+  coingeckoEl.textContent = '—';
+  coingeckoEl.onclick = null;
+  modal.classList.add('open');
+
+  try{
+    const res = await fetchCoinGecko(
+      `https://api.coingecko.com/api/v3/coins/${coinId}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`,
+      FETCH_TIMEOUT_MS
+    );
+    if(!res.ok) throw new Error('coin lookup failed (' + res.status + ')');
+    const coin = await res.json();
+
+    const md = coin.market_data || {};
+    const fmtUsd = (n) => (n === undefined || n === null) ? '—' : '$' + Number(n).toLocaleString('en-US', {maximumFractionDigits:0});
+    const fmtNum = (n) => (n === undefined || n === null) ? '—' : Number(n).toLocaleString('en-US', {maximumFractionDigits:0});
+
+    const rankText = coin.market_cap_rank ? ` #${coin.market_cap_rank}` : '';
+    subtitleEl.textContent = coin.name ? `${coin.name} (${(coin.symbol || '').toUpperCase()})${rankText}` : '';
+
+    const rawAbout = (coin.description && coin.description.en) || '';
+    aboutEl.innerHTML = formatAboutHtml(rawAbout);
+
+    const fields = [
+      {label:'Market Cap', value: fmtUsd(md.market_cap && md.market_cap.usd)},
+      {label:'Fully Diluted Valuation', value: fmtUsd(md.fully_diluted_valuation && md.fully_diluted_valuation.usd)},
+      {label:'24 Hour Trading Vol', value: fmtUsd(md.total_volume && md.total_volume.usd)},
+      {label:'Circulating Supply', value: fmtNum(md.circulating_supply)},
+      {label:'Total Supply', value: fmtNum(md.total_supply)},
+      {label:'Max Supply', value: fmtNum(md.max_supply)},
+    ];
+    gridEl.innerHTML = fields.map(f => `<div class="coininfo-card"><span class="label">${f.label}</span><span class="value">${f.value}</span></div>`).join('');
+
+    const homepage = ((coin.links && coin.links.homepage) || []).find(h => h);
+    if(homepage){
+      websiteEl.textContent = homepage;
+      websiteEl.onclick = () => openExternalLink(homepage);
+    }else{
+      websiteEl.textContent = 'Not available';
+    }
+
+    const coingeckoUrl = `https://www.coingecko.com/en/coins/${coinId}`;
+    coingeckoEl.textContent = coingeckoUrl;
+    coingeckoEl.onclick = () => openExternalLink(coingeckoUrl);
+
+    statusEl.style.display = 'none';
+    detailsEl.style.display = 'block';
+  }catch(err){
+    statusEl.textContent = `Could not load coin info from CoinGecko (${err.message}).`;
+  }
+}
+
+function closeCoinInfo(event){
+  if(event && event.target !== document.getElementById('coinInfoModal')) return;
+  document.getElementById('coinInfoModal').classList.remove('open');
+}
+window.addEventListener('keydown', (event) => {
+  if(event.key === 'Escape') closeCoinInfo();
+});
 
 loadCache();
 render();
