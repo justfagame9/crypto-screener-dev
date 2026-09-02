@@ -581,6 +581,7 @@
         <div><h2 id="analysisTitle"><a class="analysis-symbol-link" id="analysisSymbolLink" target="_blank" rel="noopener">Market analysis</a><span>&nbsp;analysis</span><button class="info-btn" type="button" onclick="openCoinInfo(currentExchangeSymbol)" aria-label="Coin info">i</button><button class="info-btn twitter-btn" type="button" onclick="openTwitterSearch(currentExchangeSymbol)" aria-label="Search coin on X (Twitter)" title="Search on X">𝕏</button></h2><p id="analysisSubtitle"></p></div>
         <span class="analysis-ltp"><span class="ltp-label">LTP</span><span class="ltp-value" id="analysisLTP">—</span></span>
         <span class="analysis-setup setup-none" id="analysisSetupBox">—</span>
+        <span id="analysisWatchlistBtn"></span>
       </div>
       <div class="analysis-actions"><button class="close-btn" type="button" aria-label="Close" onclick="closeAnalysis()">×</button><button class="plan-btn" type="button" id="analysisTradePlan" onclick="openTradePlan()" style="display:none;">Trade Plan</button></div>
     </div>
@@ -1596,6 +1597,7 @@ async function openAnalysis(symbol){
   const setupBox = document.getElementById('analysisSetupBox');
   setupBox.textContent = row.setup ? row.setup : 'None';
   setupBox.className = 'analysis-setup ' + (row.setup === 'Long' ? 'setup-long' : row.setup === 'Short' ? 'setup-short' : 'setup-none');
+  document.getElementById('analysisWatchlistBtn').innerHTML = watchlistButton(symbol);
   const tradePlanButton = document.getElementById('analysisTradePlan');
   tradePlanButton.style.display = row.setup ? 'inline-block' : 'none';
   tradePlanButton.onclick = () => openTradePlan(symbol);
