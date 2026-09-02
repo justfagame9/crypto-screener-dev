@@ -214,6 +214,38 @@ const RANK_REFRESH_MS   = 15 * 60 * 1000;  // market-cap rank - changes slowly
 const PROXY_TIMEOUT_MS  = 8000;
 const CACHE_KEY = 'crypto-watchlist-cache-v1';
 
+// Same TradingView app-linking setup as screener.html's analysis modal, so
+// "View chart" here behaves identically to opening a symbol there.
+const TRADINGVIEW_APP_PACKAGE = 'com.tradingview.tradingviewapp';
+function tradingViewChartUrl(binanceSymbol){
+  const tvSymbol = `BINANCE:${binanceSymbol}.P`;
+  return `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(tvSymbol)}`;
+}
+// window.open()/target="_blank" gets handed off to the phone's default
+// browser by the WebView, which is why this used to open Chrome instead of
+// the TradingView app. An Android "intent://" URL explicitly names the
+// target app's package, so Android launches that app directly if it's
+// installed, and only falls back to the browser (via S.browser_fallback_url)
+// if it isn't. Non-Android contexts (desktop testing, iOS) just get a
+// normal new-tab open since intent:// is an Android-only scheme.
+//
+// IMPORTANT: this must go through window.open(), not window.location.href -
+// this page runs inside an iframe within index.html's shell, and only
+// window.open() actually escapes the iframe out to the OS intent resolver.
+function openExternalLink(webUrl, androidPackage){
+  const isAndroid = /Android/i.test(navigator.userAgent || '');
+  if(isAndroid && androidPackage){
+    const hostAndPath = webUrl.replace(/^https?:\/\//, '');
+    const intentUrl = `intent://${hostAndPath}#Intent;scheme=https;package=${androidPackage};S.browser_fallback_url=${encodeURIComponent(webUrl)};end`;
+    window.open(intentUrl, '_blank', 'noopener,noreferrer');
+    return;
+  }
+  window.open(webUrl, '_blank', 'noopener,noreferrer');
+}
+function openTradingViewChart(binanceSymbol){
+  openExternalLink(tradingViewChartUrl(binanceSymbol), TRADINGVIEW_APP_PACKAGE);
+}
+
 // Same personal Cloudflare Worker used by the other pages in this app, as a
 // CORS passthrough of last resort. Binance's futures API and CoinGecko's
 // free markets endpoint are both normally directly fetchable (CORS-open), so
@@ -410,7 +442,7 @@ function renderCoinRow(coin, ticker, rankInfo, closes){
 
       <div class="watch-foot">
         <span class="watch-asof">${closeTime ? 'Vol ' + formatVolume(quoteVolume) : ''}</span>
-        <a class="watch-link" href="https://www.binance.com/en/futures/${encodeURIComponent(coin.binanceSymbol)}" target="_blank" rel="noopener">View chart ↗</a>
+        <a class="watch-link" href="${tradingViewChartUrl(coin.binanceSymbol)}" rel="noopener" onclick="event.preventDefault(); openTradingViewChart('${coin.binanceSymbol}')">View chart ↗</a>
       </div>
     </div>`;
 }
