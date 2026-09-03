@@ -366,6 +366,7 @@
   .home-card[data-page="youtube"] .home-icon{background:linear-gradient(135deg,#ff5f5f,#c22626);}
   .home-card[data-page="predictions"] .home-icon{background:linear-gradient(135deg,#a78bfa,#6d28d9);}
   .home-card[data-page="oil"] .home-icon{background:linear-gradient(135deg,#ff8a4c,#c2501a);}
+  .home-card[data-page="macro"] .home-icon{background:linear-gradient(135deg,#5b8cff,#a78bfa);}
   .home-card[data-page="watchlist"] .home-icon{background:linear-gradient(135deg,#f0c24b,#b8860b);}
   .home-card[data-page="fear-greed"] .home-icon{background:linear-gradient(135deg,#ff5470,#35e0c0);}
   .home-card[data-page="season"] .home-icon{background:linear-gradient(135deg,#f5a623,#35e0c0);}
@@ -441,6 +442,11 @@
     <div class="nav-item" data-page="oil">
       <span class="nav-icon">🛢️</span>
       <span class="nav-label">Oil & Energy<small>Brent, WTI prices & the spread</small></span>
+    </div>
+
+    <div class="nav-item" data-page="macro">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">Macro & Indices<small>S&P, Nasdaq, VIX, DXY, yields & more</small></span>
     </div>
 
     <div class="nav-item" data-page="fear-greed">
@@ -554,6 +560,10 @@
             <span class="home-icon">🛢️</span>
             <span><span class="home-title">Oil & Energy</span><span class="home-desc">Live Brent & WTI crude prices</span></span>
           </button>
+          <button class="home-card" type="button" data-page="macro">
+            <span class="home-icon">📊</span>
+            <span><span class="home-title">Macro & Indices</span><span class="home-desc">Equities, dollar, rates & global risk</span></span>
+          </button>
           <button class="home-card" type="button" data-page="fear-greed">
             <span class="home-icon">🌡️</span>
             <span><span class="home-title">Fear &amp; Greed Index</span><span class="home-desc">Crypto market sentiment, 0-100</span></span>
@@ -629,6 +639,11 @@
       <!-- lazy-loaded on first open -->
       <iframe id="iframe-oil" data-src="oil.html"></iframe>
     </div>
+    <div class="page" data-page="macro">
+      <div class="page-loading" id="loading-macro">Loading macro & indices…</div>
+      <!-- lazy-loaded on first open -->
+      <iframe id="iframe-macro" data-src="macro.html"></iframe>
+    </div>
     <div class="page" data-page="season">
       <div class="page-loading" id="loading-season">Loading season index…</div>
       <!-- lazy-loaded on first open -->
@@ -653,6 +668,7 @@ const PAGE_TITLES = {
   youtube: 'YouTube Crypto',
   predictions: 'Prediction Markets',
   oil: 'Oil & Energy',
+  macro: 'Macro & Indices',
   watchlist: 'Watchlist',
   'fear-greed': 'Fear & Greed Index',
   season: 'Season Index',
