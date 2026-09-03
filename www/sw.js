@@ -1,5 +1,5 @@
-const CACHE_NAME = 'crypto-screener-v18';
-const APP_SHELL = ['./', './index.html', './screener.html', './position-sizing.html', './news.html', './youtube.html', './trump-truth.html', './trading-settings.html', './manifest.json', './icon-192.png', './icon-512.png'];
+const CACHE_NAME = 'crypto-screener-v20';
+const APP_SHELL = ['./', './index.html', './screener.html', './position-sizing.html', './news.html', './youtube.html', './trump-truth.html', './trading-settings.html', './defi.html', './oil.html', './watchlist.html', './fear-greed.html', './season-index.html', './calendar.html', './prediction-markets.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)));
