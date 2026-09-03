@@ -147,6 +147,19 @@
     color:transparent;
   }
 
+  .drawer-nav{
+    flex:1;
+    min-height:0;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
+    margin:0 -4px;
+    padding:0 4px;
+  }
+  .drawer-nav::-webkit-scrollbar{width:5px;}
+  .drawer-nav::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+  .drawer-nav::-webkit-scrollbar-track{background:transparent;}
+
   .nav-item{
     display:flex;
     align-items:center;
@@ -186,7 +199,6 @@
   .nav-item.active .nav-label small{color:rgba(230,233,242,.7);}
 
   .drawer-tools{
-    margin-top:auto;
     padding:0 12px 10px;
     display:flex;
     justify-content:flex-end;
@@ -346,6 +358,7 @@
   .home-card .home-desc{display:block;font-size:11px;color:var(--muted);margin-top:2px;line-height:1.35;}
 
   .home-card[data-page="screener"] .home-icon{background:linear-gradient(135deg,#35e0c0,#1c8f79);}
+  .home-card[data-page="defi"] .home-icon{background:linear-gradient(135deg,#35e0c0,#5b8cff);}
   .home-card[data-page="sizing"] .home-icon{background:linear-gradient(135deg,#6ea8ff,#3a5fc9);}
   .home-card[data-page="news"] .home-icon{background:linear-gradient(135deg,#ffb84d,#c9791a);}
   .home-card[data-page="calendar"] .home-icon{background:linear-gradient(135deg,#ff6b8b,#c22d5c);}
@@ -379,6 +392,7 @@
       <div class="brand-name">TradeSphere</div>
     </div>
 
+    <div class="drawer-nav">
     <div class="nav-item" data-page="home">
       <span class="nav-icon">🏠</span>
       <span class="nav-label">Home</span>
@@ -392,6 +406,11 @@
     <div class="nav-item" data-page="screener">
       <span class="nav-icon">☁️</span>
       <span class="nav-label">Screener - Ichimoku<small>CK/PK breakouts, live scan</small></span>
+    </div>
+
+    <div class="nav-item" data-page="defi">
+      <span class="nav-icon">💧</span>
+      <span class="nav-label">DeFi & TVL<small>TVL, trade volume & unlocks</small></span>
     </div>
 
     <div class="nav-item" data-page="calendar">
@@ -437,6 +456,7 @@
     <div class="nav-item" data-page="sizing">
       <span class="nav-icon">🧮</span>
       <span class="nav-label">Position Sizing<small>Risk-based quantity calculator</small></span>
+    </div>
     </div>
 
     <div class="drawer-tools">
@@ -506,6 +526,10 @@
             <span class="home-icon">☁️</span>
             <span><span class="home-title">Screener - Ichimoku</span><span class="home-desc">CK/PK breakouts, live scan</span></span>
           </button>
+          <button class="home-card" type="button" data-page="defi">
+            <span class="home-icon">💧</span>
+            <span><span class="home-title">DeFi & TVL</span><span class="home-desc">Chains, protocols, DEX volume & unlocks</span></span>
+          </button>
           <button class="home-card" type="button" data-page="calendar">
             <span class="home-icon">📅</span>
             <span><span class="home-title">Calendar</span><span class="home-desc">Upcoming macro and crypto events</span></span>
@@ -554,6 +578,11 @@
       <div class="page-loading" id="loading-screener">Loading screener…</div>
       <!-- lazy-loaded on first open, same as every other page now -->
       <iframe id="iframe-screener" data-src="screener.html"></iframe>
+    </div>
+    <div class="page" data-page="defi">
+      <div class="page-loading" id="loading-defi">Loading DeFi & TVL…</div>
+      <!-- lazy-loaded on first open -->
+      <iframe id="iframe-defi" data-src="defi.html"></iframe>
     </div>
     <div class="page" data-page="watchlist">
       <div class="page-loading" id="loading-watchlist">Loading watchlist…</div>
@@ -616,6 +645,7 @@
 const PAGE_TITLES = {
   home: '',
   screener: 'Screener - Ichimoku',
+  defi: 'DeFi & TVL',
   sizing: 'Position Sizing',
   news: 'News',
   calendar: 'Calendar',
