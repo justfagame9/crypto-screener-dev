@@ -383,8 +383,8 @@
   .empty{color:var(--faint);text-align:center;padding:34px;font-family:var(--font-mono);font-size:12.5px;}
   .filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
   .plan-btn{padding:6px 12px;font-size:11px;font-family:var(--font-mono);font-weight:700;background:var(--accent);color:#07130f;border-radius:8px;box-shadow:none;}
-  .wl-btn{padding:6px 11px;font-size:11px;font-family:var(--font-mono);font-weight:700;background:transparent;color:var(--text);border:1px solid var(--border);border-radius:8px;cursor:pointer;}
-  .wl-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .wl-btn{padding:6px 11px;font-size:11px;font-family:var(--font-mono);font-weight:700;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:8px;cursor:pointer;box-shadow:none;}
+  .wl-btn:hover{border-color:var(--accent);color:var(--accent);box-shadow:none;transform:none;}
   .wl-btn.added{background:transparent;border-color:var(--border-soft);color:var(--faint);cursor:default;}
   .wl-btn.added:hover{border-color:var(--border-soft);color:var(--faint);}
   .trade-modal{position:fixed;inset:0;background:rgba(5,6,9,.75);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:20px;z-index:10;}
@@ -394,6 +394,10 @@
   .trade-head h2{font-size:19px;margin:0 0 4px;font-weight:700;}
   .trade-head p{color:var(--faint);font-family:var(--font-mono);font-size:11.5px;margin:0;text-transform:uppercase;letter-spacing:.04em;}
   .header-title-wrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .analysis-subtitle-row{display:flex;align-items:center;gap:6px;}
+  .trade-head p.analysis-subtitle-row{margin:2px 0 0;}
+  .analysis-subtitle-row .info-btn{text-transform:none;}
+  .analysis-meta-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;}
   .close-btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);width:30px;height:30px;padding:0;font-size:16px;line-height:1;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:none;}
   .close-btn:hover{border-color:var(--accent);color:var(--accent);transform:none;}
   .plan-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:16px;}
@@ -663,10 +667,20 @@
     <div class="trade-head">
       <div class="header-title-wrap">
         <button class="exchange-btn" type="button" aria-label="Open trading exchange" onclick="openSelectedTradingExchange()">₿</button>
-        <div><h2 id="analysisTitle"><a class="analysis-symbol-link" id="analysisSymbolLink" target="_blank" rel="noopener">Market analysis</a><span>&nbsp;analysis</span><button class="info-btn" type="button" onclick="openCoinInfo(currentExchangeSymbol)" aria-label="Coin info">i</button><button class="info-btn twitter-btn" type="button" onclick="openTwitterSearch(currentExchangeSymbol)" aria-label="Search coin on X (Twitter)" title="Search on X">𝕏</button></h2><p id="analysisSubtitle"></p></div>
-        <span class="analysis-ltp"><span class="ltp-label">LTP</span><span class="ltp-value" id="analysisLTP">—</span></span>
-        <span class="analysis-setup setup-none" id="analysisSetupBox">—</span>
-        <span id="analysisWatchlistBtn"></span>
+        <div>
+          <h2 id="analysisTitle"><a class="analysis-symbol-link" id="analysisSymbolLink" target="_blank" rel="noopener">Market analysis</a><span>&nbsp;analysis</span></h2>
+          <p class="analysis-subtitle-row">
+            <span id="analysisSubtitle"></span>
+            <span class="subtitle-sep">·</span>
+            <button class="info-btn" type="button" onclick="openCoinInfo(currentExchangeSymbol)" aria-label="Coin info">i</button>
+            <button class="info-btn twitter-btn" type="button" onclick="openTwitterSearch(currentExchangeSymbol)" aria-label="Search coin on X (Twitter)" title="Search on X">𝕏</button>
+            <span id="analysisWatchlistBtn"></span>
+          </p>
+          <div class="analysis-meta-row">
+            <span class="analysis-ltp"><span class="ltp-label">LTP</span><span class="ltp-value" id="analysisLTP">—</span></span>
+            <span class="analysis-setup setup-none" id="analysisSetupBox">—</span>
+          </div>
+        </div>
       </div>
       <div class="analysis-actions"><button class="close-btn" type="button" aria-label="Close" onclick="closeAnalysis()">×</button><button class="plan-btn" type="button" id="analysisTradePlan" onclick="openTradePlan()" style="display:none;">Trade Plan</button></div>
     </div>
@@ -1686,8 +1700,7 @@ async function openAnalysis(symbol){
     event.preventDefault();
     openExternalLink(tradingViewChartUrl(symbol, interval, source), TRADINGVIEW_APP_PACKAGE);
   };
-  const exchangeLabel = source === 'Bybit' ? 'Bybit USDT Perpetual (found via Bybit fallback)' : 'Binance USDT-M Perpetual';
-  document.getElementById('analysisSubtitle').textContent = `${timeframeLabel(interval)} · ${exchangeLabel} · 180 bars`;
+  document.getElementById('analysisSubtitle').textContent = timeframeLabel(interval);
   document.getElementById('analysisStatus').textContent = `Loading ${source} candles...`;
   document.getElementById('analysisLTP').textContent = '—';
   document.getElementById('analysisDetails').innerHTML = '';
@@ -1791,7 +1804,7 @@ async function openAnalysis(symbol){
     }
 
     drawAnalysisChart(candles,retracement,currentPrice,ema50Values,ema200Values);
-    document.getElementById('analysisStatus').textContent = `${candles.length} candles · ${timeframeLabel(interval)} · latest ${new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(candles[candles.length - 1].openTime))}`;
+    document.getElementById('analysisStatus').textContent = '';
 
     // ================= Card copy (crisp, terminal-style) =================
 
