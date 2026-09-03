@@ -328,7 +328,6 @@
   </div>
 
   <div class="page-footer">
-    <p class="sub">The macro backdrop that moves crypto as a high-beta risk asset: equity risk sentiment, the dollar and rates, commodities, crypto-native sentiment, and overseas sessions — grouped so you can scan the whole picture or drill into one lane at a time.</p>
   </div>
 
 </div>
@@ -402,11 +401,11 @@ const YAHOO_SYMBOLS = [
   { group:'equities', id:'spx', symbol:'^GSPC', name:'S&P 500', sub:'Broadest risk-on/risk-off gauge', icon:'📈', gradient:'linear-gradient(135deg,#5B8CFF,#2b4fb0)', format:'index' },
   { group:'equities', id:'ndx', symbol:'^NDX', name:'Nasdaq 100', sub:'Closest-correlated equity index to BTC', icon:'💻', gradient:'linear-gradient(135deg,#5B8CFF,#2b4fb0)', format:'index' },
   { group:'equities', id:'vix', symbol:'^VIX', name:'VIX', sub:'"Fear gauge" — spikes precede sell-offs', icon:'😨', gradient:'linear-gradient(135deg,#FF5470,#7A2E3B)', format:'index' },
-  { group:'equities', id:'rut', symbol:'^RUT', name:'Russell 2000', sub:'Small-caps, broader liquidity proxy', icon:'🏭', gradient:'linear-gradient(135deg,#5B8CFF,#2b4fb0)', format:'index' },
   { group:'equities', id:'dji', symbol:'^DJI', name:'Dow Jones', sub:'Blue-chip industrial sentiment', icon:'🏦', gradient:'linear-gradient(135deg,#5B8CFF,#2b4fb0)', format:'index' },
 
   { group:'dollar', id:'dxy', symbol:'DX-Y.NYB', name:'US Dollar Index', sub:'DXY — closely-watched inverse to BTC', icon:'💵', gradient:'linear-gradient(135deg,#A78BFA,#6d28d9)', format:'index' },
   { group:'dollar', id:'us10y', symbol:'^TNX', name:'US 10-Year Yield', sub:'Rising real yields pressure non-yielding assets', icon:'🏦', gradient:'linear-gradient(135deg,#A78BFA,#6d28d9)', format:'yield', scale:0.1 },
+  { group:'dollar', id:'usdjpy', symbol:'JPY=X', name:'USD/JPY', sub:'Yen carry-trade and dollar strength gauge', icon:'💴', gradient:'linear-gradient(135deg,#A78BFA,#6d28d9)', format:'index' },
   { group:'dollar', id:'usdinr', symbol:'INR=X', name:'USD/INR', sub:'Rupee vs. dollar — local FX cross-check', icon:'🇮🇳', gradient:'linear-gradient(135deg,#A78BFA,#6d28d9)', format:'index' },
 
   { group:'commodities', id:'gold', symbol:'GC=F', name:'Gold', sub:'"Digital gold" comparison for BTC', icon:'🥇', gradient:'linear-gradient(135deg,#F5A623,#b8860b)', format:'usd' },
@@ -419,6 +418,7 @@ const YAHOO_SYMBOLS = [
   { group:'global', id:'hangseng', symbol:'^HSI', name:'Hang Seng', sub:'Hong Kong / China risk spillover', icon:'🇭🇰', gradient:'linear-gradient(135deg,#F5A623,#b8860b)', format:'index' },
   { group:'global', id:'shanghai', symbol:'000001.SS', name:'Shanghai Composite', sub:'Mainland China sentiment', icon:'🇨🇳', gradient:'linear-gradient(135deg,#F5A623,#b8860b)', format:'index' },
   { group:'global', id:'ftse', symbol:'^FTSE', name:'FTSE 100', sub:'UK equity benchmark', icon:'🇬🇧', gradient:'linear-gradient(135deg,#F5A623,#b8860b)', format:'index' },
+  { group:'global', id:'dax', symbol:'^GDAXI', name:'DAX', sub:'German equity benchmark', icon:'🇩🇪', gradient:'linear-gradient(135deg,#F5A623,#b8860b)', format:'index' },
   { group:'global', id:'nifty', symbol:'^NSEI', name:'Nifty 50', sub:'India equity benchmark', icon:'🇮🇳', gradient:'linear-gradient(135deg,#F5A623,#b8860b)', format:'index' },
 ];
 
