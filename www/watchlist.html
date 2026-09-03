@@ -230,7 +230,20 @@
     background:var(--panel);border:1px solid var(--border);border-radius:12px;
     padding:14px 16px;margin-top:14px;
   }
-  .group-manager-title{font:700 12px var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+  .group-manager-header{
+    width:100%;background:none;border:none;padding:0;margin:0;cursor:pointer;
+    display:flex;align-items:center;gap:9px;color:var(--text);margin-bottom:10px;
+  }
+  .group-manager-chevron{
+    flex-shrink:0;width:18px;height:18px;color:var(--muted);transition:transform .2s ease;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .group-manager-chevron svg{width:12px;height:12px;}
+  .group-manager.collapsed .group-manager-chevron{transform:rotate(-90deg);}
+  .group-manager-title{font:700 12px var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);flex:1;text-align:left;margin-bottom:0;}
+  .group-manager-count{font:600 11px var(--font-mono);color:var(--faint);background:var(--panel2);border-radius:20px;padding:2px 8px;}
+  .group-manager-body{max-height:2000px;overflow:hidden;transition:max-height .25s ease,opacity .18s ease;opacity:1;}
+  .group-manager.collapsed .group-manager-body{max-height:0;opacity:0;}
   .group-manager-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
   .group-manage-row{
     display:flex;align-items:center;justify-content:space-between;gap:10px;
@@ -857,6 +870,21 @@ function renderGroupIcon(coin){
     </span>`;
 }
 
+// Whether the "Groups" manager panel itself is collapsed - persisted like
+// the other group settings, so it stays collapsed across reloads once the
+// user tucks it away. Same on/off pattern as collapsedGroups, just a
+// single flag instead of a per-group set.
+const GROUP_MANAGER_COLLAPSED_KEY = 'crypto-watchlist-group-manager-collapsed';
+function loadGroupManagerCollapsed(){
+  try{ return localStorage.getItem(GROUP_MANAGER_COLLAPSED_KEY) === '1'; }catch(err){ return false; }
+}
+let groupManagerCollapsed = loadGroupManagerCollapsed();
+function toggleGroupManagerCollapse(){
+  groupManagerCollapsed = !groupManagerCollapsed;
+  try{ localStorage.setItem(GROUP_MANAGER_COLLAPSED_KEY, groupManagerCollapsed ? '1' : '0'); }catch(err){ /* not critical */ }
+  renderGroupManager();
+}
+
 function renderGroupManager(){
   const el = document.getElementById('groupManager');
   if(!el) return;
@@ -874,17 +902,23 @@ function renderGroupManager(){
     </div>`).join('');
 
   el.innerHTML = `
-    <div class="group-manager">
-      <div class="group-manager-title">Groups</div>
-      <div class="group-manager-list">${rows || '<div class="group-manage-empty">No groups yet - add one below.</div>'}</div>
-      <form class="group-add-form" id="groupAddForm">
-        <input type="text" id="newGroupInput" class="group-add-input" placeholder="New group name" maxlength="24" autocomplete="off">
-        <button type="submit" class="group-add-btn">Add group</button>
-      </form>
-      <label class="group-ungrouped-toggle">
-        <input type="checkbox" id="ungroupedToggle" ${ungroupedEnabled ? 'checked' : ''}>
-        <span>Collect every coin that isn't in a group yet into its own "Ungrouped" section</span>
-      </label>
+    <div class="group-manager ${groupManagerCollapsed ? 'collapsed' : ''}">
+      <button type="button" class="group-manager-header" onclick="toggleGroupManagerCollapse()" aria-expanded="${!groupManagerCollapsed}">
+        <span class="group-manager-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+        <span class="group-manager-title">Groups</span>
+        <span class="group-manager-count">${combined.length}</span>
+      </button>
+      <div class="group-manager-body">
+        <div class="group-manager-list">${rows || '<div class="group-manage-empty">No groups yet - add one below.</div>'}</div>
+        <form class="group-add-form" id="groupAddForm">
+          <input type="text" id="newGroupInput" class="group-add-input" placeholder="New group name" maxlength="24" autocomplete="off">
+          <button type="submit" class="group-add-btn">Add group</button>
+        </form>
+        <label class="group-ungrouped-toggle">
+          <input type="checkbox" id="ungroupedToggle" ${ungroupedEnabled ? 'checked' : ''}>
+          <span>Collect every coin that isn't in a group yet into its own "Ungrouped" section</span>
+        </label>
+      </div>
     </div>`;
 
   document.getElementById('groupAddForm').addEventListener('submit', (e) => {
