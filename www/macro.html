@@ -567,7 +567,6 @@ function renderIndexCard(cfg, q){
       </div>
       ${sparkline}
       <div class="idx-foot">
-        <span>${asOf ? asOf.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}</span>
         ${mstatus ? `<span class="idx-mstatus ${mstatus.cls}">${mstatus.label}</span>` : ''}
       </div>
     </div>`;
