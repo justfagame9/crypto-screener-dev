@@ -958,6 +958,15 @@ document.getElementById('toggleAllGroupsBtn').addEventListener('click', () => {
     if(!id) return;
     if(anyExpanded) collapsedGroups.add(id); else collapsedGroups.delete(id);
   });
+  // The "Groups" manager panel follows only on collapse: collapsing all
+  // also tucks it away, but expanding all leaves it exactly as it was
+  // (never force-opened) - so if the user had already collapsed it, or
+  // it's already open, expand-all is a no-op for that panel either way.
+  if(anyExpanded && !groupManagerCollapsed){
+    groupManagerCollapsed = true;
+    try{ localStorage.setItem(GROUP_MANAGER_COLLAPSED_KEY, '1'); }catch(err){ /* not critical */ }
+    renderGroupManager();
+  }
   renderAll();
 });
 
