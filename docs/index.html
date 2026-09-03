@@ -373,6 +373,7 @@
     padding:0 2px 8px;
   }
   .ticker-eyebrow-left{display:flex;align-items:center;gap:7px;}
+  .ticker-eyebrow-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;}
   .ticker-eyebrow .dot{
     width:6px;height:6px;border-radius:50%;
     background:var(--accent);box-shadow:0 0 8px var(--accent);
@@ -390,6 +391,7 @@
   }
   .ticker-refresh svg{width:13px;height:13px;transition:transform .4s;}
   .ticker-refresh.spinning svg{transform:rotate(360deg);}
+  .ticker-refresh.flipped svg{transform:rotate(180deg);}
   .ticker-refresh:active{border-color:var(--accent);color:var(--accent);}
   .ticker-row{
     display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;
@@ -477,12 +479,27 @@
     display:flex;align-items:baseline;gap:8px;
     padding:0 2px 9px;position:relative;z-index:1;
   }
+  .category-section > .section-heading{
+    align-items:center;justify-content:space-between;
+    cursor:pointer;user-select:none;
+  }
+  .section-heading-left{display:flex;align-items:baseline;gap:8px;min-width:0;}
   .section-heading h3{
     margin:0;font:700 13px var(--font-ui);letter-spacing:.02em;color:var(--text);
   }
   .section-heading .section-count{
     font:600 10.5px var(--font-mono);color:var(--faint);
   }
+  .section-toggle-btn{
+    background:transparent;border:none;color:var(--muted);padding:0;margin:0;
+    width:26px;height:26px;display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;border-radius:7px;cursor:pointer;
+  }
+  .section-toggle-btn:hover{color:var(--text);background:var(--panel2);}
+  .section-toggle-btn svg{width:15px;height:15px;transition:transform .2s ease;}
+  .category-section.collapsed .section-toggle-btn svg{transform:rotate(-90deg);}
+  .category-section.collapsed .home-grid{display:none;}
+  #categoriesWrap.search-active .category-section.collapsed .home-grid{display:grid;}
   .category-section{margin:0 0 20px;}
   .category-section.hidden{display:none;}
 
@@ -624,9 +641,14 @@
               <span class="ticker-eyebrow-label">Live</span>
               <span class="ticker-updated" id="tickerUpdated"></span>
             </div>
-            <button class="ticker-refresh" id="tickerRefreshBtn" type="button" aria-label="Refresh prices">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-            </button>
+            <div class="ticker-eyebrow-actions">
+              <button class="ticker-refresh" id="toggleAllBtn" type="button" aria-label="Collapse all" title="Collapse all">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 8 12 3 17 8"/><polyline points="7 21 12 16 17 21"/></svg>
+              </button>
+              <button class="ticker-refresh" id="tickerRefreshBtn" type="button" aria-label="Refresh prices">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              </button>
+            </div>
           </div>
           <div class="ticker-row" id="tickerRow"></div>
         </div>
@@ -648,7 +670,7 @@
 
         <div id="categoriesWrap">
           <div class="category-section" data-category="markets">
-            <div class="section-heading"><h3>Markets</h3></div>
+            <div class="section-heading" data-toggle-heading><div class="section-heading-left"><h3>Markets</h3></div><button class="section-toggle-btn" type="button" aria-expanded="true" aria-label="Toggle section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button></div>
             <div class="home-grid">
               <button class="home-card" type="button" data-page="watchlist">
                 <span class="home-icon">👀</span>
@@ -681,26 +703,8 @@
             </div>
           </div>
 
-          <div class="category-section" data-category="insights">
-            <div class="section-heading"><h3>Insights</h3></div>
-            <div class="home-grid">
-              <button class="home-card" type="button" data-page="fear-greed">
-                <span class="home-icon">🌡️</span>
-                <span><span class="home-title">Fear &amp; Greed Index</span><span class="home-desc">Crypto market sentiment, 0-100</span></span>
-              </button>
-              <button class="home-card" type="button" data-page="calendar">
-                <span class="home-icon">📅</span>
-                <span><span class="home-title">Calendar</span><span class="home-desc">Upcoming macro and crypto events</span></span>
-              </button>
-              <button class="home-card" type="button" data-page="predictions">
-                <span class="home-icon">🎯</span>
-                <span><span class="home-title">Prediction Markets</span><span class="home-desc">Fed, CPI, ETFs & crypto policy odds</span></span>
-              </button>
-            </div>
-          </div>
-
           <div class="category-section" data-category="news">
-            <div class="section-heading"><h3>News &amp; Social</h3></div>
+            <div class="section-heading" data-toggle-heading><div class="section-heading-left"><h3>News &amp; Social</h3></div><button class="section-toggle-btn" type="button" aria-expanded="true" aria-label="Toggle section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button></div>
             <div class="home-grid">
               <button class="home-card" type="button" data-page="news">
                 <span class="home-icon">📰</span>
@@ -717,8 +721,26 @@
             </div>
           </div>
 
+          <div class="category-section" data-category="insights">
+            <div class="section-heading" data-toggle-heading><div class="section-heading-left"><h3>Insights</h3></div><button class="section-toggle-btn" type="button" aria-expanded="true" aria-label="Toggle section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button></div>
+            <div class="home-grid">
+              <button class="home-card" type="button" data-page="fear-greed">
+                <span class="home-icon">🌡️</span>
+                <span><span class="home-title">Fear &amp; Greed Index</span><span class="home-desc">Crypto market sentiment, 0-100</span></span>
+              </button>
+              <button class="home-card" type="button" data-page="calendar">
+                <span class="home-icon">📅</span>
+                <span><span class="home-title">Calendar</span><span class="home-desc">Upcoming macro and crypto events</span></span>
+              </button>
+              <button class="home-card" type="button" data-page="predictions">
+                <span class="home-icon">🎯</span>
+                <span><span class="home-title">Prediction Markets</span><span class="home-desc">Fed, CPI, ETFs & crypto policy odds</span></span>
+              </button>
+            </div>
+          </div>
+
           <div class="category-section" data-category="tools">
-            <div class="section-heading"><h3>Tools</h3></div>
+            <div class="section-heading" data-toggle-heading><div class="section-heading-left"><h3>Tools</h3></div><button class="section-toggle-btn" type="button" aria-expanded="true" aria-label="Toggle section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button></div>
             <div class="home-grid">
               <button class="home-card" type="button" data-page="sizing">
                 <span class="home-icon">🧮</span>
@@ -1050,11 +1072,13 @@ const searchBarEl = document.getElementById('searchBar');
 const searchInput = document.getElementById('searchInput');
 const searchClearBtn = document.getElementById('searchClear');
 const searchEmptyEl = document.getElementById('searchEmpty');
+const categoriesWrapEl = document.getElementById('categoriesWrap');
 const categorySections = document.querySelectorAll('.category-section');
 
 function applySearchFilter(){
   const q = searchInput.value.trim().toLowerCase();
   searchBarEl.classList.toggle('has-value', q.length > 0);
+  categoriesWrapEl.classList.toggle('search-active', q.length > 0);
 
   if(q){
     recentSection.classList.add('hidden');
@@ -1083,6 +1107,35 @@ searchClearBtn.addEventListener('click', () => {
   applySearchFilter();
   searchInput.focus();
 });
+
+/* ================= Home: collapsible category sections ================= */
+function setCategoryCollapsed(sectionEl, collapsed){
+  sectionEl.classList.toggle('collapsed', collapsed);
+  const btn = sectionEl.querySelector('.section-toggle-btn');
+  if(btn) btn.setAttribute('aria-expanded', String(!collapsed));
+}
+function updateToggleAllLabel(){
+  const anyExpanded = Array.from(categorySections).some(s => !s.classList.contains('collapsed'));
+  const label = anyExpanded ? 'Collapse all' : 'Expand all';
+  toggleAllBtn.setAttribute('aria-label', label);
+  toggleAllBtn.setAttribute('title', label);
+  toggleAllBtn.classList.toggle('flipped', !anyExpanded);
+}
+document.querySelectorAll('.category-section > .section-heading[data-toggle-heading]').forEach(heading => {
+  heading.addEventListener('click', () => {
+    const sectionEl = heading.closest('.category-section');
+    if(!sectionEl) return;
+    setCategoryCollapsed(sectionEl, !sectionEl.classList.contains('collapsed'));
+    updateToggleAllLabel();
+  });
+});
+const toggleAllBtn = document.getElementById('toggleAllBtn');
+toggleAllBtn.addEventListener('click', () => {
+  const anyExpanded = Array.from(categorySections).some(s => !s.classList.contains('collapsed'));
+  categorySections.forEach(s => setCategoryCollapsed(s, anyExpanded));
+  updateToggleAllLabel();
+});
+updateToggleAllLabel();
 
 function openDrawer(){
   drawer.classList.add('open');
