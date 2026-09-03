@@ -261,15 +261,15 @@
     padding:8px 14px;border-radius:8px;cursor:pointer;font:700 11.5px var(--font-mono);
   }
   .group-add-btn:hover{filter:brightness(1.1);}
-  .group-manage-row.is-unsorted{border-style:dashed;border-color:var(--border);}
-  .group-unsorted-toggle{
+  .group-manage-row.is-ungrouped-section{border-style:dashed;border-color:var(--border);}
+  .group-ungrouped-toggle{
     display:flex;align-items:flex-start;gap:9px;margin-top:12px;padding-top:12px;
     border-top:1px solid var(--border-soft);cursor:pointer;
   }
-  .group-unsorted-toggle input[type="checkbox"]{
+  .group-ungrouped-toggle input[type="checkbox"]{
     width:15px;height:15px;flex-shrink:0;margin-top:1px;accent-color:var(--violet);cursor:pointer;
   }
-  .group-unsorted-toggle span{font:600 11.5px var(--font-mono);color:var(--muted);line-height:1.5;}
+  .group-ungrouped-toggle span{font:600 11.5px var(--font-mono);color:var(--muted);line-height:1.5;}
 
   /* ---- Analysis overlay (embeds screener.html's own analysis modal, over this page) ---- */
   .analysis-overlay{
@@ -681,19 +681,19 @@ function saveCoinGroups(obj){
 let groups = loadGroups();           // [{ id, name }], order = display order
 let coinGroups = loadCoinGroups();   // { binanceSymbol: [groupId, ...] } - a coin can belong to several groups
 
-// "Unsorted" is an optional pseudo-group: when enabled, every non-BTC coin
+// "Ungrouped" is an optional pseudo-group: when enabled, every non-BTC coin
 // that isn't checked into any real group gets collected into its own
 // collapsible section (instead of sitting in a plain flat list up top), and
 // that section can be dragged into the reorder list just like a real group.
 // It isn't a real entry in GROUPS_KEY (nothing to name or delete), just a
 // toggle plus a remembered position within the combined display order.
-const UNSORTED_SETTINGS_KEY = 'crypto-watchlist-unsorted-group';
-const UNSORTED_ID = 'unsorted';
-const UNSORTED_LABEL = 'Unsorted';
+const UNGROUPED_SETTINGS_KEY = 'crypto-watchlist-ungrouped-group';
+const UNGROUPED_ID = 'ungrouped';
+const UNGROUPED_LABEL = 'Ungrouped';
 
-function loadUnsortedSettings(){
+function loadUngroupedSettings(){
   try{
-    const raw = localStorage.getItem(UNSORTED_SETTINGS_KEY);
+    const raw = localStorage.getItem(UNGROUPED_SETTINGS_KEY);
     const obj = raw ? JSON.parse(raw) : null;
     if(obj && typeof obj === 'object'){
       return { enabled: !!obj.enabled, position: Number.isFinite(obj.position) ? obj.position : groups.length };
@@ -701,27 +701,27 @@ function loadUnsortedSettings(){
   }catch(err){ /* ignore */ }
   return { enabled: false, position: groups.length };
 }
-function saveUnsortedSettings(){
-  try{ localStorage.setItem(UNSORTED_SETTINGS_KEY, JSON.stringify({ enabled: unsortedEnabled, position: unsortedPosition })); }catch(err){ /* not critical */ }
+function saveUngroupedSettings(){
+  try{ localStorage.setItem(UNGROUPED_SETTINGS_KEY, JSON.stringify({ enabled: ungroupedEnabled, position: ungroupedPosition })); }catch(err){ /* not critical */ }
 }
-let unsortedSettings = loadUnsortedSettings();
-let unsortedEnabled = unsortedSettings.enabled;
-let unsortedPosition = unsortedSettings.position;
+let ungroupedSettings = loadUngroupedSettings();
+let ungroupedEnabled = ungroupedSettings.enabled;
+let ungroupedPosition = ungroupedSettings.position;
 
-function setUnsortedEnabled(enabled){
-  unsortedEnabled = enabled;
-  if(enabled && (unsortedPosition < 0 || unsortedPosition > groups.length)) unsortedPosition = groups.length;
-  saveUnsortedSettings();
+function setUngroupedEnabled(enabled){
+  ungroupedEnabled = enabled;
+  if(enabled && (ungroupedPosition < 0 || ungroupedPosition > groups.length)) ungroupedPosition = groups.length;
+  saveUngroupedSettings();
   renderGroupManager();
   renderAll();
 }
 // The combined, reorderable display order: real groups plus (if enabled)
-// the Unsorted pseudo-group spliced in at its remembered position.
+// the Ungrouped pseudo-group spliced in at its remembered position.
 function getCombinedOrder(){
-  const list = groups.map(g => ({ id: g.id, name: g.name, isUnsorted: false }));
-  if(unsortedEnabled){
-    const pos = Math.max(0, Math.min(unsortedPosition, list.length));
-    list.splice(pos, 0, { id: UNSORTED_ID, name: UNSORTED_LABEL, isUnsorted: true });
+  const list = groups.map(g => ({ id: g.id, name: g.name, isUngroupedSection: false }));
+  if(ungroupedEnabled){
+    const pos = Math.max(0, Math.min(ungroupedPosition, list.length));
+    list.splice(pos, 0, { id: UNGROUPED_ID, name: UNGROUPED_LABEL, isUngroupedSection: true });
   }
   return list;
 }
@@ -732,10 +732,10 @@ function moveCombined(id, dir){
   const next = idx + dir;
   if(next < 0 || next >= combined.length) return;
   [combined[idx], combined[next]] = [combined[next], combined[idx]];
-  groups = combined.filter(x => !x.isUnsorted).map(x => groups.find(g => g.id === x.id));
+  groups = combined.filter(x => !x.isUngroupedSection).map(x => groups.find(g => g.id === x.id));
   saveGroups(groups);
-  unsortedPosition = combined.findIndex(x => x.isUnsorted);
-  saveUnsortedSettings();
+  ungroupedPosition = combined.findIndex(x => x.isUngroupedSection);
+  saveUngroupedSettings();
   renderGroupManager();
   renderAll();
 }
@@ -862,13 +862,13 @@ function renderGroupManager(){
   if(!el) return;
   const combined = getCombinedOrder();
   const rows = combined.map((item, idx) => `
-    <div class="group-manage-row ${item.isUnsorted ? 'is-unsorted' : ''}">
+    <div class="group-manage-row ${item.isUngroupedSection ? 'is-ungrouped-section' : ''}">
       <span class="group-manage-name">${escapeHtml(item.name)}</span>
       <span class="group-manage-actions">
         <button type="button" class="group-move-btn" title="Move up" ${idx === 0 ? 'disabled' : ''} onclick="moveCombined('${item.id}', -1)">↑</button>
         <button type="button" class="group-move-btn" title="Move down" ${idx === combined.length - 1 ? 'disabled' : ''} onclick="moveCombined('${item.id}', 1)">↓</button>
-        ${item.isUnsorted
-          ? `<button type="button" class="group-remove-btn" title="Stop grouping unsorted coins" onclick="setUnsortedEnabled(false)">Hide</button>`
+        ${item.isUngroupedSection
+          ? `<button type="button" class="group-remove-btn" title="Hide the Ungrouped section" onclick="setUngroupedEnabled(false)">Hide</button>`
           : `<button type="button" class="group-remove-btn" title="Remove group" onclick="removeGroup('${item.id}')">Remove</button>`}
       </span>
     </div>`).join('');
@@ -881,9 +881,9 @@ function renderGroupManager(){
         <input type="text" id="newGroupInput" class="group-add-input" placeholder="New group name" maxlength="24" autocomplete="off">
         <button type="submit" class="group-add-btn">Add group</button>
       </form>
-      <label class="group-unsorted-toggle">
-        <input type="checkbox" id="unsortedToggle" ${unsortedEnabled ? 'checked' : ''}>
-        <span>Collect every coin that isn't in a group yet into its own "Unsorted" section</span>
+      <label class="group-ungrouped-toggle">
+        <input type="checkbox" id="ungroupedToggle" ${ungroupedEnabled ? 'checked' : ''}>
+        <span>Collect every coin that isn't in a group yet into its own "Ungrouped" section</span>
       </label>
     </div>`;
 
@@ -894,8 +894,8 @@ function renderGroupManager(){
     input.value = '';
     input.focus();
   });
-  document.getElementById('unsortedToggle').addEventListener('change', (e) => {
-    setUnsortedEnabled(e.target.checked);
+  document.getElementById('ungroupedToggle').addEventListener('change', (e) => {
+    setUngroupedEnabled(e.target.checked);
   });
 }
 
@@ -1062,12 +1062,12 @@ function renderGroupSection(id, name, coinsInSection, alwaysShow){
 function renderAll(){
   const el = document.getElementById('content');
 
-  // BTC is always ungrouped by design and never joins the Unsorted section.
+  // BTC is always ungrouped by design and never joins the Ungrouped section.
   const btc = COINS.filter(c => c.binanceSymbol === UNGROUPABLE_SYMBOL);
   const others = COINS.filter(c => c.binanceSymbol !== UNGROUPABLE_SYMBOL);
 
   let bodyHtml = '';
-  if(!unsortedEnabled){
+  if(!ungroupedEnabled){
     // Default behaviour: BTC + any other ungrouped coin sit in one flat
     // list up top, real groups render as collapsible sections below.
     const ungrouped = [...btc, ...others.filter(isCoinUngrouped)].sort(byRank);
@@ -1078,13 +1078,13 @@ function renderAll(){
     }).join('');
   }else{
     // BTC still sits alone up top; every other coin - grouped or not - now
-    // lives in a collapsible section, including a dedicated "Unsorted" one
+    // lives in a collapsible section, including a dedicated "Ungrouped" one
     // that can be dragged anywhere in the group order.
     bodyHtml += `<div class="watch-list">${btc.sort(byRank).map(renderRow).join('')}</div>`;
     bodyHtml += getCombinedOrder().map(item => {
-      if(item.isUnsorted){
+      if(item.isUngroupedSection){
         const coinsInSection = others.filter(isCoinUngrouped).sort(byRank);
-        return renderGroupSection(UNSORTED_ID, UNSORTED_LABEL, coinsInSection, true);
+        return renderGroupSection(UNGROUPED_ID, UNGROUPED_LABEL, coinsInSection, true);
       }
       const coinsInGroup = others.filter(c => Array.isArray(coinGroups[c.binanceSymbol]) && coinGroups[c.binanceSymbol].includes(item.id)).sort(byRank);
       return renderGroupSection(item.id, item.name, coinsInGroup, false);
