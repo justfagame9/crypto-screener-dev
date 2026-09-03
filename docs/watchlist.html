@@ -57,6 +57,7 @@
   .refresh-btn:hover{border-color:var(--gold);color:var(--gold);}
   .refresh-btn svg{width:14px;height:14px;transition:transform .4s;}
   .refresh-btn.spinning svg{transform:rotate(360deg);}
+  .refresh-btn.flipped svg{transform:rotate(180deg);}
   .sub{color:var(--muted);font-size:13px;line-height:1.55;margin:10px 0 16px;max-width:640px;}
 
   .degraded-banner{
@@ -172,6 +173,94 @@
   }
   .analysis-btn:hover{text-decoration:underline;}
 
+  /* ---- Coin -> group assignment icon + picker ---- */
+  .group-picker-wrap{position:relative;display:inline-flex;}
+  .group-icon-btn{
+    background:none;border:none;padding:0;margin:0;color:var(--faint);cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;
+  }
+  .group-icon-btn svg{width:14px;height:14px;}
+  .group-icon-btn:hover{color:var(--violet);}
+  .group-icon-btn.assigned{color:var(--violet);}
+  /* Appended directly to <body> (not nested inside the swipe-card, which
+     clips overflow) and positioned with fixed coordinates computed in JS,
+     so it always renders on top and is never cut off. */
+  .group-picker{
+    position:fixed;z-index:9999;min-width:180px;max-width:240px;max-height:280px;overflow-y:auto;
+    background:var(--panel2);border:1px solid var(--border);border-radius:10px;
+    padding:8px;display:flex;flex-direction:column;gap:2px;
+    box-shadow:0 12px 32px rgba(0,0,0,.5);
+  }
+  .group-picker-title{font:700 10px var(--font-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--faint);padding:2px 6px 6px;}
+  .group-picker-list{display:flex;flex-direction:column;gap:1px;}
+  .group-picker-item{
+    display:flex;align-items:center;gap:9px;color:var(--text);
+    font:600 12px var(--font-mono);padding:8px;border-radius:6px;cursor:pointer;
+  }
+  .group-picker-item:hover{background:var(--panel);}
+  .group-picker-item input[type="checkbox"]{
+    width:14px;height:14px;flex-shrink:0;accent-color:var(--violet);cursor:pointer;
+  }
+  .group-picker-empty{font:11px var(--font-mono);color:var(--faint);padding:6px;max-width:200px;white-space:normal;line-height:1.5;}
+
+  /* ---- Collapsible coin groups ---- */
+  .coin-group{
+    background:var(--panel);border:1px solid var(--border);border-radius:14px;
+    padding:12px 14px;margin-bottom:10px;
+  }
+  .coin-group-header{
+    width:100%;background:none;border:none;padding:0;margin:0;cursor:pointer;
+    display:flex;align-items:center;gap:9px;color:var(--text);
+  }
+  .coin-group-chevron{
+    flex-shrink:0;width:18px;height:18px;color:var(--muted);transition:transform .2s ease;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .coin-group-chevron svg{width:12px;height:12px;}
+  .coin-group.collapsed .coin-group-chevron{transform:rotate(-90deg);}
+  .coin-group-name{font:700 13px var(--font-display);flex:1;text-align:left;}
+  .coin-group-count{font:600 11px var(--font-mono);color:var(--faint);background:var(--panel2);border-radius:20px;padding:2px 8px;}
+  .coin-group-body{max-height:4000px;overflow:hidden;transition:max-height .25s ease,margin-top .2s ease;margin-top:12px;}
+  .coin-group.collapsed .coin-group-body{max-height:0;margin-top:0;}
+  .coin-group .watch-list{margin-bottom:0;}
+
+  /* ---- Group manager (add / remove / reorder groups) ---- */
+  .group-manager{
+    background:var(--panel);border:1px solid var(--border);border-radius:12px;
+    padding:14px 16px;margin-top:14px;
+  }
+  .group-manager-title{font:700 12px var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+  .group-manager-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
+  .group-manage-row{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    background:var(--panel2);border:1px solid var(--border-soft);border-radius:9px;padding:8px 10px;
+  }
+  .group-manage-name{font:600 12.5px var(--font-display);}
+  .group-manage-actions{display:flex;align-items:center;gap:6px;}
+  .group-move-btn{
+    background:var(--panel);border:1px solid var(--border);color:var(--text);
+    width:24px;height:24px;border-radius:6px;cursor:pointer;font:700 11px var(--font-mono);
+  }
+  .group-move-btn:hover:not(:disabled){border-color:var(--gold);color:var(--gold);}
+  .group-move-btn:disabled{opacity:.35;cursor:default;}
+  .group-remove-btn{
+    background:none;border:1px solid var(--border);color:var(--red);
+    padding:5px 9px;border-radius:6px;cursor:pointer;font:700 10.5px var(--font-mono);
+  }
+  .group-remove-btn:hover{border-color:var(--red);background:rgba(255,84,112,.08);}
+  .group-manage-empty{font:12px var(--font-mono);color:var(--faint);padding:2px 0;}
+  .group-add-form{display:flex;gap:8px;}
+  .group-add-input{
+    flex:1;min-width:0;background:var(--panel2);border:1px solid var(--border);color:var(--text);
+    border-radius:8px;padding:8px 10px;font:12px var(--font-mono);
+  }
+  .group-add-input:focus{outline:none;border-color:var(--violet);}
+  .group-add-btn{
+    flex-shrink:0;background:var(--violet);border:none;color:#141221;
+    padding:8px 14px;border-radius:8px;cursor:pointer;font:700 11.5px var(--font-mono);
+  }
+  .group-add-btn:hover{filter:brightness(1.1);}
+
   /* ---- Analysis overlay (embeds screener.html's own analysis modal, over this page) ---- */
   .analysis-overlay{
     position:fixed;inset:0;background:rgba(5,6,9,.82);z-index:999;
@@ -246,6 +335,9 @@
     <div class="eyebrow"><span class="dot"></span>Watchlist</div>
     <div class="header-right">
       <span class="updated-label" id="updatedLabel"></span>
+      <button class="refresh-btn" id="toggleAllGroupsBtn" type="button" aria-label="Collapse all groups" title="Collapse all groups" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 8 12 3 17 8"/><polyline points="7 21 12 16 17 21"/></svg>
+      </button>
       <button class="refresh-btn" id="refreshBtn" aria-label="Refresh">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
       </button>
@@ -257,6 +349,8 @@
   <div id="pulseStrip"></div>
 
   <div id="content"></div>
+
+  <div id="groupManager"></div>
 
   <div class="notice">
     <div class="notice-summary">
@@ -347,6 +441,8 @@ function removeCoin(binanceSymbol){
   }
   expandedCoins.delete(binanceSymbol);
   openSwipeItem = null;
+  if(coinGroups[binanceSymbol]){ delete coinGroups[binanceSymbol]; saveCoinGroups(coinGroups); }
+  if(groupPickerSymbol === binanceSymbol) closeGroupPicker();
   rebuildCoinsList();
   renderAll();
 }
@@ -532,6 +628,237 @@ const expandedCoins = new Set();
 // used so opening a new one closes whichever was previously open.
 let openSwipeItem = null;
 
+// ---------------- Coin groups ----------------
+// Groups are user-defined labels a coin can be filed under (e.g. "DeFi",
+// "Watching closely"). BTC is intentionally never groupable and always
+// renders in the top-level ungrouped list. Group order (persisted as array
+// order in GROUPS_KEY) drives both the render order of the collapsible
+// sections and the up/down reorder controls in the group manager panel.
+const GROUPS_KEY = 'crypto-watchlist-groups';
+const COIN_GROUPS_KEY = 'crypto-watchlist-coin-groups';
+const UNGROUPABLE_SYMBOL = 'BTCUSDT';
+
+function loadGroups(){
+  try{
+    const raw = localStorage.getItem(GROUPS_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) ? list.filter(g => g && g.id && g.name) : [];
+  }catch(err){ return []; }
+}
+function saveGroups(list){
+  try{ localStorage.setItem(GROUPS_KEY, JSON.stringify(list)); }catch(err){ /* not critical */ }
+}
+function loadCoinGroups(){
+  try{
+    const raw = localStorage.getItem(COIN_GROUPS_KEY);
+    const obj = raw ? JSON.parse(raw) : {};
+    if(!obj || typeof obj !== 'object' || Array.isArray(obj)) return {};
+    // Migrate the older single-group-per-coin format (string values) to the
+    // current multi-group format (arrays of group ids).
+    let migrated = false;
+    Object.keys(obj).forEach(sym => {
+      if(typeof obj[sym] === 'string'){ obj[sym] = [obj[sym]]; migrated = true; }
+      else if(!Array.isArray(obj[sym])){ delete obj[sym]; migrated = true; }
+    });
+    if(migrated) saveCoinGroups(obj);
+    return obj;
+  }catch(err){ return {}; }
+}
+function saveCoinGroups(obj){
+  try{ localStorage.setItem(COIN_GROUPS_KEY, JSON.stringify(obj)); }catch(err){ /* not critical */ }
+}
+
+let groups = loadGroups();           // [{ id, name }], order = display order
+let coinGroups = loadCoinGroups();   // { binanceSymbol: [groupId, ...] } - a coin can belong to several groups
+
+// Which group sections are collapsed - in-memory only (like expandedCoins),
+// resets to "all expanded" on a fresh page load.
+const collapsedGroups = new Set();
+// The single floating group-picker panel currently open (or null). It's
+// appended straight to <body> rather than nested inside the card, so it's
+// never clipped by the card's overflow:hidden (used for the swipe gesture)
+// and always renders above everything else.
+let groupPickerEl = null;
+let groupPickerSymbol = null;
+
+function genGroupId(){
+  return 'g_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+function addGroup(name){
+  name = (name || '').trim();
+  if(!name) return;
+  if(groups.some(g => g.name.toLowerCase() === name.toLowerCase())) return;
+  groups.push({ id: genGroupId(), name });
+  saveGroups(groups);
+  renderGroupManager();
+  renderAll();
+}
+function removeGroup(id){
+  groups = groups.filter(g => g.id !== id);
+  saveGroups(groups);
+  let changed = false;
+  Object.keys(coinGroups).forEach(sym => {
+    const arr = coinGroups[sym];
+    if(Array.isArray(arr) && arr.includes(id)){
+      const filtered = arr.filter(gid => gid !== id);
+      if(filtered.length) coinGroups[sym] = filtered; else delete coinGroups[sym];
+      changed = true;
+    }
+  });
+  if(changed) saveCoinGroups(coinGroups);
+  collapsedGroups.delete(id);
+  closeGroupPicker();
+  renderGroupManager();
+  renderAll();
+}
+function moveGroup(id, dir){
+  const idx = groups.findIndex(g => g.id === id);
+  if(idx < 0) return;
+  const next = idx + dir;
+  if(next < 0 || next >= groups.length) return;
+  [groups[idx], groups[next]] = [groups[next], groups[idx]];
+  saveGroups(groups);
+  renderGroupManager();
+  renderAll();
+}
+// Toggles a single coin's membership in a single group (checkbox semantics -
+// a coin can be checked into any number of groups at once).
+function toggleCoinGroup(binanceSymbol, groupId, checked){
+  if(binanceSymbol === UNGROUPABLE_SYMBOL) return;
+  const set = new Set(coinGroups[binanceSymbol] || []);
+  if(checked) set.add(groupId); else set.delete(groupId);
+  if(set.size) coinGroups[binanceSymbol] = Array.from(set); else delete coinGroups[binanceSymbol];
+  saveCoinGroups(coinGroups);
+  renderAll(); // updates section membership + the icon's "assigned" state; picker itself is untouched
+}
+function toggleGroupCollapse(id){
+  if(collapsedGroups.has(id)) collapsedGroups.delete(id); else collapsedGroups.add(id);
+  renderAll();
+}
+
+function closeGroupPicker(){
+  if(groupPickerEl) groupPickerEl.remove();
+  groupPickerEl = null;
+  groupPickerSymbol = null;
+}
+function buildGroupPickerHtml(binanceSymbol){
+  const memberOf = new Set(coinGroups[binanceSymbol] || []);
+  if(!groups.length){
+    return `<div class="group-picker-title">Add to group</div><div class="group-picker-empty">No groups yet — add one in "Groups" below the watchlist.</div>`;
+  }
+  const items = groups.map(g => `
+    <label class="group-picker-item">
+      <input type="checkbox" data-group-id="${g.id}" ${memberOf.has(g.id) ? 'checked' : ''}>
+      <span>${escapeHtml(g.name)}</span>
+    </label>`).join('');
+  return `<div class="group-picker-title">Add to group(s)</div><div class="group-picker-list">${items}</div>`;
+}
+function openGroupPicker(e, binanceSymbol){
+  e.preventDefault();
+  e.stopPropagation();
+  if(groupPickerSymbol === binanceSymbol){ closeGroupPicker(); return; }
+  closeGroupPicker();
+  const btn = e.currentTarget;
+  const rect = btn.getBoundingClientRect();
+
+  const el = document.createElement('div');
+  el.className = 'group-picker';
+  el.innerHTML = buildGroupPickerHtml(binanceSymbol);
+  el.addEventListener('click', ev => ev.stopPropagation());
+  el.addEventListener('pointerdown', ev => ev.stopPropagation());
+  document.body.appendChild(el);
+
+  // Position it near the button, flipping above/below and clamping
+  // horizontally so it always stays fully on-screen instead of getting cut
+  // off by a parent's overflow:hidden or the edge of the viewport.
+  const panelRect = el.getBoundingClientRect();
+  let top = rect.top - panelRect.height - 8;
+  if(top < 8) top = Math.min(rect.bottom + 8, window.innerHeight - panelRect.height - 8);
+  let left = Math.min(rect.left, window.innerWidth - panelRect.width - 8);
+  if(left < 8) left = 8;
+  el.style.top = Math.max(8, top) + 'px';
+  el.style.left = left + 'px';
+
+  el.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', () => toggleCoinGroup(binanceSymbol, cb.dataset.groupId, cb.checked));
+  });
+
+  groupPickerEl = el;
+  groupPickerSymbol = binanceSymbol;
+}
+function renderGroupIcon(coin){
+  if(coin.binanceSymbol === UNGROUPABLE_SYMBOL) return '';
+  const memberOf = coinGroups[coin.binanceSymbol] || [];
+  const title = memberOf.length ? `In ${memberOf.length} group${memberOf.length > 1 ? 's' : ''}` : 'Add to group';
+  return `
+    <span class="group-picker-wrap">
+      <button class="group-icon-btn ${memberOf.length ? 'assigned' : ''}" type="button" title="${title}" onclick="openGroupPicker(event, '${coin.binanceSymbol}')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </button>
+    </span>`;
+}
+
+function renderGroupManager(){
+  const el = document.getElementById('groupManager');
+  if(!el) return;
+  const rows = groups.map((g, idx) => `
+    <div class="group-manage-row">
+      <span class="group-manage-name">${escapeHtml(g.name)}</span>
+      <span class="group-manage-actions">
+        <button type="button" class="group-move-btn" title="Move up" ${idx === 0 ? 'disabled' : ''} onclick="moveGroup('${g.id}', -1)">↑</button>
+        <button type="button" class="group-move-btn" title="Move down" ${idx === groups.length - 1 ? 'disabled' : ''} onclick="moveGroup('${g.id}', 1)">↓</button>
+        <button type="button" class="group-remove-btn" title="Remove group" onclick="removeGroup('${g.id}')">Remove</button>
+      </span>
+    </div>`).join('');
+
+  el.innerHTML = `
+    <div class="group-manager">
+      <div class="group-manager-title">Groups</div>
+      <div class="group-manager-list">${rows || '<div class="group-manage-empty">No groups yet - add one below.</div>'}</div>
+      <form class="group-add-form" id="groupAddForm">
+        <input type="text" id="newGroupInput" class="group-add-input" placeholder="New group name" maxlength="24" autocomplete="off">
+        <button type="submit" class="group-add-btn">Add group</button>
+      </form>
+    </div>`;
+
+  document.getElementById('groupAddForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = document.getElementById('newGroupInput');
+    addGroup(input.value);
+    input.value = '';
+    input.focus();
+  });
+}
+
+// ---------------- Collapse-all / expand-all groups ----------------
+function updateToggleAllGroupsBtn(){
+  const btn = document.getElementById('toggleAllGroupsBtn');
+  if(!btn) return;
+  const sections = document.querySelectorAll('.coin-group');
+  if(!sections.length){ btn.style.display = 'none'; return; }
+  btn.style.display = '';
+  const anyExpanded = Array.from(sections).some(s => !s.classList.contains('collapsed'));
+  const label = anyExpanded ? 'Collapse all groups' : 'Expand all groups';
+  btn.setAttribute('aria-label', label);
+  btn.setAttribute('title', label);
+  btn.classList.toggle('flipped', !anyExpanded);
+}
+document.getElementById('toggleAllGroupsBtn').addEventListener('click', () => {
+  const sections = document.querySelectorAll('.coin-group');
+  if(!sections.length) return;
+  const anyExpanded = Array.from(sections).some(s => !s.classList.contains('collapsed'));
+  groups.forEach(g => { if(anyExpanded) collapsedGroups.add(g.id); else collapsedGroups.delete(g.id); });
+  renderAll();
+});
+
+// Closing the floating group-picker on any outside tap/click, same pattern
+// as the swipe-panel outside-close below.
+document.addEventListener('pointerdown', (e) => {
+  if(groupPickerEl && !groupPickerEl.contains(e.target) && !e.target.closest('.group-icon-btn')){
+    closeGroupPicker();
+  }
+});
+
 function renderCoinRow(coin, ticker, rankInfo){
   const isExpanded = expandedCoins.has(coin.binanceSymbol);
   const deleteBg = `
@@ -605,6 +932,7 @@ function renderCoinRow(coin, ticker, rankInfo){
           <div class="watch-foot">
             <span class="watch-asof">${closeTime ? 'Vol ' + formatVolume(quoteVolume) : ''}</span>
             <span class="watch-foot-links">
+              ${renderGroupIcon(coin)}
               <button class="analysis-btn" type="button" onclick="event.preventDefault(); event.stopPropagation(); openAnalysisOverlay('${coin.binanceSymbol}')">Analysis</button>
               <a class="watch-link" href="${tradingViewChartUrl(coin.binanceSymbol)}" rel="noopener" onclick="event.preventDefault(); event.stopPropagation(); openTradingViewChart('${coin.binanceSymbol}')">View chart ↗</a>
             </span>
@@ -635,21 +963,47 @@ function renderPulseStrip(tickers){
     </div>`;
 }
 
+function rankOf(coin){
+  return (state.ranks[coin.coingeckoId] && state.ranks[coin.coingeckoId].rank) || 999;
+}
+function byRank(a, b){ return rankOf(a) - rankOf(b); }
+function renderRow(coin){
+  return renderCoinRow(coin, state.tickers[coin.binanceSymbol], state.ranks[coin.coingeckoId]);
+}
+
 function renderAll(){
   const el = document.getElementById('content');
-  const sorted = [...COINS].sort((a, b) => {
-    const ra = (state.ranks[a.coingeckoId] && state.ranks[a.coingeckoId].rank) || 999;
-    const rb = (state.ranks[b.coingeckoId] && state.ranks[b.coingeckoId].rank) || 999;
-    return ra - rb;
-  });
-  el.innerHTML = `<div class="watch-list">${
-    sorted.map(coin => renderCoinRow(
-      coin,
-      state.tickers[coin.binanceSymbol],
-      state.ranks[coin.coingeckoId]
-    )).join('')
-  }</div>`;
+
+  // BTC is always ungrouped by design; every other coin is ungrouped only
+  // until the user checks it into at least one group via the group icon.
+  const ungrouped = COINS
+    .filter(c => c.binanceSymbol === UNGROUPABLE_SYMBOL || !(coinGroups[c.binanceSymbol] && coinGroups[c.binanceSymbol].length))
+    .sort(byRank);
+
+  const groupSections = groups.map(g => {
+    const coinsInGroup = COINS
+      .filter(c => c.binanceSymbol !== UNGROUPABLE_SYMBOL && Array.isArray(coinGroups[c.binanceSymbol]) && coinGroups[c.binanceSymbol].includes(g.id))
+      .sort(byRank);
+    if(!coinsInGroup.length) return ''; // group exists but has no coins in it yet
+    const isCollapsed = collapsedGroups.has(g.id);
+    return `
+      <div class="coin-group ${isCollapsed ? 'collapsed' : ''}" data-group-id="${g.id}">
+        <button type="button" class="coin-group-header" onclick="toggleGroupCollapse('${g.id}')" aria-expanded="${!isCollapsed}">
+          <span class="coin-group-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+          <span class="coin-group-name">${escapeHtml(g.name)}</span>
+          <span class="coin-group-count">${coinsInGroup.length}</span>
+        </button>
+        <div class="coin-group-body">
+          <div class="watch-list">${coinsInGroup.map(renderRow).join('')}</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="watch-list">${ungrouped.map(renderRow).join('')}</div>
+    ${groupSections}`;
   renderPulseStrip(state.tickers);
+  updateToggleAllGroupsBtn();
 }
 
 function renderSkeleton(){
@@ -917,6 +1271,7 @@ document.getElementById('noticeToggle').addEventListener('click', () => {
 });
 
 loadCache();
+renderGroupManager();
 if(Object.keys(state.tickers).length) renderAll();
 resolveCustomCoinMetadata().finally(refreshAll);
 setInterval(loadPrices, PRICE_REFRESH_MS);
