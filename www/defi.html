@@ -84,6 +84,7 @@
   .section.collapsed .section-body{display:none;}
   .section.collapsed .section-head{margin-bottom:0;}
   .section-note{font-size:11px;color:var(--faint);}
+  .section-note-inline{font-size:11.5px;color:var(--muted);padding:2px 2px 10px;}
   .panel{background:var(--panel);border:1px solid var(--border);border-radius:14px;}
 
   /* ---- Stat strip ---- */
@@ -276,34 +277,34 @@
   </div>
 
   <!-- Chains -->
-  <div class="section" id="sec-chains">
+  <div class="section collapsed" id="sec-chains">
     <div class="section-head toggleable" data-toggle="sec-chains">
-      <div class="section-title"><button class="section-toggle-btn" type="button" aria-expanded="true" aria-label="Toggle section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button><span class="si">⛓️</span>TVL by Chain</div>
-      <div class="section-note">Top 12 of tracked chains</div>
+      <div class="section-title"><button class="section-toggle-btn" type="button" aria-expanded="false" aria-label="Toggle section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button><span class="si">⛓️</span>TVL by Chain</div>
     </div>
     <div class="section-body">
+      <div class="section-note-inline">Top 12 of tracked chains</div>
       <div class="panel" id="chainsPanel"></div>
     </div>
   </div>
 
   <!-- Categories -->
-  <div class="section" id="sec-categories">
+  <div class="section collapsed" id="sec-categories">
     <div class="section-head toggleable" data-toggle="sec-categories">
-      <div class="section-title"><button class="section-toggle-btn" type="button" aria-expanded="true" aria-label="Toggle section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button><span class="si">🗂️</span>TVL by Category</div>
-      <div class="section-note">Where DeFi capital is deployed</div>
+      <div class="section-title"><button class="section-toggle-btn" type="button" aria-expanded="false" aria-label="Toggle section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button><span class="si">🗂️</span>TVL by Category</div>
     </div>
     <div class="section-body">
+      <div class="section-note-inline">Where DeFi capital is deployed</div>
       <div class="panel" id="categoriesPanel"></div>
     </div>
   </div>
 
   <!-- Protocols -->
-  <div class="section" id="sec-protocols">
+  <div class="section collapsed" id="sec-protocols">
     <div class="section-head toggleable" data-toggle="sec-protocols">
-      <div class="section-title"><button class="section-toggle-btn" type="button" aria-expanded="true" aria-label="Toggle section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button><span class="si">🏛️</span>Top Protocols</div>
-      <div class="section-note" id="protocolsNote"></div>
+      <div class="section-title"><button class="section-toggle-btn" type="button" aria-expanded="false" aria-label="Toggle section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button><span class="si">🏛️</span>Top Protocols</div>
     </div>
     <div class="section-body">
+      <div class="section-note-inline" id="protocolsNote"></div>
       <div class="controls-row">
         <input class="ctrl" id="protoSearch" type="text" placeholder="Search protocol…">
         <select class="ctrl" id="protoCategory"><option value="all">All categories</option></select>
@@ -319,34 +320,34 @@
   </div>
 
   <!-- DEX volume -->
-  <div class="section" id="sec-dex">
+  <div class="section collapsed" id="sec-dex">
     <div class="section-head toggleable" data-toggle="sec-dex">
-      <div class="section-title"><button class="section-toggle-btn" type="button" aria-expanded="true" aria-label="Toggle section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button><span class="si">🔁</span>DEX Trade Volume (24h)</div>
-      <div class="section-note" id="dexNote"></div>
+      <div class="section-title"><button class="section-toggle-btn" type="button" aria-expanded="false" aria-label="Toggle section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button><span class="si">🔁</span>DEX Trade Volume (24h)</div>
     </div>
     <div class="section-body">
+      <div class="section-note-inline" id="dexNote"></div>
       <div class="panel" id="dexPanel"></div>
     </div>
   </div>
 
   <!-- Movers -->
-  <div class="section" id="sec-movers">
+  <div class="section collapsed" id="sec-movers">
     <div class="section-head toggleable" data-toggle="sec-movers">
-      <div class="section-title"><button class="section-toggle-btn" type="button" aria-expanded="true" aria-label="Toggle section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button><span class="si">🚀</span>Market Movers</div>
-      <div class="section-note">Top 100 coins by market cap, 24h</div>
+      <div class="section-title"><button class="section-toggle-btn" type="button" aria-expanded="false" aria-label="Toggle section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button><span class="si">🚀</span>Market Movers</div>
     </div>
     <div class="section-body">
+      <div class="section-note-inline">Top 100 coins by market cap, 24h</div>
       <div class="panel"><div class="movers-grid" id="moversPanel"></div></div>
     </div>
   </div>
 
   <!-- Events / Unlocks -->
-  <div class="section" id="sec-events">
+  <div class="section collapsed" id="sec-events">
     <div class="section-head toggleable" data-toggle="sec-events">
-      <div class="section-title"><button class="section-toggle-btn" type="button" aria-expanded="true" aria-label="Toggle section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button><span class="si">🗓️</span>Unlocks & Major Events</div>
-      <div class="section-note">Token vesting & emission schedules</div>
+      <div class="section-title"><button class="section-toggle-btn" type="button" aria-expanded="false" aria-label="Toggle section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button><span class="si">🗓️</span>Unlocks & Major Events</div>
     </div>
     <div class="section-body">
+      <div class="section-note-inline">Token vesting & emission schedules</div>
       <div class="panel" id="eventsPanel"></div>
     </div>
   </div>
@@ -1030,35 +1031,22 @@ document.getElementById('noticeToggle').addEventListener('click', () => {
 
 // ---------------- Collapsible sections ----------------
 // Lets long sections (chains, categories, protocols, DEX volume, movers,
-// unlocks) be collapsed to make the page easier to scan/navigate. State is
-// remembered per section across visits via localStorage.
-const SECTION_COLLAPSE_KEY = 'crypto-defi-section-collapse-v1';
-function loadCollapseState(){
-  try{
-    const raw = localStorage.getItem(SECTION_COLLAPSE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  }catch(err){ return {}; }
-}
-function saveCollapseState(state){
-  try{ localStorage.setItem(SECTION_COLLAPSE_KEY, JSON.stringify(state)); }catch(err){ /* not critical */ }
-}
+// unlocks) be collapsed to make the page easier to scan/navigate. They
+// always start collapsed on open/reopen - expanding one only lasts for the
+// current visit, not persisted across app closes.
 function setSectionCollapsed(sectionEl, collapsed){
   sectionEl.classList.toggle('collapsed', collapsed);
   const btn = sectionEl.querySelector('.section-toggle-btn');
   if(btn) btn.setAttribute('aria-expanded', String(!collapsed));
 }
 (function initCollapsibleSections(){
-  const state = loadCollapseState();
   document.querySelectorAll('.section-head[data-toggle]').forEach(head => {
     const id = head.getAttribute('data-toggle');
     const sectionEl = document.getElementById(id);
     if(!sectionEl) return;
-    if(state[id]) setSectionCollapsed(sectionEl, true);
-    head.addEventListener('click', (e) => {
-      const collapsed = !sectionEl.classList.contains('collapsed');
-      setSectionCollapsed(sectionEl, collapsed);
-      state[id] = collapsed;
-      saveCollapseState(state);
+    setSectionCollapsed(sectionEl, true);
+    head.addEventListener('click', () => {
+      setSectionCollapsed(sectionEl, !sectionEl.classList.contains('collapsed'));
     });
   });
 })();
