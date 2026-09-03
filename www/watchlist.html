@@ -950,7 +950,14 @@ document.getElementById('toggleAllGroupsBtn').addEventListener('click', () => {
   const sections = document.querySelectorAll('.coin-group');
   if(!sections.length) return;
   const anyExpanded = Array.from(sections).some(s => !s.classList.contains('collapsed'));
-  groups.forEach(g => { if(anyExpanded) collapsedGroups.add(g.id); else collapsedGroups.delete(g.id); });
+  // Walk the actual rendered sections (real groups + the Ungrouped section,
+  // when enabled) rather than just `groups`, so "collapse/expand all" also
+  // covers Ungrouped instead of leaving it in whatever state it was in.
+  sections.forEach(s => {
+    const id = s.dataset.groupId;
+    if(!id) return;
+    if(anyExpanded) collapsedGroups.add(id); else collapsedGroups.delete(id);
+  });
   renderAll();
 });
 
