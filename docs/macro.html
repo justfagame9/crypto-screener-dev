@@ -121,8 +121,15 @@
   .idx-change.flat{color:var(--muted);}
 
   .idx-spark{width:100%;height:34px;display:block;}
-  .idx-foot{font:9.5px var(--font-mono);color:var(--faint);}
+  .idx-foot{font:9.5px var(--font-mono);color:var(--faint);display:flex;align-items:center;justify-content:space-between;gap:8px;}
   .idx-error{color:var(--faint);font:11px var(--font-mono);padding:6px 0;}
+  .idx-mstatus{
+    font:600 9px var(--font-mono);letter-spacing:.03em;white-space:nowrap;
+    padding:2px 6px;border-radius:5px;flex-shrink:0;
+  }
+  .idx-mstatus.open{color:var(--accent);background:rgba(53,224,192,.1);}
+  .idx-mstatus.closed{color:var(--faint);background:rgba(139,147,163,.08);}
+  .idx-mstatus.extended{color:var(--amber);background:rgba(245,166,35,.1);}
 
   /* ---- Spread / callout card ---- */
   .callout-card{
@@ -400,7 +407,6 @@ const YAHOO_SYMBOLS = [
 
   { group:'dollar', id:'dxy', symbol:'DX-Y.NYB', name:'US Dollar Index', sub:'DXY — closely-watched inverse to BTC', icon:'💵', gradient:'linear-gradient(135deg,#A78BFA,#6d28d9)', format:'index' },
   { group:'dollar', id:'us10y', symbol:'^TNX', name:'US 10-Year Yield', sub:'Rising real yields pressure non-yielding assets', icon:'🏦', gradient:'linear-gradient(135deg,#A78BFA,#6d28d9)', format:'yield', scale:0.1 },
-  { group:'dollar', id:'us2y', symbol:'TMUBMUSD02Y', name:'US 2-Year Yield', sub:"Market's real-time read on Fed policy", icon:'🏛️', gradient:'linear-gradient(135deg,#A78BFA,#6d28d9)', format:'yield' },
   { group:'dollar', id:'usdinr', symbol:'INR=X', name:'USD/INR', sub:'Rupee vs. dollar — local FX cross-check', icon:'🇮🇳', gradient:'linear-gradient(135deg,#A78BFA,#6d28d9)', format:'index' },
 
   { group:'commodities', id:'gold', symbol:'GC=F', name:'Gold', sub:'"Digital gold" comparison for BTC', icon:'🥇', gradient:'linear-gradient(135deg,#F5A623,#b8860b)', format:'usd' },
@@ -499,6 +505,31 @@ function formatValue(cfg, price){
   return v.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
 }
 
+// Yahoo's v8 chart endpoint often omits the simple `marketState` field, so
+// derive open/closed/pre/post from `currentTradingPeriod`'s start/end epoch
+// timestamps (present on nearly every quote) and fall back to `marketState`
+// when that's all we have.
+function getMarketStatus(meta){
+  const nowSec = Date.now() / 1000;
+  const cp = meta.currentTradingPeriod;
+  const inWindow = (w) => w && typeof w.start === 'number' && typeof w.end === 'number' && nowSec >= w.start && nowSec < w.end;
+  if(cp){
+    if(inWindow(cp.regular)) return { label: 'Market Open', cls: 'open' };
+    if(inWindow(cp.pre)) return { label: 'Pre-Market', cls: 'extended' };
+    if(inWindow(cp.post)) return { label: 'After-Hours', cls: 'extended' };
+    return { label: 'Market Closed', cls: 'closed' };
+  }
+  const marketState = (meta.marketState || '').toUpperCase();
+  return ({
+    REGULAR: { label: 'Market Open', cls: 'open' },
+    PRE: { label: 'Pre-Market', cls: 'extended' },
+    PREPRE: { label: 'Pre-Market', cls: 'extended' },
+    POST: { label: 'After-Hours', cls: 'extended' },
+    POSTPOST: { label: 'After-Hours', cls: 'extended' },
+    CLOSED: { label: 'Market Closed', cls: 'closed' },
+  })[marketState] || null;
+}
+
 function renderIndexCard(cfg, q){
   if(!q){
     return `
@@ -521,6 +552,7 @@ function renderIndexCard(cfg, q){
   const sparkline = buildSparklineSVG(closes, isUp, `spark-${cfg.id}`);
   const marketState = (meta.marketState || '').toUpperCase();
   const asOf = meta.regularMarketTime ? new Date(meta.regularMarketTime * 1000) : null;
+  const mstatus = getMarketStatus(meta);
 
   return `
     <div class="idx-card">
@@ -534,7 +566,10 @@ function renderIndexCard(cfg, q){
         <div class="idx-change ${changePct === 0 ? 'flat' : (isUp ? 'up' : 'down')}">${isUp ? '▲' : '▼'} ${Math.abs(changePct).toFixed(2)}%</div>
       </div>
       ${sparkline}
-      <div class="idx-foot">${asOf ? asOf.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}</div>
+      <div class="idx-foot">
+        <span>${asOf ? asOf.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}</span>
+        ${mstatus ? `<span class="idx-mstatus ${mstatus.cls}">${mstatus.label}</span>` : ''}
+      </div>
     </div>`;
 }
 
@@ -543,21 +578,6 @@ function renderGroup(groupId){
   if(!el) return;
   const cfgs = YAHOO_SYMBOLS.filter(c => c.group === groupId);
   el.innerHTML = cfgs.map(cfg => renderIndexCard(cfg, quotesById[cfg.id])).join('');
-
-  if(groupId === 'dollar'){
-    const us10y = quotesById.us10y, us2y = quotesById.us2y;
-    if(us10y && us2y){
-      const y10 = us10y.meta.regularMarketPrice * 0.1;
-      const y2 = us2y.meta.regularMarketPrice;
-      const spread = y10 - y2;
-      el.insertAdjacentHTML('beforeend', `
-        <div class="callout-card">
-          <div class="callout-title">10Y – 2Y Spread</div>
-          <div class="callout-value" style="color:${spread >= 0 ? 'var(--accent)' : 'var(--red)'}">${spread >= 0 ? '+' : ''}${spread.toFixed(2)}%</div>
-          <div class="callout-note">A negative (inverted) spread has preceded past recessions and is watched as an early risk-off signal.</div>
-        </div>`);
-    }
-  }
 }
 
 function renderCryptoSentiment(){
