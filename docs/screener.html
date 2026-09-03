@@ -70,8 +70,8 @@
   }
   .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);animation:pulse 2s infinite;}
   @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+  .title-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
   h1{font-size:23px;font-weight:700;margin:4px 0 0;letter-spacing:-0.01em;}
-  .header-right{display:flex;align-items:center;gap:10px;}
   .live-tag{
     display:inline-flex;align-items:center;gap:6px;
     font:600 10.5px var(--font-mono);color:var(--accent);
@@ -366,6 +366,7 @@
     color:var(--muted);
     margin-top:14px;
   }
+  .legend > span{flex-basis:100%;}
   .legend b{color:var(--text);}
   .legend #csvBtn{flex-basis:100%;width:max-content;}
   .error-box{
@@ -564,13 +565,12 @@
 <div class="header-row">
   <div>
     <div class="eyebrow"><span class="dot"></span>Ichimoku Breakout Screener</div>
-    <h1>Binance USDT-M Futures Scanner</h1>
-  </div>
-  <div class="header-right">
-    <span class="live-tag">● Live market data</span>
+    <div class="title-row">
+      <h1>Binance USDT-M Futures Scanner</h1>
+      <span class="live-tag">● Live market data</span>
+    </div>
   </div>
 </div>
-<p class="sub">Scans every Binance USDT-M perpetual future for confirmed Ichimoku Kinko Hyo breakouts, computed live from candle data — Chikou-span crosses and price/cloud breakouts, long and short.</p>
 
 <div class="panel">
   <input type="hidden" id="tenkanLen" value="9">
