@@ -6,6 +6,9 @@
 <title>TradeSphere</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0b0e17">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#0b0e17;
@@ -18,6 +21,11 @@
     --faint:#5b6478;
     --purple:#8b5cf6;
     --accent:#35e0c0;
+    --red:#ff5470;
+    --amber:#f5a623;
+    --blue:#5b8cff;
+    --font-ui:'Space Grotesk',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --font-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{
@@ -25,7 +33,7 @@
     height:100%;
     background:var(--bg);
     color:var(--text);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-family:var(--font-ui);
     overflow:hidden;
     -webkit-font-smoothing:antialiased;
   }
@@ -272,16 +280,16 @@
   }
   .home-header{padding:2px 2px 16px;position:relative;}
   .home-greeting{
-    font-size:20px;
+    font-size:21px;
     font-weight:800;
+    font-family:var(--font-ui);
     letter-spacing:-.02em;
-    max-width:60%;
     background:linear-gradient(90deg, #ffffff 0%, #edfdf4 32%, #7fe4b6 58%, #2ac78a 100%);
     -webkit-background-clip:text;
     background-clip:text;
     color:transparent;
   }
-  .home-subtext{font-size:12px;color:var(--muted);margin-top:3px;max-width:60%;}
+  .home-subtext{font-size:12px;color:var(--muted);margin-top:3px;}
 
   /* Small live-looking candlestick + trend chart filling the empty space
      to the right of the greeting text. Purely decorative (aria-hidden). */
@@ -354,8 +362,129 @@
     font-size:19px;
     box-shadow:0 6px 16px rgba(0,0,0,.28);
   }
-  .home-card .home-title{display:block;font-size:13.5px;font-weight:700;color:var(--text);line-height:1.25;}
+  .home-card .home-title{display:block;font-size:13.5px;font-weight:700;color:var(--text);line-height:1.25;font-family:var(--font-ui);}
   .home-card .home-desc{display:block;font-size:11px;color:var(--muted);margin-top:2px;line-height:1.35;}
+  .home-card.hidden{display:none;}
+
+  /* ---- Live ticker strip ---- */
+  .ticker-section{margin:0 0 18px;position:relative;z-index:1;}
+  .ticker-eyebrow{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 2px 8px;
+  }
+  .ticker-eyebrow-left{display:flex;align-items:center;gap:7px;}
+  .ticker-eyebrow .dot{
+    width:6px;height:6px;border-radius:50%;
+    background:var(--accent);box-shadow:0 0 8px var(--accent);
+    animation:tickerPulse 2s infinite;
+  }
+  @keyframes tickerPulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+  .ticker-eyebrow-label{
+    font:700 11px var(--font-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+  }
+  .ticker-updated{font-family:var(--font-mono);font-size:10px;color:var(--faint);}
+  .ticker-refresh{
+    width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+    border:1px solid var(--border);background:transparent;border-radius:8px;color:var(--muted);
+    cursor:pointer;transition:border-color .15s ease,color .15s ease;
+  }
+  .ticker-refresh svg{width:13px;height:13px;transition:transform .4s;}
+  .ticker-refresh.spinning svg{transform:rotate(360deg);}
+  .ticker-refresh:active{border-color:var(--accent);color:var(--accent);}
+  .ticker-row{
+    display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;
+    margin:0 -2px;padding:2px 2px 4px;
+  }
+  .ticker-row::-webkit-scrollbar{display:none;}
+  .ticker-card{
+    flex:0 0 auto;min-width:112px;
+    display:flex;flex-direction:column;gap:5px;
+    padding:10px 12px;border-radius:14px;
+    background:var(--panel);border:1px solid var(--border-soft);
+    cursor:pointer;transition:border-color .15s ease,transform .1s ease;
+  }
+  .ticker-card:active{transform:scale(.96);}
+  .ticker-card.up{border-color:rgba(53,224,192,.28);}
+  .ticker-card.down{border-color:rgba(255,84,112,.28);}
+  .ticker-sym{font:700 11.5px var(--font-ui);color:var(--text);letter-spacing:.01em;}
+  .ticker-price{font:600 14px var(--font-mono);color:var(--text);transition:color .3s ease;}
+  .ticker-price.flash-up{color:var(--accent);}
+  .ticker-price.flash-down{color:var(--red);}
+  .ticker-chg{font:600 11px var(--font-mono);}
+  .ticker-chg.up{color:var(--accent);}
+  .ticker-chg.down{color:var(--red);}
+  .ticker-card.skeleton .ticker-price,
+  .ticker-card.skeleton .ticker-chg{
+    color:transparent;border-radius:4px;
+    background:linear-gradient(90deg,var(--panel2) 25%,var(--border-soft) 50%,var(--panel2) 75%);
+    background-size:200% 100%;animation:tickerShimmer 1.3s infinite;
+  }
+  @keyframes tickerShimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+  .ticker-error{
+    font-size:11px;color:var(--faint);padding:8px 2px;
+  }
+
+  /* ---- Search bar ---- */
+  .search-bar{
+    position:relative;margin:0 0 16px;z-index:1;
+  }
+  .search-bar svg{
+    position:absolute;left:12px;top:50%;transform:translateY(-50%);
+    width:15px;height:15px;color:var(--faint);pointer-events:none;
+  }
+  .search-input{
+    width:100%;padding:11px 34px 11px 36px;border-radius:12px;
+    background:var(--panel);border:1px solid var(--border-soft);
+    color:var(--text);font:500 13.5px var(--font-ui);outline:none;
+    transition:border-color .15s ease;
+  }
+  .search-input::placeholder{color:var(--faint);}
+  .search-input:focus{border-color:var(--purple);}
+  .search-clear{
+    position:absolute;right:6px;top:50%;transform:translateY(-50%);
+    width:26px;height:26px;border:none;background:transparent;color:var(--faint);
+    display:none;align-items:center;justify-content:center;cursor:pointer;border-radius:50%;
+  }
+  .search-clear svg{width:14px;height:14px;}
+  .search-bar.has-value .search-clear{display:flex;}
+  .search-empty{
+    display:none;text-align:center;color:var(--muted);font-size:12.5px;
+    padding:32px 10px;
+  }
+  .search-empty.show{display:block;}
+
+  /* ---- Recently visited ---- */
+  .recent-section{margin:0 0 18px;position:relative;z-index:1;}
+  .recent-section.hidden{display:none;}
+  .recent-row{
+    display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+    scrollbar-width:none;margin:0 -2px;padding:0 2px 2px;
+  }
+  .recent-row::-webkit-scrollbar{display:none;}
+  .recent-chip{
+    flex:0 0 auto;display:flex;align-items:center;gap:7px;
+    padding:8px 13px 8px 10px;border-radius:999px;
+    background:var(--panel);border:1px solid var(--border-soft);
+    cursor:pointer;font:600 12px var(--font-ui);color:var(--text);
+    white-space:nowrap;transition:border-color .15s ease,transform .1s ease;
+  }
+  .recent-chip:active{transform:scale(.95);}
+  .recent-chip .recent-icon{font-size:13px;}
+
+  /* ---- Category sections ---- */
+  .section-heading{
+    display:flex;align-items:baseline;gap:8px;
+    padding:0 2px 9px;position:relative;z-index:1;
+  }
+  .section-heading h3{
+    margin:0;font:700 13px var(--font-ui);letter-spacing:.02em;color:var(--text);
+  }
+  .section-heading .section-count{
+    font:600 10.5px var(--font-mono);color:var(--faint);
+  }
+  .category-section{margin:0 0 20px;}
+  .category-section.hidden{display:none;}
 
   .home-card[data-page="screener"] .home-icon{background:linear-gradient(135deg,#35e0c0,#1c8f79);}
   .home-card[data-page="defi"] .home-icon{background:linear-gradient(135deg,#35e0c0,#5b8cff);}
@@ -484,112 +613,122 @@
     <div class="page active" data-page="home">
       <div class="home-wrap">
         <div class="home-header">
-          <div class="home-greeting">TradeSphere</div>
-          <div class="home-subtext">Choose a tool to get started</div>
-          <svg class="header-chart" viewBox="0 0 132 76" aria-hidden="true">
-            <defs>
-              <linearGradient id="hcArea" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#35e0c0" stop-opacity=".35"/>
-                <stop offset="100%" stop-color="#35e0c0" stop-opacity="0"/>
-              </linearGradient>
-              <linearGradient id="hcLine" x1="0" y1="1" x2="1" y2="0">
-                <stop offset="0%" stop-color="#8b5cf6"/>
-                <stop offset="100%" stop-color="#35e0c0"/>
-              </linearGradient>
-            </defs>
-            <!-- candlesticks -->
-            <g stroke-width="1.4" stroke-linecap="round">
-              <line x1="10" y1="40" x2="10" y2="58" stroke="#ff6b8b"/>
-              <rect x="7" y="45" width="6" height="9" rx="1.2" fill="#ff6b8b"/>
-              <line x1="26" y1="34" x2="26" y2="52" stroke="#5b6478"/>
-              <rect x="23" y="38" width="6" height="10" rx="1.2" fill="#5b6478"/>
-              <line x1="42" y1="24" x2="42" y2="46" stroke="#35e0c0"/>
-              <rect x="39" y="30" width="6" height="11" rx="1.2" fill="#35e0c0"/>
-              <line x1="58" y1="18" x2="58" y2="38" stroke="#ff6b8b"/>
-              <rect x="55" y="24" width="6" height="8" rx="1.2" fill="#ff6b8b"/>
-              <line x1="74" y1="10" x2="74" y2="32" stroke="#35e0c0"/>
-              <rect x="71" y="14" width="6" height="12" rx="1.2" fill="#35e0c0"/>
-              <line x1="90" y1="6" x2="90" y2="24" stroke="#35e0c0"/>
-              <rect x="87" y="9" width="6" height="9" rx="1.2" fill="#35e0c0"/>
-            </g>
-            <!-- trend line + area over the candles -->
-            <path d="M2,54 L18,44 34,40 50,26 66,20 82,12 98,8 L98,70 2,70 Z" fill="url(#hcArea)"/>
-            <path d="M2,54 L18,44 34,40 50,26 66,20 82,12 98,8" fill="none" stroke="url(#hcLine)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle class="chart-dot" cx="98" cy="8" r="3.2" fill="#35e0c0"/>
-          </svg>
+          <div class="home-greeting" id="homeGreeting">TradeSphere</div>
+          <div class="home-subtext">Your crypto market cockpit</div>
         </div>
-        <div class="home-grid-wrap">
-          <svg class="grid-watermark" viewBox="0 0 400 460" preserveAspectRatio="none" aria-hidden="true">
-            <defs>
-              <linearGradient id="wmArea" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#8b5cf6" stop-opacity=".9"/>
-                <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0"/>
-              </linearGradient>
-            </defs>
-            <path d="M0,360 C60,340 90,300 140,310 C190,320 210,250 260,230 C300,214 320,150 400,90 L400,460 0,460 Z" fill="url(#wmArea)"/>
-            <path d="M0,360 C60,340 90,300 140,310 C190,320 210,250 260,230 C300,214 320,150 400,90" fill="none" stroke="#35e0c0" stroke-width="2.5"/>
-          </svg>
-          <div class="home-grid">
-          <button class="home-card" type="button" data-page="season">
-            <span class="home-icon">🌗</span>
-            <span><span class="home-title">Season Index</span><span class="home-desc">Bitcoin vs Altcoin season, live</span></span>
+
+        <div class="ticker-section">
+          <div class="ticker-eyebrow">
+            <div class="ticker-eyebrow-left">
+              <span class="dot"></span>
+              <span class="ticker-eyebrow-label">Live</span>
+              <span class="ticker-updated" id="tickerUpdated"></span>
+            </div>
+            <button class="ticker-refresh" id="tickerRefreshBtn" type="button" aria-label="Refresh prices">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            </button>
+          </div>
+          <div class="ticker-row" id="tickerRow"></div>
+        </div>
+
+        <div class="search-bar" id="searchBar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="search-input" id="searchInput" type="text" inputmode="search" autocomplete="off" placeholder="Search tools & pages…">
+          <button class="search-clear" id="searchClear" type="button" aria-label="Clear search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
-          <button class="home-card" type="button" data-page="defi">
-            <span class="home-icon">💧</span>
-            <span><span class="home-title">DeFi & TVL</span><span class="home-desc">Chains, protocols, DEX volume & unlocks</span></span>
-          </button>
-          <button class="home-card" type="button" data-page="calendar">
-            <span class="home-icon">📅</span>
-            <span><span class="home-title">Calendar</span><span class="home-desc">Upcoming macro and crypto events</span></span>
-          </button>
-          <button class="home-card" type="button" data-page="screener">
-            <span class="home-icon">☁️</span>
-            <span><span class="home-title">Screener - Ichimoku</span><span class="home-desc">CK/PK breakouts, live scan</span></span>
-          </button>
-          <button class="home-card" type="button" data-page="news">
-            <span class="home-icon">📰</span>
-            <span><span class="home-title">News</span><span class="home-desc">Latest crypto market stories</span></span>
-          </button>
-          <button class="home-card" type="button" data-page="youtube">
-            <span class="home-icon">▶️</span>
-            <span><span class="home-title">YouTube Crypto</span><span class="home-desc">Recent uploads</span></span>
-          </button>
-          <button class="home-card" type="button" data-page="macro">
-            <span class="home-icon">📊</span>
-            <span><span class="home-title">Macro & Indices</span><span class="home-desc">Equities, dollar, rates & global risk</span></span>
-          </button>
-          <button class="home-card" type="button" data-page="watchlist">
-            <span class="home-icon">👀</span>
-            <span><span class="home-title">Watchlist</span><span class="home-desc">Live BTC, ETH, SOL & HYPE prices</span></span>
-          </button>
-          <button class="home-card" type="button" data-page="predictions">
-            <span class="home-icon">🎯</span>
-            <span><span class="home-title">Prediction Markets</span><span class="home-desc">Fed, CPI, ETFs & crypto policy odds</span></span>
-          </button>
-          <button class="home-card" type="button" data-page="trump-truth">
-            <span class="home-icon">🚀</span>
-            <span><span class="home-title">Trump's Truth SM</span><span class="home-desc">Latest posts on crypto & clarity</span></span>
-          </button>
-          <button class="home-card" type="button" data-page="fear-greed">
-            <span class="home-icon">🌡️</span>
-            <span><span class="home-title">Fear &amp; Greed Index</span><span class="home-desc">Crypto market sentiment, 0-100</span></span>
-          </button>
-          <button class="home-card" type="button" data-page="btc-returns">
-            <span class="home-icon">📆</span>
-            <span><span class="home-title">Bitcoin Returns</span><span class="home-desc">Monthly, quarterly &amp; yearly performance</span></span>
-          </button>
-          <button class="home-card" type="button" data-page="oil">
-            <span class="home-icon">🛢️</span>
-            <span><span class="home-title">Oil & Energy</span><span class="home-desc">Live Brent & WTI crude prices</span></span>
-          </button>
-          <button class="home-card" type="button" data-page="sizing">
-            <span class="home-icon">🧮</span>
-            <span><span class="home-title">Position Sizing</span><span class="home-desc">Risk-based quantity calculator</span></span>
-          </button>
-          <button class="home-card" type="button" data-page="settings">
-            <span class="home-icon">⚙️</span>
-            <span><span class="home-title">Trading Settings</span><span class="home-desc">Portfolio, exchange & YouTube channels</span></span>
-          </button>
+        </div>
+
+        <div class="recent-section hidden" id="recentSection">
+          <div class="section-heading"><h3>Recently visited</h3></div>
+          <div class="recent-row" id="recentRow"></div>
+        </div>
+
+        <div class="search-empty" id="searchEmpty">No tools match your search.</div>
+
+        <div id="categoriesWrap">
+          <div class="category-section" data-category="markets">
+            <div class="section-heading"><h3>Markets</h3></div>
+            <div class="home-grid">
+              <button class="home-card" type="button" data-page="watchlist">
+                <span class="home-icon">👀</span>
+                <span><span class="home-title">Watchlist</span><span class="home-desc">Live BTC, ETH, SOL & HYPE prices</span></span>
+              </button>
+              <button class="home-card" type="button" data-page="screener">
+                <span class="home-icon">☁️</span>
+                <span><span class="home-title">Screener - Ichimoku</span><span class="home-desc">CK/PK breakouts, live scan</span></span>
+              </button>
+              <button class="home-card" type="button" data-page="season">
+                <span class="home-icon">🌗</span>
+                <span><span class="home-title">Season Index</span><span class="home-desc">Bitcoin vs Altcoin season, live</span></span>
+              </button>
+              <button class="home-card" type="button" data-page="defi">
+                <span class="home-icon">💧</span>
+                <span><span class="home-title">DeFi & TVL</span><span class="home-desc">Chains, protocols, DEX volume & unlocks</span></span>
+              </button>
+              <button class="home-card" type="button" data-page="btc-returns">
+                <span class="home-icon">📆</span>
+                <span><span class="home-title">Bitcoin Returns</span><span class="home-desc">Monthly, quarterly &amp; yearly performance</span></span>
+              </button>
+              <button class="home-card" type="button" data-page="macro">
+                <span class="home-icon">📊</span>
+                <span><span class="home-title">Macro & Indices</span><span class="home-desc">Equities, dollar, rates & global risk</span></span>
+              </button>
+              <button class="home-card" type="button" data-page="oil">
+                <span class="home-icon">🛢️</span>
+                <span><span class="home-title">Oil & Energy</span><span class="home-desc">Live Brent & WTI crude prices</span></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="category-section" data-category="insights">
+            <div class="section-heading"><h3>Insights</h3></div>
+            <div class="home-grid">
+              <button class="home-card" type="button" data-page="fear-greed">
+                <span class="home-icon">🌡️</span>
+                <span><span class="home-title">Fear &amp; Greed Index</span><span class="home-desc">Crypto market sentiment, 0-100</span></span>
+              </button>
+              <button class="home-card" type="button" data-page="calendar">
+                <span class="home-icon">📅</span>
+                <span><span class="home-title">Calendar</span><span class="home-desc">Upcoming macro and crypto events</span></span>
+              </button>
+              <button class="home-card" type="button" data-page="predictions">
+                <span class="home-icon">🎯</span>
+                <span><span class="home-title">Prediction Markets</span><span class="home-desc">Fed, CPI, ETFs & crypto policy odds</span></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="category-section" data-category="news">
+            <div class="section-heading"><h3>News &amp; Social</h3></div>
+            <div class="home-grid">
+              <button class="home-card" type="button" data-page="news">
+                <span class="home-icon">📰</span>
+                <span><span class="home-title">News</span><span class="home-desc">Latest crypto market stories</span></span>
+              </button>
+              <button class="home-card" type="button" data-page="trump-truth">
+                <span class="home-icon">🚀</span>
+                <span><span class="home-title">Trump's Truth SM</span><span class="home-desc">Latest posts on crypto & clarity</span></span>
+              </button>
+              <button class="home-card" type="button" data-page="youtube">
+                <span class="home-icon">▶️</span>
+                <span><span class="home-title">YouTube Crypto</span><span class="home-desc">Recent uploads</span></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="category-section" data-category="tools">
+            <div class="section-heading"><h3>Tools</h3></div>
+            <div class="home-grid">
+              <button class="home-card" type="button" data-page="sizing">
+                <span class="home-icon">🧮</span>
+                <span><span class="home-title">Position Sizing</span><span class="home-desc">Risk-based quantity calculator</span></span>
+              </button>
+              <button class="home-card" type="button" data-page="settings">
+                <span class="home-icon">⚙️</span>
+                <span><span class="home-title">Trading Settings</span><span class="home-desc">Portfolio, exchange & YouTube channels</span></span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -698,6 +837,253 @@ const topbarTitle = document.getElementById('topbarTitle');
 const navItems = document.querySelectorAll('.nav-item');
 const pages = document.querySelectorAll('.page');
 
+/* ================= Home: live ticker strip ================= */
+const TICKER_COINS = [
+  { symbol:'BTC',  binanceSymbol:'BTCUSDT'  },
+  { symbol:'ETH',  binanceSymbol:'ETHUSDT'  },
+  { symbol:'SOL',  binanceSymbol:'SOLUSDT'  },
+  { symbol:'HYPE', binanceSymbol:'HYPEUSDT' },
+];
+const TICKER_CACHE_KEY = 'ts_home_ticker_cache_v1';
+const TICKER_REFRESH_MS = 20000;
+
+const tickerRow = document.getElementById('tickerRow');
+const tickerUpdatedEl = document.getElementById('tickerUpdated');
+const tickerRefreshBtn = document.getElementById('tickerRefreshBtn');
+
+// Same personal Cloudflare Worker + public CORS proxy fallback chain used by
+// watchlist.html and every other data page in this app.
+const TICKER_WORKER_PROXY_URL = 'https://newsyt.justfagame9.workers.dev';
+function buildTickerWorkerUrl(u){ return `${TICKER_WORKER_PROXY_URL}/?url=${encodeURIComponent(u)}`; }
+const TICKER_CORS_PROXIES = [
+  (u) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+  (u) => `https://proxy.corsfix.com/?${u}`,
+  (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+];
+async function tickerFetchWithTimeout(url, ms){
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try{ return await fetch(url, { cache:'no-store', signal: controller.signal }); }
+  finally{ clearTimeout(timer); }
+}
+async function tickerFetchJSON(url){
+  try{
+    const res = await tickerFetchWithTimeout(url, 6000);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    return await res.json();
+  }catch(directErr){
+    try{
+      const res = await tickerFetchWithTimeout(buildTickerWorkerUrl(url), 6000);
+      if(!res.ok) throw new Error('worker HTTP ' + res.status);
+      return await res.json();
+    }catch(workerErr){
+      return await Promise.any(TICKER_CORS_PROXIES.map(build => (async () => {
+        const res = await tickerFetchWithTimeout(build(url), 6000);
+        if(!res.ok) throw new Error('proxy HTTP ' + res.status);
+        return await res.json();
+      })()));
+    }
+  }
+}
+
+function readTickerCache(){
+  try{
+    const raw = localStorage.getItem(TICKER_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+function writeTickerCache(data){
+  try{ localStorage.setItem(TICKER_CACHE_KEY, JSON.stringify({ data, ts: Date.now() })); }catch(e){}
+}
+function formatTickerPrice(n){
+  const num = Number(n);
+  if(!isFinite(num)) return '—';
+  if(num >= 1000) return num.toLocaleString('en-US', { maximumFractionDigits:0 });
+  if(num >= 1) return num.toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 });
+  return num.toLocaleString('en-US', { minimumFractionDigits:4, maximumFractionDigits:4 });
+}
+function formatTickerUpdatedLabel(ts){
+  if(!ts) return '';
+  const secs = Math.round((Date.now() - ts) / 1000);
+  if(secs < 5) return 'just now';
+  if(secs < 60) return secs + 's ago';
+  return Math.round(secs / 60) + 'm ago';
+}
+
+let tickerLastData = null;
+let tickerLastTs = null;
+
+function renderTicker(map, opts){
+  opts = opts || {};
+  tickerRow.innerHTML = '';
+  TICKER_COINS.forEach(coin => {
+    const row = map ? map[coin.binanceSymbol] : null;
+    const card = document.createElement('div');
+    card.className = 'ticker-card' + (opts.skeleton ? ' skeleton' : '');
+
+    let priceText = '—', chgText = '—', dirClass = '', flashDir = null;
+    if(row){
+      const price = parseFloat(row.lastPrice);
+      const chg = parseFloat(row.priceChangePercent);
+      priceText = '$' + formatTickerPrice(price);
+      chgText = (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%';
+      dirClass = chg >= 0 ? 'up' : 'down';
+      card.classList.add(dirClass);
+
+      const prevRow = tickerLastData ? tickerLastData[coin.binanceSymbol] : null;
+      if(prevRow){
+        const prevPrice = parseFloat(prevRow.lastPrice);
+        if(price > prevPrice) flashDir = 'up';
+        else if(price < prevPrice) flashDir = 'down';
+      }
+    }
+
+    card.innerHTML =
+      '<span class="ticker-sym">' + coin.symbol + '</span>' +
+      '<span class="ticker-price">' + priceText + '</span>' +
+      '<span class="ticker-chg ' + dirClass + '">' + chgText + '</span>';
+    card.addEventListener('click', () => activatePage('watchlist'));
+    tickerRow.appendChild(card);
+
+    if(flashDir){
+      const priceEl = card.querySelector('.ticker-price');
+      priceEl.classList.add('flash-' + flashDir);
+      setTimeout(() => priceEl.classList.remove('flash-' + flashDir), 700);
+    }
+  });
+}
+
+function updateTickerLabel(){
+  tickerUpdatedEl.textContent = tickerLastTs ? formatTickerUpdatedLabel(tickerLastTs) : '';
+}
+setInterval(updateTickerLabel, 5000);
+
+async function loadTicker(opts){
+  opts = opts || {};
+  if(opts.manual) tickerRefreshBtn.classList.add('spinning');
+  try{
+    const data = await tickerFetchJSON('https://fapi.binance.com/fapi/v1/ticker/24hr');
+    if(!Array.isArray(data)) throw new Error('Unexpected Binance ticker response shape');
+    const wanted = new Set(TICKER_COINS.map(c => c.binanceSymbol));
+    const map = {};
+    data.forEach(row => { if(wanted.has(row.symbol)) map[row.symbol] = row; });
+    renderTicker(map);
+    tickerLastData = map;
+    tickerLastTs = Date.now();
+    writeTickerCache(map);
+    updateTickerLabel();
+  }catch(err){
+    console.warn('[home ticker] fetch failed:', err && err.message);
+    if(!tickerLastData){
+      tickerRow.innerHTML = '<div class="ticker-error">Live prices unavailable right now</div>';
+    }
+  }finally{
+    if(opts.manual) setTimeout(() => tickerRefreshBtn.classList.remove('spinning'), 400);
+  }
+}
+
+// stale-while-revalidate: paint any cached prices instantly, then refresh
+const tickerCached = readTickerCache();
+if(tickerCached && tickerCached.data){
+  tickerLastData = tickerCached.data;
+  tickerLastTs = tickerCached.ts;
+  renderTicker(tickerCached.data);
+  updateTickerLabel();
+}else{
+  renderTicker(null, { skeleton:true });
+}
+loadTicker();
+tickerRefreshBtn.addEventListener('click', () => loadTicker({ manual:true }));
+setInterval(() => {
+  if(currentPage === 'home' && !document.hidden) loadTicker();
+}, TICKER_REFRESH_MS);
+document.addEventListener('visibilitychange', () => {
+  if(!document.hidden && currentPage === 'home') loadTicker();
+});
+
+/* ================= Home: recently visited ================= */
+const RECENT_KEY = 'ts_recent_pages_v1';
+const RECENT_MAX = 6;
+const recentSection = document.getElementById('recentSection');
+const recentRow = document.getElementById('recentRow');
+
+function readRecentPages(){
+  try{
+    const raw = localStorage.getItem(RECENT_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  }catch(e){ return []; }
+}
+function writeRecentPages(arr){
+  try{ localStorage.setItem(RECENT_KEY, JSON.stringify(arr)); }catch(e){}
+}
+function recordRecentVisit(pageId){
+  if(!pageId || pageId === 'home') return;
+  let arr = readRecentPages().filter(id => id !== pageId);
+  arr.unshift(pageId);
+  writeRecentPages(arr.slice(0, RECENT_MAX));
+}
+function getNavIconFor(pageId){
+  const el = document.querySelector('.nav-item[data-page="' + pageId + '"] .nav-icon');
+  return el ? el.textContent : '•';
+}
+function renderRecentVisited(){
+  const arr = readRecentPages().filter(id => PAGE_TITLES.hasOwnProperty(id) && id !== 'home');
+  recentRow.innerHTML = '';
+  if(!arr.length){
+    recentSection.classList.add('hidden');
+    return;
+  }
+  recentSection.classList.remove('hidden');
+  arr.forEach(pageId => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'recent-chip';
+    chip.innerHTML = '<span class="recent-icon">' + getNavIconFor(pageId) + '</span><span>' + PAGE_TITLES[pageId] + '</span>';
+    chip.addEventListener('click', () => activatePage(pageId));
+    recentRow.appendChild(chip);
+  });
+}
+
+/* ================= Home: search filter ================= */
+const searchBarEl = document.getElementById('searchBar');
+const searchInput = document.getElementById('searchInput');
+const searchClearBtn = document.getElementById('searchClear');
+const searchEmptyEl = document.getElementById('searchEmpty');
+const categorySections = document.querySelectorAll('.category-section');
+
+function applySearchFilter(){
+  const q = searchInput.value.trim().toLowerCase();
+  searchBarEl.classList.toggle('has-value', q.length > 0);
+
+  if(q){
+    recentSection.classList.add('hidden');
+  }else{
+    renderRecentVisited();
+  }
+
+  let anyVisible = false;
+  categorySections.forEach(section => {
+    let sectionHasVisible = false;
+    section.querySelectorAll('.home-card').forEach(card => {
+      const title = card.querySelector('.home-title').textContent.toLowerCase();
+      const desc = card.querySelector('.home-desc').textContent.toLowerCase();
+      const match = !q || title.includes(q) || desc.includes(q);
+      card.classList.toggle('hidden', !match);
+      if(match) sectionHasVisible = true;
+    });
+    section.classList.toggle('hidden', !sectionHasVisible);
+    if(sectionHasVisible) anyVisible = true;
+  });
+  searchEmptyEl.classList.toggle('show', q.length > 0 && !anyVisible);
+}
+searchInput.addEventListener('input', applySearchFilter);
+searchClearBtn.addEventListener('click', () => {
+  searchInput.value = '';
+  applySearchFilter();
+  searchInput.focus();
+});
+
 function openDrawer(){
   drawer.classList.add('open');
   backdrop.classList.add('open');
@@ -724,6 +1110,14 @@ function activatePage(pageId){
     sub.className = 'page-sub';
     sub.textContent = pageLabel;
     topbarTitle.appendChild(sub);
+  }
+
+  // Track this page for the "Recently visited" strip on Home, and refresh
+  // that strip whenever we land back on Home so it reflects the latest order.
+  if(pageId === 'home'){
+    renderRecentVisited();
+  }else{
+    recordRecentVisit(pageId);
   }
 
   // Lazy-load the iframe the first time its page is opened, so we don't
