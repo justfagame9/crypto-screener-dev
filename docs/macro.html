@@ -398,10 +398,10 @@ async function fetchCoinGeckoFirst(url, ms){
 // ================= Symbol config =================
 // format: 'usd' ($ price), 'index' (plain number), 'yield' (percentage)
 const YAHOO_SYMBOLS = [
+  { group:'equities', id:'dji', symbol:'^DJI', name:'Dow Jones', sub:'Blue-chip industrial sentiment', icon:'🏦', gradient:'linear-gradient(135deg,#5B8CFF,#2b4fb0)', format:'index' },
   { group:'equities', id:'spx', symbol:'^GSPC', name:'S&P 500', sub:'Broadest risk-on/risk-off gauge', icon:'📈', gradient:'linear-gradient(135deg,#5B8CFF,#2b4fb0)', format:'index' },
   { group:'equities', id:'ndx', symbol:'^NDX', name:'Nasdaq 100', sub:'Closest-correlated equity index to BTC', icon:'💻', gradient:'linear-gradient(135deg,#5B8CFF,#2b4fb0)', format:'index' },
   { group:'equities', id:'vix', symbol:'^VIX', name:'VIX', sub:'"Fear gauge" — spikes precede sell-offs', icon:'😨', gradient:'linear-gradient(135deg,#FF5470,#7A2E3B)', format:'index' },
-  { group:'equities', id:'dji', symbol:'^DJI', name:'Dow Jones', sub:'Blue-chip industrial sentiment', icon:'🏦', gradient:'linear-gradient(135deg,#5B8CFF,#2b4fb0)', format:'index' },
 
   { group:'dollar', id:'dxy', symbol:'DX-Y.NYB', name:'US Dollar Index', sub:'DXY — closely-watched inverse to BTC', icon:'💵', gradient:'linear-gradient(135deg,#A78BFA,#6d28d9)', format:'index' },
   { group:'dollar', id:'us10y', symbol:'^TNX', name:'US 10-Year Yield', sub:'Rising real yields pressure non-yielding assets', icon:'🏦', gradient:'linear-gradient(135deg,#A78BFA,#6d28d9)', format:'yield', scale:0.1 },
@@ -413,6 +413,7 @@ const YAHOO_SYMBOLS = [
   { group:'commodities', id:'wti', symbol:'CL=F', name:'WTI Crude', sub:'US benchmark oil', icon:'🛢️', gradient:'linear-gradient(135deg,#FF8A4C,#c2501a)', format:'usd' },
   { group:'commodities', id:'brent', symbol:'BZ=F', name:'Brent Crude', sub:'Global benchmark oil', icon:'🛢️', gradient:'linear-gradient(135deg,#5B8CFF,#2b4fb0)', format:'usd' },
   { group:'commodities', id:'natgas', symbol:'NG=F', name:'Natural Gas', sub:'Henry Hub — energy demand gauge', icon:'🔥', gradient:'linear-gradient(135deg,#FF8A4C,#c2501a)', format:'usd' },
+  { group:'commodities', id:'copper', symbol:'HG=F', name:'Copper', sub:'Industrial demand and global growth gauge', icon:'🔶', gradient:'linear-gradient(135deg,#FF8A4C,#c2501a)', format:'usd' },
 
   { group:'global', id:'nikkei', symbol:'^N225', name:'Nikkei 225', sub:'Yen carry-trade unwinds have hit crypto before', icon:'🇯🇵', gradient:'linear-gradient(135deg,#F5A623,#b8860b)', format:'index' },
   { group:'global', id:'hangseng', symbol:'^HSI', name:'Hang Seng', sub:'Hong Kong / China risk spillover', icon:'🇭🇰', gradient:'linear-gradient(135deg,#F5A623,#b8860b)', format:'index' },
@@ -617,6 +618,8 @@ function renderCryptoSentiment(){
     const btcPct = globalData.market_cap_percentage.btc;
     const ethPct = globalData.market_cap_percentage.eth;
     const usdtPct = globalData.market_cap_percentage.usdt;
+    const stablecoinKeys = ['usdt','usdc','dai','usde','usds','fdusd','usdd','tusd','frax','pyusd','crvusd','gusd','lusd'];
+    const stablePct = stablecoinKeys.reduce((sum, key) => sum + (typeof globalData.market_cap_percentage[key] === 'number' ? globalData.market_cap_percentage[key] : 0), 0);
     const mcapChg = globalData.market_cap_change_percentage_24h_usd;
     const total2 = (typeof total === 'number' && typeof btcPct === 'number') ? total * (1 - btcPct/100) : null;
     const total3 = (typeof total === 'number' && typeof btcPct === 'number' && typeof ethPct === 'number') ? total * (1 - btcPct/100 - ethPct/100) : null;
@@ -662,6 +665,14 @@ function renderCryptoSentiment(){
           <div class="idx-name-wrap"><div class="idx-name">TOTAL3 (ex-BTC & ETH)</div><div class="idx-sub">Broader alt-rotation shorthand</div></div>
         </div>
         <div class="idx-price-row"><div class="idx-price">${fmtCompactUsd(total3)}</div></div>
+      </div>`);
+      parts.push(`
+      <div class="idx-card">
+        <div class="idx-head">
+          <span class="idx-icon" style="background:linear-gradient(135deg,#35E0C0,#1c8f79)">💲</span>
+          <div class="idx-name-wrap"><div class="idx-name">Stable Coin Dominance</div><div class="idx-sub">Aggregate stablecoin share of total crypto market cap</div></div>
+        </div>
+        <div class="idx-price-row"><div class="idx-price">${stablePct ? stablePct.toFixed(2) + '%' : '—'}</div></div>
       </div>`);
   }else{
     parts.push(`<div class="idx-card"><div class="idx-error">Couldn't load dominance / market-cap data this refresh.</div></div>`);
