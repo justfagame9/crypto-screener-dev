@@ -58,6 +58,7 @@
   .refresh-btn:hover{border-color:var(--red);color:var(--red);}
   .refresh-btn svg{width:14px;height:14px;transition:transform .4s;}
   .refresh-btn.spinning svg{transform:rotate(360deg);}
+  .refresh-btn.flipped svg{transform:rotate(180deg);}
   .sub{color:var(--muted);font-size:13px;line-height:1.55;margin:10px 0 18px;max-width:720px;}
 
   .degraded-banner{
@@ -187,20 +188,6 @@
   .empty-note{padding:26px 16px;text-align:center;color:var(--faint);font:12px var(--font-mono);}
   .empty-note b{color:var(--muted);}
 
-  /* ---- Heatmap ---- */
-  .heat-marker-row{display:flex;align-items:center;gap:8px;padding:2px 16px;}
-  .heat-marker-line{flex:1;height:1px;background:repeating-linear-gradient(90deg,var(--amber) 0 4px,transparent 4px 8px);}
-  .heat-marker-label{font:700 10px var(--font-mono);color:var(--amber);white-space:nowrap;}
-  .heat-row{display:flex;align-items:center;gap:8px;padding:3px 16px;}
-  .heat-price{width:84px;flex-shrink:0;text-align:right;font:600 10.5px var(--font-mono);color:var(--muted);}
-  .heat-track{flex:1;height:15px;border-radius:4px;background:var(--border-soft);display:flex;overflow:hidden;}
-  .heat-long-fill{height:100%;background:linear-gradient(90deg,#7a2e3b,#ff5470);}
-  .heat-short-fill{height:100%;background:linear-gradient(90deg,#1e7f6f,#35e0c0);}
-  .heat-vol{width:64px;flex-shrink:0;text-align:right;font:600 10px var(--font-mono);color:var(--faint);}
-  .heat-legend{display:flex;gap:14px;padding:12px 16px 2px;font:10.5px var(--font-mono);color:var(--muted);}
-  .heat-legend span{display:inline-flex;align-items:center;gap:6px;}
-  .heat-legend .sw{width:10px;height:10px;border-radius:3px;}
-
   .skel-block{border-radius:14px;background:linear-gradient(90deg,var(--panel) 25%,var(--panel2) 37%,var(--panel) 63%);background-size:400% 100%;animation:shimmer 1.4s ease infinite;}
   @keyframes shimmer{0%{background-position:100% 0;}100%{background-position:0 0;}}
   .error-state{
@@ -246,12 +233,15 @@
     <div class="eyebrow"><span class="dot"></span>Long/Short &amp; Liquidations</div>
     <div class="header-right">
       <span class="updated-label" id="updatedLabel"></span>
+      <button class="refresh-btn" id="toggleAllBtn" type="button" aria-label="Collapse all" title="Collapse all">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 8 12 3 17 8"/><polyline points="7 21 12 16 17 21"/></svg>
+      </button>
       <button class="refresh-btn" id="refreshBtn" aria-label="Refresh">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
       </button>
     </div>
   </div>
-  <p class="sub">Positioning and forced-exit data for perpetual futures: long/short ratios across account and top-trader cohorts, open interest, funding, and a live liquidation feed &amp; heatmap built from real-time Binance Futures liquidation events.</p>
+  <p class="sub">Positioning and forced-exit data for perpetual futures: long/short ratios across account and top-trader cohorts, open interest, funding, and a live liquidation feed built from real-time Binance Futures liquidation events.</p>
 
   <div class="degraded-banner" id="degradedBanner"></div>
 
@@ -263,14 +253,16 @@
 
   <!-- Long/Short Ratio -->
   <div class="section" id="sec-ratio">
-    <div class="section-head">
-      <div class="section-title"><span class="si">⚖️</span>Long/Short Ratio</div>
+    <div class="section-head toggleable" data-toggle="sec-ratio">
+      <div class="section-title"><button class="section-toggle-btn" type="button" aria-expanded="true" aria-label="Toggle section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button><span class="si">⚖️</span>Long/Short Ratio</div>
       <div class="section-note" id="ratioNote"></div>
     </div>
-    <div class="chip-row tabs" id="ratioTypeChips"></div>
-    <div class="chip-sub" id="ratioTypeDesc"></div>
-    <div class="chip-row" id="periodChips"></div>
-    <div class="panel" id="ratioPanel"></div>
+    <div class="section-body">
+      <div class="chip-row tabs" id="ratioTypeChips"></div>
+      <div class="chip-sub" id="ratioTypeDesc"></div>
+      <div class="chip-row" id="periodChips"></div>
+      <div class="panel" id="ratioPanel"></div>
+    </div>
   </div>
 
   <!-- Open Interest -->
@@ -299,34 +291,19 @@
 
   <!-- Live Liquidation Feed -->
   <div class="section" id="sec-feed">
-    <div class="section-head">
-      <div class="section-title"><span class="si">💥</span>Live Liquidation Feed</div>
+    <div class="section-head toggleable" data-toggle="sec-feed">
+      <div class="section-title"><button class="section-toggle-btn" type="button" aria-expanded="true" aria-label="Toggle section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button><span class="si">💥</span>Live Liquidation Feed</div>
     </div>
-    <div class="chip-row" id="feedScopeChips"></div>
-    <div class="chip-row" id="minSizeChips"></div>
-    <div class="panel">
-      <div class="feed-head">
-        <div class="ws-status connecting" id="wsStatus"><span class="ws-dot"></span><span id="wsStatusText">Connecting</span></div>
-        <div class="feed-totals" id="feedTotals">Long liq'd <b class="long">$0</b> · Short liq'd <b class="short">$0</b> <span style="color:var(--faint)">· this session</span></div>
+    <div class="section-body">
+      <div class="chip-row" id="feedScopeChips"></div>
+      <div class="chip-row" id="minSizeChips"></div>
+      <div class="panel">
+        <div class="feed-head">
+          <div class="ws-status connecting" id="wsStatus"><span class="ws-dot"></span><span id="wsStatusText">Connecting</span></div>
+          <div class="feed-totals" id="feedTotals">Long liq'd <b class="long">$0</b> · Short liq'd <b class="short">$0</b> <span style="color:var(--faint)">· this session</span></div>
+        </div>
+        <div class="liq-list" id="liqList"><div class="empty-note">Waiting for the live liquidation stream to connect…</div></div>
       </div>
-      <div class="liq-list" id="liqList"><div class="empty-note">Waiting for the live liquidation stream to connect…</div></div>
-    </div>
-  </div>
-
-  <!-- Liquidation Heatmap -->
-  <div class="section" id="sec-heatmap">
-    <div class="section-head">
-      <div class="section-title"><span class="si">🔥</span>Liquidation Heatmap</div>
-      <div class="section-note" id="heatmapNote"></div>
-    </div>
-    <div class="chip-row" id="heatWindowChips"></div>
-    <div class="chip-sub">Built from liquidations actually observed on the live stream for <span id="heatSymbolLabel">BTCUSDT</span> — not a predictive model of where future liquidations will cluster.</div>
-    <div class="panel">
-      <div class="heat-legend">
-        <span><span class="sw" style="background:linear-gradient(90deg,#7a2e3b,#ff5470)"></span>Longs liquidated (forced sells)</span>
-        <span><span class="sw" style="background:linear-gradient(90deg,#1e7f6f,#35e0c0)"></span>Shorts liquidated (forced buys)</span>
-      </div>
-      <div id="heatmapBody" style="padding:8px 0 14px;"></div>
     </div>
   </div>
 
@@ -336,7 +313,7 @@
       <button class="notice-toggle" id="noticeToggle" type="button" aria-expanded="false" aria-controls="noticeDetails" aria-label="Show more details">+</button>
     </div>
     <div class="notice-details" id="noticeDetails" hidden>
-      All figures on this page come from Binance Futures public endpoints (USDⓈ-M perpetuals) and reflect Binance's own order book and traders only — not the whole market. "Top trader" ratios cover Binance's top 20% of accounts/positions by margin balance, which behaves differently from the retail-heavy "global accounts" ratio, so the two can diverge or even point opposite directions. The liquidation feed and heatmap are built entirely from Binance's public <code>forceOrder</code> stream while this tab is open (plus whatever was recorded earlier this session, persisted locally on this device) — they are not a full historical record and are not a predictive "where liquidations will happen" model like paid aggregator tools produce; they show where liquidations already occurred. Ratio/open interest/funding figures refresh every 10 minutes; the liquidation feed is real-time via WebSocket and reconnects automatically if it drops.
+      All figures on this page come from Binance Futures public endpoints (USDⓈ-M perpetuals) and reflect Binance's own order book and traders only — not the whole market. "Top trader" ratios cover Binance's top 20% of accounts/positions by margin balance, which behaves differently from the retail-heavy "global accounts" ratio, so the two can diverge or even point opposite directions. The liquidation feed is built entirely from Binance's public <code>forceOrder</code> stream while this tab is open (plus whatever was recorded earlier this session, persisted locally on this device) — it is not a full historical record of every liquidation on the exchange. Ratio/open interest/funding figures refresh every 10 minutes; the liquidation feed is real-time via WebSocket and reconnects automatically if it drops.
       <div class="src-tags">
         <span class="src-tag"><span class="dot"></span>Ratios/OI/Funding · Binance Futures REST</span>
         <span class="src-tag"><span class="dot"></span>Liquidations · Binance Futures WebSocket</span>
@@ -375,11 +352,6 @@ const RATIO_TYPES = {
   taker:   { path:'takerlongshortRatio',          label:'Taker Volume',     desc:'Aggressive (market-order) taker buy volume vs sell volume \u2014 who is paying to cross the spread right now.' },
 };
 const PERIODS = ['5m', '15m', '1h', '4h'];
-const HEAT_WINDOWS = [
-  { key:'1h', ms:60 * 60 * 1000, label:'1h' },
-  { key:'6h', ms:6 * 60 * 60 * 1000, label:'6h' },
-  { key:'24h', ms:24 * 60 * 60 * 1000, label:'24h' },
-];
 const MIN_SIZES = [0, 10000, 50000, 100000, 500000];
 const WHALE_THRESHOLD_USD = 100000;
 
@@ -390,7 +362,7 @@ const WHALE_THRESHOLD_USD = 100000;
 // only applies to REST calls \u2014 the liquidation feed is a WebSocket and
 // connects directly to fstream.binance.com (cannot be proxied through a CORS
 // worker), so if outbound WebSocket connections are blocked in your
-// environment, the feed/heatmap sections will show a connection error while
+// environment, the feed section will show a connection error while
 // everything else on the page keeps working.
 const WORKER_PROXY_URL = 'https://newsyt.justfagame9.workers.dev';
 function buildWorkerProxyUrl(u){ return `${WORKER_PROXY_URL}/?url=${encodeURIComponent(u)}`; }
@@ -478,7 +450,7 @@ function timeAgo(ts){
 }
 
 // ==================== State ====================
-let STATE = { symbol:'BTCUSDT', ratioType:'global', period:'15m', feedScope:'all', minSize:0, heatWindow:'6h' };
+let STATE = { symbol:'BTCUSDT', ratioType:'global', period:'15m', feedScope:'all', minSize:0 };
 let DATA = { ticker:null, oiCurrent:null, oiHist:null, funding:null, fundingHist:null, ratioHist:null };
 let lastResults = null;
 let lastUpdated = null;
@@ -613,27 +585,13 @@ function renderMinSizeChips(){
     }));
   });
 }
-function renderHeatWindowChips(){
-  const row = document.getElementById('heatWindowChips');
-  row.innerHTML = '';
-  HEAT_WINDOWS.forEach(w => {
-    row.appendChild(buildChip(w.key === STATE.heatWindow, w.label, () => {
-      STATE.heatWindow = w.key;
-      renderHeatWindowChips();
-      renderHeatmap();
-    }));
-  });
-}
-
 function onSymbolChange(){
   renderSymbolChips();
-  document.getElementById('heatSymbolLabel').textContent = STATE.symbol;
   if(STATE.feedScope === 'symbol') renderFeedScopeChips();
   renderRatioTypeChips();
   renderFeedScopeChips();
   fetchAll();
   renderLiqFeed();
-  renderHeatmap();
 }
 
 // ==================== Chart builder (generic sparkline) ====================
@@ -995,7 +953,6 @@ function handleLiqMessage(msg){
   updateFeedTotals();
 
   prependLiqRow(event);
-  if(symbol === STATE.symbol) appendHeatmapEvent(event);
 }
 function updateFeedTotals(){
   const el = document.getElementById('feedTotals');
@@ -1042,104 +999,40 @@ setInterval(() => {
   });
 }, 15000);
 
-// ==================== Heatmap ====================
-let heatmapBuckets = null; // { bucketSize, min, map: Map(bucketIndex -> {long, short}) }
-function bucketSizeForPrice(price){
-  if(!isFinite(price) || price <= 0) return 1;
-  const raw = price * 0.0015;
-  const magnitude = Math.pow(10, Math.floor(Math.log10(raw)));
-  const norm = raw / magnitude;
-  let niceNorm = 1;
-  if(norm >= 5) niceNorm = 5; else if(norm >= 2) niceNorm = 2; else niceNorm = 1;
-  return niceNorm * magnitude;
-}
-function appendHeatmapEvent(e){
-  if(!heatmapBuckets) return;
-  const idx = Math.round(e.price / heatmapBuckets.bucketSize);
-  const cur = heatmapBuckets.map.get(idx) || { long:0, short:0 };
-  cur[e.side] += e.valueUsd;
-  heatmapBuckets.map.set(idx, cur);
-  renderHeatmapFromBuckets();
-}
-function renderHeatmap(){
-  const note = document.getElementById('heatmapNote');
-  const body = document.getElementById('heatmapBody');
-  const price = DATA.ticker ? parseFloat(DATA.ticker.lastPrice) : null;
-  const windowMs = HEAT_WINDOWS.find(w => w.key === STATE.heatWindow).ms;
-  const cutoff = Date.now() - windowMs;
-  const relevant = liqEvents.filter(e => e.symbol === STATE.symbol && e.ts >= cutoff);
-
-  if(!price || !relevant.length){
-    body.innerHTML = `<div class="empty-note"><b>Not enough observed liquidations yet for ${STATE.symbol} in the last ${STATE.heatWindow}.</b><br>Keep this tab open \u2014 the heatmap fills in as real liquidations stream in.</div>`;
-    note.textContent = '';
-    heatmapBuckets = { bucketSize: bucketSizeForPrice(price || 1), map: new Map() };
-    return;
-  }
-
-  const bucketSize = bucketSizeForPrice(price);
-  const map = new Map();
-  relevant.forEach(e => {
-    const idx = Math.round(e.price / bucketSize);
-    const cur = map.get(idx) || { long:0, short:0 };
-    cur[e.side] += e.valueUsd;
-    map.set(idx, cur);
-  });
-  heatmapBuckets = { bucketSize, map };
-  note.textContent = `${relevant.length} events \u00b7 last ${STATE.heatWindow}`;
-  renderHeatmapFromBuckets();
-}
-function renderHeatmapFromBuckets(){
-  const body = document.getElementById('heatmapBody');
-  if(!heatmapBuckets || !heatmapBuckets.map.size) return;
-  const price = DATA.ticker ? parseFloat(DATA.ticker.lastPrice) : null;
-  const { bucketSize, map } = heatmapBuckets;
-  const entries = Array.from(map.entries()).map(([idx, v]) => ({ idx, price: idx * bucketSize, ...v, total: v.long + v.short }));
-  entries.sort((a,b) => b.price - a.price);
-  const maxTotal = Math.max(...entries.map(e => e.total), 1);
-  const priceIdx = price ? Math.round(price / bucketSize) : null;
-
-  let html = '';
-  let markerInserted = false;
-  entries.forEach(e => {
-    if(priceIdx !== null && !markerInserted && e.idx <= priceIdx){
-      html += `<div class="heat-marker-row"><div class="heat-marker-line"></div><div class="heat-marker-label">${formatPrice(price)} now</div><div class="heat-marker-line"></div></div>`;
-      markerInserted = true;
-    }
-    const longPct = e.total ? (e.long / maxTotal * 100) : 0;
-    const shortPct = e.total ? (e.short / maxTotal * 100) : 0;
-    html += `
-      <div class="heat-row">
-        <div class="heat-price">${formatPrice(e.price)}</div>
-        <div class="heat-track">
-          <div class="heat-long-fill" style="width:${longPct.toFixed(1)}%"></div>
-          <div class="heat-short-fill" style="width:${shortPct.toFixed(1)}%"></div>
-        </div>
-        <div class="heat-vol">${formatUSD(e.total)}</div>
-      </div>`;
-  });
-  if(!markerInserted && priceIdx !== null){
-    html += `<div class="heat-marker-row"><div class="heat-marker-line"></div><div class="heat-marker-label">${formatPrice(price)} now</div><div class="heat-marker-line"></div></div>`;
-  }
-  body.innerHTML = html;
-}
-
-// ==================== Collapsible sections ====================
+// ==================== Collapsible sections (chevron + expand/collapse all) ====================
+// Each section keeps whatever collapsed/expanded state is authored in the
+// HTML (Ratio and Feed start open; Open Interest and Funding start
+// collapsed) rather than forcing everything shut on load, matching
+// macro.html's behavior.
 function setSectionCollapsed(sectionEl, collapsed){
   sectionEl.classList.toggle('collapsed', collapsed);
   const btn = sectionEl.querySelector('.section-toggle-btn');
   if(btn) btn.setAttribute('aria-expanded', String(!collapsed));
 }
-(function initCollapsibleSections(){
-  document.querySelectorAll('.section-head[data-toggle]').forEach(head => {
-    const id = head.getAttribute('data-toggle');
-    const sectionEl = document.getElementById(id);
+document.querySelectorAll('.section-head[data-toggle]').forEach(head => {
+  head.addEventListener('click', () => {
+    const sectionEl = document.getElementById(head.getAttribute('data-toggle'));
     if(!sectionEl) return;
-    setSectionCollapsed(sectionEl, true);
-    head.addEventListener('click', () => {
-      setSectionCollapsed(sectionEl, !sectionEl.classList.contains('collapsed'));
-    });
+    setSectionCollapsed(sectionEl, !sectionEl.classList.contains('collapsed'));
+    updateToggleAllLabel();
   });
-})();
+});
+const toggleAllBtn = document.getElementById('toggleAllBtn');
+function updateToggleAllLabel(){
+  const sections = document.querySelectorAll('.section');
+  const anyExpanded = Array.from(sections).some(s => !s.classList.contains('collapsed'));
+  const label = anyExpanded ? 'Collapse all' : 'Expand all';
+  toggleAllBtn.setAttribute('aria-label', label);
+  toggleAllBtn.setAttribute('title', label);
+  toggleAllBtn.classList.toggle('flipped', !anyExpanded);
+}
+toggleAllBtn.addEventListener('click', () => {
+  const sections = document.querySelectorAll('.section');
+  const anyExpanded = Array.from(sections).some(s => !s.classList.contains('collapsed'));
+  sections.forEach(s => setSectionCollapsed(s, anyExpanded));
+  updateToggleAllLabel();
+});
+updateToggleAllLabel();
 
 // ==================== Wire up ====================
 document.getElementById('refreshBtn').addEventListener('click', fetchAll);
@@ -1157,8 +1050,6 @@ renderRatioTypeChips();
 renderPeriodChips();
 renderFeedScopeChips();
 renderMinSizeChips();
-renderHeatWindowChips();
-document.getElementById('heatSymbolLabel').textContent = STATE.symbol;
 
 liqEvents = loadStoredLiqs();
 liqEvents.forEach(e => { sessionTotals[e.side] += e.valueUsd; });
@@ -1167,12 +1058,10 @@ renderLiqFeed();
 
 loadCache();
 fetchAll();
-renderHeatmap();
 connectLiqStream();
 
 setInterval(fetchAll, REFRESH_INTERVAL_MS);
 setInterval(updateLastUpdatedLabel, 60000);
-setInterval(() => { if(liqEvents.length) renderHeatmap(); }, 60000);
 </script>
 </body>
 </html>
