@@ -69,15 +69,42 @@
 
   /* ---- Market pulse strip ---- */
   .pulse-strip{
-    display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+    display:flex;flex-direction:column;gap:10px;
     background:var(--panel);border:1px solid var(--border);border-radius:12px;
     padding:12px 16px;margin-bottom:16px;
   }
+  .pulse-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+  .pulse-row-top{justify-content:space-between;}
+  .pulse-row-top .pulse-row-left{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
   .pulse-item{display:flex;align-items:center;gap:7px;font:600 12.5px var(--font-mono);color:var(--muted);}
   .pulse-item b{color:var(--text);font-size:13.5px;}
   .pulse-up{color:var(--accent);}
   .pulse-down{color:var(--red);}
   .pulse-divider{width:1px;height:16px;background:var(--border);}
+
+  /* ---- Pulse strip inline coin search / quick-add ---- */
+  .pulse-search-wrap{
+    display:flex;align-items:center;gap:6px;background:var(--panel2);
+    border:1px solid var(--border);border-radius:8px;padding:4px 6px 4px 10px;
+    margin-left:auto;
+  }
+  .pulse-search-wrap:focus-within{border-color:var(--violet);}
+  .pulse-search-input{
+    background:none;border:none;color:var(--text);font:12px var(--font-mono);
+    width:104px;min-width:0;
+  }
+  .pulse-search-input:focus{outline:none;}
+  .pulse-search-input::placeholder{color:var(--faint);}
+  .pulse-search-error{
+    color:var(--red);font:700 13px var(--font-mono);flex-shrink:0;line-height:1;
+  }
+  .pulse-search-add{
+    flex-shrink:0;background:var(--violet);border:none;color:#141221;
+    width:22px;height:22px;border-radius:6px;cursor:pointer;font:700 13px var(--font-mono);
+    line-height:1;display:flex;align-items:center;justify-content:center;
+  }
+  .pulse-search-add:hover{filter:brightness(1.1);}
+  .pulse-search-add:disabled{opacity:.5;cursor:default;}
 
   /* ---- Watchlist rows ---- */
   .watch-list{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;}
@@ -470,9 +497,55 @@ function removeCoin(binanceSymbol){
   renderAll();
 }
 
+// Binance's public spot product listing - undocumented, but it's the same
+// data backing binance.com's own markets pages and is widely relied on for
+// exactly this purpose. Each entry carries "s" (trading pair, e.g.
+// "BTCUSDT"), "b" (base asset, e.g. "BTC"), "q" (quote asset), and "an" (the
+// project's actual name, e.g. "Bitcoin"). Used only to look up a coin's real
+// name before searching CoinGecko - see findBinanceAssetName() below.
+const BINANCE_PRODUCTS_URL = 'https://www.binance.com/exchange-api/v2/public/asset-service/product/get-products';
+let binanceProductsCache = null;
+let binanceProductsFetchedAt = 0;
+const BINANCE_PRODUCTS_TTL_MS = 10 * 60 * 1000;
+async function ensureBinanceProducts(){
+  const isFresh = binanceProductsCache && (Date.now() - binanceProductsFetchedAt) < BINANCE_PRODUCTS_TTL_MS;
+  if(isFresh) return binanceProductsCache;
+  try{
+    const data = await fetchJSON(BINANCE_PRODUCTS_URL);
+    const list = Array.isArray(data && data.data) ? data.data : (Array.isArray(data) ? data : []);
+    if(!list.length) throw new Error('Unexpected Binance product list response shape');
+    binanceProductsCache = list;
+    binanceProductsFetchedAt = Date.now();
+  }catch(err){
+    console.warn('[binance-products] could not load product list:', err && err.message);
+    if(!binanceProductsCache) binanceProductsCache = [];
+  }
+  return binanceProductsCache;
+}
+// Resolves a coin's real project name from Binance's product listing - tried
+// first by exact trading-pair symbol, then by base asset + USDT quote as a
+// fallback. Returns null if Binance has no matching product at all (e.g. a
+// futures-only listing with no spot pair); callers should fall back to
+// searching CoinGecko by ticker alone in that case.
+async function findBinanceAssetName(binanceSymbol, baseSymbol){
+  const products = await ensureBinanceProducts();
+  if(!products.length) return null;
+  let match = products.find(p => p && p.s === binanceSymbol);
+  if(!match) match = products.find(p => p && p.b === baseSymbol && p.q === 'USDT');
+  return (match && match.an) ? match.an : null;
+}
+
 // Resolves CoinGecko id/name/logo for any custom coin that doesn't have one
 // yet (screener.html only writes the Binance symbol when adding), then
 // persists the resolution back to localStorage so it's a one-time lookup.
+//
+// Ticker symbols collide a lot on CoinGecko - dozens of unrelated/defunct
+// projects can share a 3-4 letter symbol with whatever's actually trading on
+// Binance, and searching CoinGecko by ticker alone was picking up the wrong
+// one. Binance's own product listing knows each symbol's real project name
+// (findBinanceAssetName, above), so that name is looked up first and used to
+// search CoinGecko instead - only falling back to a ticker-only search if
+// Binance has no matching product for it.
 async function resolveCustomCoinMetadata(){
   const custom = loadCustomCoins();
   const unresolved = custom.filter(c => !c.coingeckoId);
@@ -480,9 +553,24 @@ async function resolveCustomCoinMetadata(){
   let changed = false;
   for(const c of unresolved){
     try{
-      const data = await fetchJSON(`https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(c.symbol)}`);
+      let binanceName = null;
+      try{
+        binanceName = await findBinanceAssetName(c.binanceSymbol, c.symbol);
+      }catch(err){
+        console.warn(`[watchlist] Binance name lookup failed for ${c.symbol}:`, err && err.message);
+      }
+      const query = binanceName || c.symbol;
+      const data = await fetchJSON(`https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(query)}`);
       const results = Array.isArray(data && data.coins) ? data.coins : [];
-      const match = results.find(x => (x.symbol || '').toLowerCase() === c.symbol.toLowerCase()) || results[0];
+      let match = null;
+      if(binanceName){
+        match = results.find(x => (x.name || '').toLowerCase() === binanceName.toLowerCase() && (x.symbol || '').toLowerCase() === c.symbol.toLowerCase())
+          || results.find(x => (x.name || '').toLowerCase() === binanceName.toLowerCase())
+          || results.find(x => (x.symbol || '').toLowerCase() === c.symbol.toLowerCase())
+          || results[0];
+      }else{
+        match = results.find(x => (x.symbol || '').toLowerCase() === c.symbol.toLowerCase()) || results[0];
+      }
       if(match){
         c.coingeckoId = match.id;
         if(match.name) c.name = match.name;
@@ -498,6 +586,7 @@ async function resolveCustomCoinMetadata(){
   }
   return changed;
 }
+
 
 const PRICE_REFRESH_MS  = 30 * 1000;       // ticker price + 24h stats - fast
 const RANK_REFRESH_MS   = 15 * 60 * 1000;  // market-cap rank - changes slowly
@@ -611,6 +700,42 @@ async function fetchRanks(){
   return map;
 }
 
+// The full set of tradeable Binance USDT-M perpetual contract symbols (e.g.
+// "BTCUSDT") - used only to validate a coin typed into the pulse strip's
+// quick-add search box before it's added to the watchlist. Cached in memory
+// for PERPETUAL_SYMBOLS_TTL_MS since it rarely changes and every keystroke's
+// "+" click shouldn't refetch the entire exchange symbol list.
+let perpetualSymbolsCache = null;
+let perpetualSymbolsFetchedAt = 0;
+const PERPETUAL_SYMBOLS_TTL_MS = 10 * 60 * 1000;
+async function fetchPerpetualSymbols(){
+  const data = await fetchJSON('https://fapi.binance.com/fapi/v1/exchangeInfo');
+  const list = Array.isArray(data && data.symbols) ? data.symbols : [];
+  const set = new Set();
+  list.forEach(s => {
+    if(s.contractType === 'PERPETUAL' && s.quoteAsset === 'USDT' && s.status === 'TRADING'){
+      set.add(s.symbol);
+    }
+  });
+  if(!set.size) throw new Error('Unexpected Binance exchangeInfo response shape');
+  return set;
+}
+async function ensurePerpetualSymbols(){
+  const isFresh = perpetualSymbolsCache && (Date.now() - perpetualSymbolsFetchedAt) < PERPETUAL_SYMBOLS_TTL_MS;
+  if(isFresh) return perpetualSymbolsCache;
+  try{
+    perpetualSymbolsCache = await fetchPerpetualSymbols();
+    perpetualSymbolsFetchedAt = Date.now();
+  }catch(err){
+    console.warn('[pulse-search] could not load Binance perpetual symbol list:', err && err.message);
+    // Fall back to whatever we last had cached (even if stale) rather than
+    // an empty set, so a transient network hiccup doesn't make every symbol
+    // look invalid; only a genuinely empty first-ever fetch becomes {}.
+    if(!perpetualSymbolsCache) perpetualSymbolsCache = new Set();
+  }
+  return perpetualSymbolsCache;
+}
+
 // ---------------- Rendering helpers ----------------
 function escapeHtml(s){
   return (s || '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -650,6 +775,14 @@ const expandedCoins = new Set();
 // Which .watch-item currently has its swipe-to-delete panel open (if any) -
 // used so opening a new one closes whichever was previously open.
 let openSwipeItem = null;
+
+// State for the inline "add coin" search box in the pulse strip. Lives
+// outside renderPulseStrip() so it survives that function rebuilding the
+// strip's innerHTML on every price refresh (every PRICE_REFRESH_MS) - without
+// this, whatever the user was mid-typing would get wiped out from under them.
+// status: 'idle' (nothing to report) or 'invalid' (last attempted symbol
+// didn't match any Binance USDT-M perpetual contract - shows the red "!").
+const pulseSearch = { text: '', status: 'idle' };
 
 // ---------------- Coin groups ----------------
 // Groups are user-defined labels a coin can be filed under (e.g. "DeFi",
@@ -958,6 +1091,14 @@ document.getElementById('toggleAllGroupsBtn').addEventListener('click', () => {
     if(!id) return;
     if(anyExpanded) collapsedGroups.add(id); else collapsedGroups.delete(id);
   });
+  // Collapsing all groups should also collapse every individual coin's own
+  // expanded detail view (high/low, volume, chart link) inside them, so
+  // nothing is left showing once its parent group is tucked away. Expanding
+  // all groups intentionally does NOT touch expandedCoins - coins should
+  // stay collapsed by default even when their group opens back up.
+  if(anyExpanded){
+    expandedCoins.clear();
+  }
   // The "Groups" manager panel follows only on collapse: collapsing all
   // also tucks it away, but expanding all leaves it exactly as it was
   // (never force-opened) - so if the user had already collapsed it, or
@@ -1072,14 +1213,110 @@ function renderPulseStrip(tickers){
   const biggestCoin = COINS.find(c => c.binanceSymbol === biggest.symbol);
   const biggestPct = parseFloat(biggest.priceChangePercent);
 
+  // This whole strip gets rebuilt from scratch every price refresh
+  // (PRICE_REFRESH_MS, ~30s) via renderAll(), which would otherwise wipe out
+  // anything the user's mid-typing into the quick-add search box and steal
+  // focus out from under them. pulseSearch (text/status) carries the typed
+  // value + red-"!" state through the rebuild, and we explicitly restore
+  // DOM focus + caret position below if the box was focused going in.
+  const prevInput = document.getElementById('pulseCoinSearch');
+  const hadFocus = !!prevInput && document.activeElement === prevInput;
+  const hasText = pulseSearch.text.trim().length > 0;
+  const showError = hasText && pulseSearch.status === 'invalid';
+
   el.innerHTML = `
     <div class="pulse-strip">
-      <span class="pulse-item"><b class="pulse-up">${upCount}</b>&nbsp;up</span>
-      <span class="pulse-divider"></span>
-      <span class="pulse-item"><b class="pulse-down">${downCount}</b>&nbsp;down</span>
-      <span class="pulse-divider"></span>
-      <span class="pulse-item">Biggest mover&nbsp;<b class="${biggestPct >= 0 ? 'pulse-up' : 'pulse-down'}">${biggestCoin ? biggestCoin.symbol : ''} ${biggestPct >= 0 ? '+' : ''}${biggestPct.toFixed(2)}%</b></span>
+      <div class="pulse-row pulse-row-top">
+        <div class="pulse-row-left">
+          <span class="pulse-item"><b class="pulse-up">${upCount}</b>&nbsp;up</span>
+          <span class="pulse-divider"></span>
+          <span class="pulse-item"><b class="pulse-down">${downCount}</b>&nbsp;down</span>
+        </div>
+        <div class="pulse-search-wrap">
+          <input type="text" id="pulseCoinSearch" class="pulse-search-input" placeholder="Add coin"
+            maxlength="20" autocomplete="off" autocapitalize="characters" spellcheck="false"
+            value="${escapeHtml(pulseSearch.text)}"
+            oninput="handlePulseSearchInput(this)"
+            onkeydown="if(event.key==='Enter'){ event.preventDefault(); handlePulseSearchAdd(); }">
+          <span id="pulseSearchError" class="pulse-search-error" style="display:${showError ? '' : 'none'};">!</span>
+          <button id="pulseSearchAddBtn" class="pulse-search-add" type="button"
+            style="display:${hasText ? '' : 'none'};" onclick="handlePulseSearchAdd()">+</button>
+        </div>
+      </div>
+      <div class="pulse-row pulse-row-bottom">
+        <span class="pulse-item">Biggest mover&nbsp;<b class="${biggestPct >= 0 ? 'pulse-up' : 'pulse-down'}">${biggestCoin ? biggestCoin.symbol : ''} ${biggestPct >= 0 ? '+' : ''}${biggestPct.toFixed(2)}%</b></span>
+      </div>
     </div>`;
+
+  if(hadFocus){
+    const input = document.getElementById('pulseCoinSearch');
+    if(input){
+      input.focus();
+      const pos = input.value.length;
+      input.setSelectionRange(pos, pos);
+    }
+  }
+}
+
+// Toggles the "+" add button and red "!" mismatch indicator directly, rather
+// than going through a full renderPulseStrip() rebuild on every keystroke -
+// that would otherwise fight with the user's own caret position while typing.
+function updatePulseSearchUI(){
+  const addBtn = document.getElementById('pulseSearchAddBtn');
+  const errEl = document.getElementById('pulseSearchError');
+  if(!addBtn || !errEl) return;
+  const hasText = pulseSearch.text.trim().length > 0;
+  addBtn.style.display = hasText ? '' : 'none';
+  errEl.style.display = (hasText && pulseSearch.status === 'invalid') ? '' : 'none';
+}
+
+function handlePulseSearchInput(inputEl){
+  pulseSearch.text = inputEl.value;
+  // Typing again clears any previous red "!" until the next "+" attempt.
+  pulseSearch.status = 'idle';
+  updatePulseSearchUI();
+}
+
+// Validates whatever's typed against the live list of Binance USDT-M
+// perpetual symbols and, on a match, adds it to the watchlist the same way
+// screener.html's "+ WL" button does (a custom coin keyed only by
+// binanceSymbol - resolveCustomCoinMetadata() fills in its CoinGecko id/name
+// on the next load cycle). On no match, shows a red "!" in the search box
+// instead of adding anything.
+async function handlePulseSearchAdd(){
+  const raw = pulseSearch.text.trim();
+  if(!raw) return;
+  const addBtn = document.getElementById('pulseSearchAddBtn');
+  if(addBtn) addBtn.disabled = true;
+  try{
+    const base = raw.toUpperCase().replace(/USDT$/, '');
+    const candidateSymbol = base + 'USDT';
+    const symbols = await ensurePerpetualSymbols();
+    if(!symbols.has(candidateSymbol)){
+      pulseSearch.status = 'invalid';
+      updatePulseSearchUI();
+      return;
+    }
+    pulseSearch.text = '';
+    pulseSearch.status = 'idle';
+    const input = document.getElementById('pulseCoinSearch');
+    if(input) input.value = '';
+    updatePulseSearchUI();
+    // Already on the watchlist (default or previously added) - nothing more
+    // to do, just clear the box (already done above).
+    if(COINS.some(c => c.binanceSymbol === candidateSymbol)) return;
+    const custom = loadCustomCoins();
+    custom.push({ symbol: base, binanceSymbol: candidateSymbol });
+    saveCustomCoins(custom);
+    rebuildCoinsList();
+    resolveCustomCoinMetadata().finally(refreshAll);
+  }catch(err){
+    console.warn('[pulse-search] add failed:', err && err.message);
+    pulseSearch.status = 'invalid';
+    updatePulseSearchUI();
+  }finally{
+    if(addBtn) addBtn.disabled = false;
+  }
 }
 
 function rankOf(coin){
