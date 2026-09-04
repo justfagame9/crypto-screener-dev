@@ -513,6 +513,7 @@
   .home-card[data-page="youtube"] .home-icon{background:linear-gradient(135deg,#ff5f5f,#c22626);}
   .home-card[data-page="predictions"] .home-icon{background:linear-gradient(135deg,#a78bfa,#6d28d9);}
   .home-card[data-page="oil"] .home-icon{background:linear-gradient(135deg,#ff8a4c,#c2501a);}
+  .home-card[data-page="etf"] .home-icon{background:linear-gradient(135deg,#f5a623,#5b8cff);}
   .home-card[data-page="macro"] .home-icon{background:linear-gradient(135deg,#5b8cff,#a78bfa);}
   .home-card[data-page="watchlist"] .home-icon{background:linear-gradient(135deg,#f0c24b,#b8860b);}
   .home-card[data-page="fear-greed"] .home-icon{background:linear-gradient(135deg,#ff5470,#35e0c0);}
@@ -601,6 +602,11 @@
     <div class="nav-item" data-page="oil">
       <span class="nav-icon">🛢️</span>
       <span class="nav-label">Oil & Energy<small>Brent, WTI prices & the spread</small></span>
+    </div>
+
+    <div class="nav-item" data-page="etf">
+      <span class="nav-icon">🏦</span>
+      <span class="nav-label">ETF Flows<small>BTC, ETH, SOL &amp; HYPE spot ETF flows</small></span>
     </div>
 
     <div class="nav-item" data-page="macro">
@@ -715,6 +721,10 @@
               <button class="home-card" type="button" data-page="oil">
                 <span class="home-icon">🛢️</span>
                 <span><span class="home-title">Oil & Energy</span><span class="home-desc">Live Brent & WTI crude prices</span></span>
+              </button>
+              <button class="home-card" type="button" data-page="etf">
+                <span class="home-icon">🏦</span>
+                <span><span class="home-title">ETF Flows</span><span class="home-desc">BTC, ETH, SOL &amp; HYPE spot ETF flows</span></span>
               </button>
             </div>
           </div>
@@ -845,6 +855,11 @@
       <!-- lazy-loaded on first open -->
       <iframe id="iframe-oil" data-src="oil.html"></iframe>
     </div>
+    <div class="page" data-page="etf">
+      <div class="page-loading" id="loading-etf">Loading ETF flows…</div>
+      <!-- lazy-loaded on first open -->
+      <iframe id="iframe-etf" data-src="etf-flows.html"></iframe>
+    </div>
     <div class="page" data-page="macro">
       <div class="page-loading" id="loading-macro">Loading macro & indices…</div>
       <!-- lazy-loaded on first open -->
@@ -876,6 +891,7 @@ const PAGE_TITLES = {
   pulse: 'Whale & Social Pulse',
   predictions: 'Prediction Markets',
   oil: 'Oil & Energy',
+  etf: 'ETF Flows',
   macro: 'Macro & Indices',
   watchlist: 'Watchlist',
   'fear-greed': 'Fear & Greed Index',
