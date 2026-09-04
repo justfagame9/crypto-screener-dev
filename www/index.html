@@ -518,6 +518,7 @@
   .home-card[data-page="fear-greed"] .home-icon{background:linear-gradient(135deg,#ff5470,#35e0c0);}
   .home-card[data-page="btc-returns"] .home-icon{background:linear-gradient(135deg,#f7931a,#35e0c0);}
   .home-card[data-page="season"] .home-icon{background:linear-gradient(135deg,#f5a623,#35e0c0);}
+  .home-card[data-page="pulse"] .home-icon{background:linear-gradient(135deg,#5b8cff,#35e0c0);}
   .home-card[data-page="settings"] .home-icon{background:linear-gradient(135deg,#9aa5b8,#5b6478);}
 </style>
 </head>
@@ -585,6 +586,11 @@
     <div class="nav-item" data-page="youtube">
       <span class="nav-icon">▶️</span>
       <span class="nav-label">YouTube Crypto<small>Recent uploads</small></span>
+    </div>
+
+    <div class="nav-item" data-page="pulse">
+      <span class="nav-icon">🐋</span>
+      <span class="nav-label">Whale & Social Pulse<small>Exchange flows & X accounts</small></span>
     </div>
 
     <div class="nav-item" data-page="predictions">
@@ -728,6 +734,10 @@
                 <span class="home-icon">▶️</span>
                 <span><span class="home-title">YouTube Crypto</span><span class="home-desc">Recent uploads</span></span>
               </button>
+              <button class="home-card" type="button" data-page="pulse">
+                <span class="home-icon">🐋</span>
+                <span><span class="home-title">Whale & Social Pulse</span><span class="home-desc">Exchange flows & X accounts</span></span>
+              </button>
             </div>
           </div>
 
@@ -820,6 +830,11 @@
       <!-- lazy-loaded on first open -->
       <iframe id="iframe-youtube" data-src="youtube.html"></iframe>
     </div>
+    <div class="page" data-page="pulse">
+      <div class="page-loading" id="loading-pulse">Loading whale & social pulse…</div>
+      <!-- lazy-loaded on first open -->
+      <iframe id="iframe-pulse" data-src="pulse.html"></iframe>
+    </div>
     <div class="page" data-page="predictions">
       <div class="page-loading" id="loading-predictions">Loading prediction markets…</div>
       <!-- lazy-loaded on first open -->
@@ -858,6 +873,7 @@ const PAGE_TITLES = {
   calendar: 'Calendar',
   'trump-truth': 'Trump\'s Truth SM',
   youtube: 'YouTube Crypto',
+  pulse: 'Whale & Social Pulse',
   predictions: 'Prediction Markets',
   oil: 'Oil & Energy',
   macro: 'Macro & Indices',
