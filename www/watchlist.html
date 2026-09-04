@@ -958,6 +958,14 @@ document.getElementById('toggleAllGroupsBtn').addEventListener('click', () => {
     if(!id) return;
     if(anyExpanded) collapsedGroups.add(id); else collapsedGroups.delete(id);
   });
+  // Collapsing all groups should also collapse every individual coin's own
+  // expanded detail view (high/low, volume, chart link) inside them, so
+  // nothing is left showing once its parent group is tucked away. Expanding
+  // all groups intentionally does NOT touch expandedCoins - coins should
+  // stay collapsed by default even when their group opens back up.
+  if(anyExpanded){
+    expandedCoins.clear();
+  }
   // The "Groups" manager panel follows only on collapse: collapsing all
   // also tucks it away, but expanding all leaves it exactly as it was
   // (never force-opened) - so if the user had already collapsed it, or
