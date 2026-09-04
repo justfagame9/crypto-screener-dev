@@ -505,6 +505,7 @@
 
   .home-card[data-page="screener"] .home-icon{background:linear-gradient(135deg,#35e0c0,#1c8f79);}
   .home-card[data-page="defi"] .home-icon{background:linear-gradient(135deg,#35e0c0,#5b8cff);}
+  .home-card[data-page="liquidations"] .home-icon{background:linear-gradient(135deg,#ff5470,#f5a623);}
   .home-card[data-page="sizing"] .home-icon{background:linear-gradient(135deg,#6ea8ff,#3a5fc9);}
   .home-card[data-page="news"] .home-icon{background:linear-gradient(135deg,#ffb84d,#c9791a);}
   .home-card[data-page="calendar"] .home-icon{background:linear-gradient(135deg,#ff6b8b,#c22d5c);}
@@ -559,6 +560,11 @@
     <div class="nav-item" data-page="defi">
       <span class="nav-icon">💧</span>
       <span class="nav-label">DeFi & TVL<small>TVL, trade volume & unlocks</small></span>
+    </div>
+
+    <div class="nav-item" data-page="liquidations">
+      <span class="nav-icon">💥</span>
+      <span class="nav-label">Long/Short &amp; Liquidations<small>Ratios, open interest &amp; live liq heatmap</small></span>
     </div>
 
     <div class="nav-item" data-page="calendar">
@@ -688,6 +694,10 @@
                 <span class="home-icon">💧</span>
                 <span><span class="home-title">DeFi & TVL</span><span class="home-desc">Chains, protocols, DEX volume & unlocks</span></span>
               </button>
+              <button class="home-card" type="button" data-page="liquidations">
+                <span class="home-icon">💥</span>
+                <span><span class="home-title">Long/Short & Liquidations</span><span class="home-desc">Ratios, open interest & live liq heatmap</span></span>
+              </button>
               <button class="home-card" type="button" data-page="btc-returns">
                 <span class="home-icon">📆</span>
                 <span><span class="home-title">Bitcoin Returns</span><span class="home-desc">Monthly, quarterly &amp; yearly performance</span></span>
@@ -770,6 +780,11 @@
       <!-- lazy-loaded on first open -->
       <iframe id="iframe-watchlist" data-src="watchlist.html"></iframe>
     </div>
+    <div class="page" data-page="liquidations">
+      <div class="page-loading" id="loading-liquidations">Loading Long/Short &amp; Liquidations…</div>
+      <!-- lazy-loaded on first open -->
+      <iframe id="iframe-liquidations" data-src="liquidations.html"></iframe>
+    </div>
     <div class="page" data-page="fear-greed">
       <div class="page-loading" id="loading-fear-greed">Loading Fear &amp; Greed Index…</div>
       <!-- lazy-loaded on first open -->
@@ -837,6 +852,7 @@ const PAGE_TITLES = {
   home: '',
   screener: 'Screener - Ichimoku',
   defi: 'DeFi & TVL',
+  liquidations: 'Long/Short & Liquidations',
   sizing: 'Position Sizing',
   news: 'News',
   calendar: 'Calendar',
