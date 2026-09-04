@@ -153,38 +153,6 @@
   }
   select.ctrl{cursor:pointer;}
 
-  /* ---- Live feed header (ws status) ---- */
-  .feed-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border-soft);flex-wrap:wrap;gap:8px;}
-  .ws-status{display:flex;align-items:center;gap:7px;font:700 10.5px var(--font-mono);text-transform:uppercase;letter-spacing:.04em;}
-  .ws-dot{width:7px;height:7px;border-radius:50%;background:var(--faint);}
-  .ws-status.live .ws-dot{background:var(--accent);box-shadow:0 0 6px var(--accent);animation:pulse 1.6s infinite;}
-  .ws-status.live{color:var(--accent);}
-  .ws-status.connecting .ws-dot{background:var(--amber);}
-  .ws-status.connecting{color:var(--amber);}
-  .ws-status.down .ws-dot{background:var(--red);}
-  .ws-status.down{color:var(--red);}
-  .feed-totals{display:flex;gap:12px;font:11px var(--font-mono);color:var(--muted);}
-  .feed-totals b.long{color:var(--red);}
-  .feed-totals b.short{color:var(--accent);}
-
-  /* ---- Liquidation feed rows ---- */
-  .liq-list{max-height:520px;overflow-y:auto;}
-  .liq-row{display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--border-soft);}
-  .liq-row:last-child{border-bottom:none;}
-  .liq-row.enter{animation:liqIn .6s ease;}
-  @keyframes liqIn{0%{background:rgba(255,255,255,.07);}100%{background:transparent;}}
-  .liq-row.whale{background:rgba(245,166,35,.05);box-shadow:inset 3px 0 0 var(--amber);}
-  .liq-side{
-    flex-shrink:0;width:74px;text-align:center;font:700 9.5px var(--font-mono);text-transform:uppercase;
-    letter-spacing:.03em;padding:5px 0;border-radius:7px;
-  }
-  .liq-side.long{color:var(--red);background:rgba(255,84,112,.12);}
-  .liq-side.short{color:var(--accent);background:rgba(53,224,192,.12);}
-  .liq-body{flex:1;min-width:0;}
-  .liq-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
-  .liq-symbol{font-size:12.5px;font-weight:700;}
-  .liq-value{font:700 12.5px var(--font-mono);}
-  .liq-meta{font:10.5px var(--font-mono);color:var(--faint);margin-top:2px;display:flex;gap:8px;}
   .empty-note{padding:26px 16px;text-align:center;color:var(--faint);font:12px var(--font-mono);}
   .empty-note b{color:var(--muted);}
 
@@ -199,6 +167,33 @@
     padding:8px 16px;border-radius:8px;font:600 12px var(--font-mono);cursor:pointer;
   }
   .retry-btn:hover{border-color:var(--red);color:var(--red);}
+
+  /* ---- Liquidation totals table ---- */
+  .liqtotals-keybar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:14px 16px;border-bottom:1px solid var(--border-soft);}
+  .liqtotals-keybar input{
+    background:var(--panel2);border:1px solid var(--border);color:var(--text);
+    font:600 11.5px var(--font-mono);border-radius:9px;padding:8px 10px;outline:none;flex:1;min-width:180px;
+  }
+  .liqtotals-keybar button{
+    background:rgba(53,224,192,.12);border:1px solid var(--accent-dim);color:var(--accent);
+    font:700 11.5px var(--font-mono);border-radius:9px;padding:8px 14px;cursor:pointer;white-space:nowrap;
+  }
+  .liqtotals-keybar button:hover{border-color:var(--accent);}
+  .liqtotals-keybar .keybar-msg{font:11px var(--font-mono);color:var(--faint);flex-basis:100%;}
+  .liqtotals-keybar a{color:var(--accent);}
+  .liqtotals-table{width:100%;border-collapse:collapse;}
+  .liqtotals-table th{
+    text-align:right;font:700 9.5px var(--font-mono);letter-spacing:.05em;text-transform:uppercase;
+    color:var(--muted);padding:10px 14px;border-bottom:1px solid var(--border-soft);white-space:nowrap;
+  }
+  .liqtotals-table th:first-child, .liqtotals-table td:first-child{text-align:left;}
+  .liqtotals-table td{padding:10px 14px;border-bottom:1px solid var(--border-soft);font:600 12px var(--font-mono);text-align:right;white-space:nowrap;}
+  .liqtotals-table tr:last-child td{border-bottom:none;}
+  .liqtotals-coin{display:flex;align-items:center;gap:8px;font:700 12.5px var(--font-display);}
+  .liqtotals-coin .swatch{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+  .liqtotals-long{color:var(--red);}
+  .liqtotals-short{color:var(--accent);}
+  .liqtotals-cell-sep{color:var(--faint);font-weight:400;margin:0 2px;}
 
   /* ---- Disclaimer / about panel ---- */
   .notice{
@@ -241,7 +236,7 @@
       </button>
     </div>
   </div>
-  <p class="sub">Positioning and forced-exit data for perpetual futures: long/short ratios across account and top-trader cohorts, open interest, funding, and a live liquidation feed built from real-time Binance Futures liquidation events.</p>
+  <p class="sub">Positioning and forced-exit data for perpetual futures: long/short ratios across account and top-trader cohorts, open interest, funding, and 1h/8h/24h liquidation totals per coin.</p>
 
   <div class="degraded-banner" id="degradedBanner"></div>
 
@@ -289,21 +284,15 @@
     </div>
   </div>
 
-  <!-- Live Liquidation Feed -->
-  <div class="section" id="sec-feed">
-    <div class="section-head toggleable" data-toggle="sec-feed">
-      <div class="section-title"><button class="section-toggle-btn" type="button" aria-expanded="true" aria-label="Toggle section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button><span class="si">💥</span>Live Liquidation Feed</div>
+  <!-- Liquidation Totals (1h / 8h / 24h) -->
+  <div class="section" id="sec-liqtotals">
+    <div class="section-head toggleable" data-toggle="sec-liqtotals">
+      <div class="section-title"><button class="section-toggle-btn" type="button" aria-expanded="true" aria-label="Toggle section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button><span class="si">🧮</span>Liquidation Totals</div>
+      <div class="section-note" id="liqTotalsNote"></div>
     </div>
     <div class="section-body">
-      <div class="chip-row" id="feedScopeChips"></div>
-      <div class="chip-row" id="minSizeChips"></div>
-      <div class="panel">
-        <div class="feed-head">
-          <div class="ws-status connecting" id="wsStatus"><span class="ws-dot"></span><span id="wsStatusText">Connecting</span></div>
-          <div class="feed-totals" id="feedTotals">Long liq'd <b class="long">$0</b> · Short liq'd <b class="short">$0</b> <span style="color:var(--faint)">· this session</span></div>
-        </div>
-        <div class="liq-list" id="liqList"><div class="empty-note">Waiting for the live liquidation stream to connect…</div></div>
-      </div>
+      <div class="section-note-inline">Long vs. short liquidations aggregated across exchanges over the last 1h / 8h / 24h, per coin. Powered by the free <a href="https://coinalyze.net" target="_blank" rel="noopener">Coinalyze</a> API.</div>
+      <div class="panel" id="liqTotalsPanel"></div>
     </div>
   </div>
 
@@ -313,10 +302,10 @@
       <button class="notice-toggle" id="noticeToggle" type="button" aria-expanded="false" aria-controls="noticeDetails" aria-label="Show more details">+</button>
     </div>
     <div class="notice-details" id="noticeDetails" hidden>
-      All figures on this page come from Binance Futures public endpoints (USDⓈ-M perpetuals) and reflect Binance's own order book and traders only — not the whole market. "Top trader" ratios cover Binance's top 20% of accounts/positions by margin balance, which behaves differently from the retail-heavy "global accounts" ratio, so the two can diverge or even point opposite directions. The liquidation feed is built entirely from Binance's public <code>forceOrder</code> stream while this tab is open (plus whatever was recorded earlier this session, persisted locally on this device) — it is not a full historical record of every liquidation on the exchange. Ratio/open interest/funding figures refresh every 10 minutes; the liquidation feed is real-time via WebSocket and reconnects automatically if it drops.
+      Ratio/open interest/funding figures come from Binance Futures public endpoints (USDⓈ-M perpetuals) and reflect Binance's own order book and traders only — not the whole market. "Top trader" ratios cover Binance's top 20% of accounts/positions by margin balance, which behaves differently from the retail-heavy "global accounts" ratio, so the two can diverge or even point opposite directions. The <b>Liquidation Totals</b> section (1h/8h/24h per coin) comes from the free Coinalyze API, aggregated across the exchanges Coinalyze tracks — it needs a free API key (see the section itself). Ratio/open interest/funding refresh every 10 minutes; Liquidation Totals every 5 minutes.
       <div class="src-tags">
         <span class="src-tag"><span class="dot"></span>Ratios/OI/Funding · Binance Futures REST</span>
-        <span class="src-tag"><span class="dot"></span>Liquidations · Binance Futures WebSocket</span>
+        <span class="src-tag"><span class="dot"></span>Liquidation Totals (1h/8h/24h) · Coinalyze API</span>
       </div>
     </div>
   </div>
@@ -326,13 +315,21 @@
 <script>
 // ==================== Config ====================
 const FAPI_BASE = 'https://fapi.binance.com';
-const WS_URL = 'wss://fstream.binance.com/ws/!forceOrder@arr';
 const REFRESH_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes, matches the rest of the suite
 const PROXY_TIMEOUT_MS = 12000;
 const CACHE_KEY = 'crypto-liq-ratio-cache-v1';
-const LIQ_STORE_KEY = 'crypto-liq-events-v1';
-const MAX_STORED_LIQS = 1500;
-const MAX_FEED_ROWS = 80;
+
+// Historical (1h/8h/24h) liquidation totals come from Coinalyze's free
+// public API (https://coinalyze.net) — Binance's own endpoints have no free
+// REST history for market-wide liquidations, so a second free source is
+// needed to answer "how much got liquidated in the last N hours". Requires a
+// free Coinalyze API key.
+const COINALYZE_BASE = 'https://api.coinalyze.net/v1';
+const COINALYZE_KEY_STORAGE = 'crypto-liq-coinalyze-key-v1';
+const COINALYZE_SYMBOL_CACHE_KEY = 'crypto-liq-coinalyze-symbols-v1';
+const COINALYZE_SYMBOL_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // re-resolve symbols once a day
+const COINALYZE_REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes, well under the 40/min rate limit
+const COINALYZE_PROXY_TIMEOUT_MS = 20000; // public CORS proxies double-hop, so give them more room than PROXY_TIMEOUT_MS
 
 const SYMBOLS = [
   { sym:'BTCUSDT',  label:'BTC',  grad:'linear-gradient(135deg,#f7931a,#c9791a)' },
@@ -352,8 +349,6 @@ const RATIO_TYPES = {
   taker:   { path:'takerlongshortRatio',          label:'Taker Volume',     desc:'Aggressive (market-order) taker buy volume vs sell volume \u2014 who is paying to cross the spread right now.' },
 };
 const PERIODS = ['5m', '15m', '1h', '4h'];
-const MIN_SIZES = [0, 10000, 50000, 100000, 500000];
-const WHALE_THRESHOLD_USD = 100000;
 
 // Reuse the same personal Cloudflare Worker + public CORS proxy fallback chain
 // used across the rest of the suite. Binance's fapi.binance.com endpoints are
@@ -450,13 +445,20 @@ function timeAgo(ts){
 }
 
 // ==================== State ====================
-let STATE = { symbol:'BTCUSDT', ratioType:'global', period:'15m', feedScope:'all', minSize:0 };
+let STATE = { symbol:'BTCUSDT', ratioType:'global', period:'15m' };
 let DATA = { ticker:null, oiCurrent:null, oiHist:null, funding:null, fundingHist:null, ratioHist:null };
 let lastResults = null;
 let lastUpdated = null;
-let sessionTotals = { long:0, short:0 };
-let liqEvents = []; // { symbol, side, price, valueUsd, ts, whale }
 let fundingCountdownTimer = null;
+
+// ==================== Coinalyze liquidation totals state ====================
+let coinalyzeApiKey = '';
+try{ coinalyzeApiKey = localStorage.getItem(COINALYZE_KEY_STORAGE) || ''; }catch(err){ /* storage unavailable */ }
+let coinalyzeSymbolMap = null; // { BTC: 'BTCUSDT_PERP.A', ETH: '...', ... }
+let coinalyzeTotals = null;    // { BTC: { h1:{l,s}, h8:{l,s}, h24:{l,s} }, ... }
+let coinalyzeStatus = 'idle';  // idle | nokey | loading | ok | error
+let coinalyzeErrorMsg = '';
+let coinalyzeUpdatedAt = null;
 
 // ==================== Local cache (stale-while-revalidate) ====================
 function cacheKeyFor(){ return `${STATE.symbol}|${STATE.ratioType}|${STATE.period}`; }
@@ -495,22 +497,203 @@ function showDegradedBanner(text){
   el.classList.add('show');
 }
 
-// ==================== Liquidation event persistence ====================
-function loadStoredLiqs(){
+// ==================== Coinalyze liquidation totals (1h/8h/24h) ====================
+// Coinalyze calls get their own fetch helper (instead of the generic
+// fetchJSON used for Binance) because when everything fails we want to know
+// *why* — was it a CORS/network block, a bad HTTP status from Coinalyze
+// itself (e.g. 401 = bad key), or the proxy chain being down — rather than a
+// single opaque "All promises were rejected" from Promise.any.
+async function coinalyzeFetchJSON(url){
+  const attempts = [];
+  // 1) Direct (works only if Coinalyze sends CORS headers for browser JS)
   try{
-    const raw = localStorage.getItem(LIQ_STORE_KEY);
-    if(!raw) return [];
-    const arr = JSON.parse(raw);
-    if(!Array.isArray(arr)) return [];
-    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
-    return arr.filter(e => e && e.ts > cutoff);
-  }catch(err){ return []; }
+    const res = await fetchWithTimeout(url, PROXY_TIMEOUT_MS);
+    if(!res.ok){
+      const body = await res.text().catch(() => '');
+      throw new Error(`HTTP ${res.status}${body ? ' \u2014 ' + body.slice(0, 160) : ''}`);
+    }
+    return await res.json();
+  }catch(err){
+    attempts.push(`direct: ${err && err.message ? err.message : 'network/CORS error'}`);
+  }
+  // 2) Personal worker proxy (only reliable if its ALLOWED_HOSTS includes api.coinalyze.net)
+  if(WORKER_PROXY_URL){
+    try{
+      const res = await fetchWithTimeout(buildWorkerProxyUrl(url), PROXY_TIMEOUT_MS);
+      if(!res.ok){
+        const body = await res.text().catch(() => '');
+        throw new Error(`HTTP ${res.status}${body ? ' \u2014 ' + body.slice(0, 160) : ''}`);
+      }
+      return await res.json();
+    }catch(err){
+      attempts.push(`worker: ${err && err.message ? err.message : 'failed'}`);
+    }
+  }
+  // 3) Public CORS proxies, tried one at a time so each failure is attributable.
+  // corsfix is deliberately excluded here: its free tier requires the
+  // calling site's origin to be pre-registered in their dashboard, which
+  // can't be satisfied from an arbitrary local/self-hosted HTML file, so it
+  // would only ever fail with "invalid_origin" in this context.
+  const coinalyzeProxies = [
+    (u) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+    (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  ];
+  const proxyNames = ['codetabs', 'allorigins'];
+  for(let i = 0; i < coinalyzeProxies.length; i++){
+    try{
+      const res = await fetchWithTimeout(coinalyzeProxies[i](url), COINALYZE_PROXY_TIMEOUT_MS);
+      if(!res.ok){
+        const body = await res.text().catch(() => '');
+        throw new Error(`HTTP ${res.status}${body ? ' \u2014 ' + body.slice(0, 160) : ''}`);
+      }
+      return await res.json();
+    }catch(err){
+      attempts.push(`${proxyNames[i] || 'proxy' + i}: ${err && err.message ? err.message : 'failed'}`);
+    }
+  }
+  const authIssue = attempts.some(a => /HTTP 401/.test(a));
+  const prefix = authIssue
+    ? 'Invalid/rejected API key (401) \u2014 double-check you copied the whole key with no extra spaces. '
+    : '';
+  throw new Error(prefix + attempts.join(' | '));
 }
-function saveStoredLiqs(){
+function saveCoinalyzeKey(key){
+  coinalyzeApiKey = (key || '').trim();
+  try{ localStorage.setItem(COINALYZE_KEY_STORAGE, coinalyzeApiKey); }catch(err){ /* storage unavailable */ }
+  coinalyzeSymbolMap = null; // force re-resolve with the new key
+  fetchCoinalyzeTotals();
+}
+function loadCoinalyzeSymbolCache(){
   try{
-    const trimmed = liqEvents.slice(0, MAX_STORED_LIQS);
-    localStorage.setItem(LIQ_STORE_KEY, JSON.stringify(trimmed));
-  }catch(err){ /* storage unavailable */ }
+    const raw = localStorage.getItem(COINALYZE_SYMBOL_CACHE_KEY);
+    if(!raw) return null;
+    const cached = JSON.parse(raw);
+    if(!cached.map || !cached.savedAt) return null;
+    if(Date.now() - cached.savedAt > COINALYZE_SYMBOL_CACHE_TTL_MS) return null;
+    return cached.map;
+  }catch(err){ return null; }
+}
+function saveCoinalyzeSymbolCache(map){
+  try{ localStorage.setItem(COINALYZE_SYMBOL_CACHE_KEY, JSON.stringify({ map, savedAt: Date.now() })); }
+  catch(err){ /* storage unavailable */ }
+}
+// Resolve each of our coins to its Binance USDT-margined perpetual symbol in
+// Coinalyze's own symbol notation (e.g. BTCUSDT_PERP.A), by asking Coinalyze
+// which exchange code corresponds to "Binance" and cross-referencing its
+// future-markets list, rather than hardcoding an exchange suffix that could
+// silently break if Coinalyze ever renumbers exchange codes.
+async function resolveCoinalyzeSymbols(){
+  const cached = loadCoinalyzeSymbolCache();
+  if(cached){ coinalyzeSymbolMap = cached; return; }
+  const withKey = (path) => `${COINALYZE_BASE}${path}${path.includes('?') ? '&' : '?'}api_key=${encodeURIComponent(coinalyzeApiKey)}`;
+  const [exchanges, markets] = await Promise.all([
+    coinalyzeFetchJSON(withKey('/exchanges')),
+    coinalyzeFetchJSON(withKey('/future-markets')),
+  ]);
+  const binance = Array.isArray(exchanges) ? exchanges.find(e => /^binance$/i.test(e.name)) : null;
+  if(!binance) throw new Error('could not find Binance in Coinalyze exchange list');
+  const wanted = new Set(SYMBOLS.map(s => s.label));
+  const map = {};
+  (Array.isArray(markets) ? markets : []).forEach(m => {
+    if(m.exchange !== binance.code) return;
+    if(!m.is_perpetual) return;
+    if(m.quote_asset !== 'USDT') return;
+    if(!wanted.has(m.base_asset)) return;
+    map[m.base_asset] = m.symbol;
+  });
+  coinalyzeSymbolMap = map;
+  saveCoinalyzeSymbolCache(map);
+}
+async function fetchCoinalyzeTotals(){
+  if(!coinalyzeApiKey){ coinalyzeStatus = 'nokey'; renderLiqTotals(); return; }
+  coinalyzeStatus = 'loading';
+  renderLiqTotals();
+  try{
+    if(!coinalyzeSymbolMap) await resolveCoinalyzeSymbols();
+    const symbols = Object.values(coinalyzeSymbolMap || {});
+    if(!symbols.length) throw new Error('no matching Binance USDT perpetuals found on Coinalyze');
+    const toTs = Math.floor(Date.now() / 1000);
+    const fromTs = toTs - 25 * 3600; // 24h of hourly candles + a little slack
+    const url = `${COINALYZE_BASE}/liquidation-history?symbols=${encodeURIComponent(symbols.join(','))}` +
+      `&interval=1hour&from=${fromTs}&to=${toTs}&convert_to_usd=true&api_key=${encodeURIComponent(coinalyzeApiKey)}`;
+    const data = await coinalyzeFetchJSON(url);
+    const historyBySymbol = {};
+    (Array.isArray(data) ? data : []).forEach(d => { historyBySymbol[d.symbol] = Array.isArray(d.history) ? d.history : []; });
+    const sumSince = (history, hours) => {
+      const cutoff = toTs - hours * 3600;
+      return history.reduce((acc, pt) => {
+        if(pt.t >= cutoff){ acc.l += (pt.l || 0); acc.s += (pt.s || 0); }
+        return acc;
+      }, { l: 0, s: 0 });
+    };
+    const totals = {};
+    Object.entries(coinalyzeSymbolMap).forEach(([label, sym]) => {
+      const hist = historyBySymbol[sym] || [];
+      totals[label] = { h1: sumSince(hist, 1), h8: sumSince(hist, 8), h24: sumSince(hist, 24) };
+    });
+    coinalyzeTotals = totals;
+    coinalyzeStatus = 'ok';
+    coinalyzeUpdatedAt = new Date();
+  }catch(err){
+    console.warn('[coinalyze] failed:', err && err.message);
+    coinalyzeStatus = 'error';
+    coinalyzeErrorMsg = (err && err.message) || 'unknown error';
+  }
+  renderLiqTotals();
+}
+function renderLiqTotals(){
+  const panel = document.getElementById('liqTotalsPanel');
+  const note = document.getElementById('liqTotalsNote');
+  if(!panel) return;
+
+  if(coinalyzeStatus === 'nokey' || coinalyzeStatus === 'error'){
+    const errLine = coinalyzeStatus === 'error'
+      ? `<div class="keybar-msg" style="color:#ffb3c1;word-break:break-word;">Couldn\u2019t load totals \u2014 ${escapeHtml(coinalyzeErrorMsg)}</div>`
+      : `<div class="keybar-msg">Free, no credit card \u2014 sign up and grab a key from <a href="https://coinalyze.net/account/api-key/" target="_blank" rel="noopener">coinalyze.net/account/api-key</a>, then paste it here. Stored only in this browser.</div>`;
+    panel.innerHTML = `
+      <div class="liqtotals-keybar">
+        <input type="text" id="coinalyzeKeyInput" placeholder="Paste your free Coinalyze API key" value="${escapeHtml(coinalyzeApiKey)}" autocomplete="off" spellcheck="false"/>
+        <button type="button" id="coinalyzeKeySave">Save &amp; load</button>
+        ${errLine}
+      </div>
+      <div class="empty-note">${coinalyzeStatus === 'error' ? 'Totals unavailable this refresh.' : 'Add a key above to see 1h / 8h / 24h liquidation totals per coin.'}</div>`;
+    const saveBtn = document.getElementById('coinalyzeKeySave');
+    if(saveBtn){
+      saveBtn.addEventListener('click', () => {
+        const val = document.getElementById('coinalyzeKeyInput').value;
+        saveCoinalyzeKey(val);
+      });
+    }
+    note.textContent = '';
+    return;
+  }
+
+  if(coinalyzeStatus === 'loading' && !coinalyzeTotals){
+    panel.innerHTML = '<div class="skel-block" style="height:180px;border-radius:14px"></div>';
+    note.textContent = 'Loading\u2026';
+    return;
+  }
+
+  const rows = SYMBOLS.filter(s => coinalyzeTotals && coinalyzeTotals[s.label]).map(s => {
+    const t = coinalyzeTotals[s.label];
+    const cell = (bucket) => `<span class="liqtotals-long">${formatUSD(bucket.l)}</span><span class="liqtotals-cell-sep">/</span><span class="liqtotals-short">${formatUSD(bucket.s)}</span>`;
+    return `
+      <tr>
+        <td><div class="liqtotals-coin"><span class="swatch" style="background:${s.grad}"></span>${s.label}</div></td>
+        <td>${cell(t.h1)}</td>
+        <td>${cell(t.h8)}</td>
+        <td>${cell(t.h24)}</td>
+      </tr>`;
+  }).join('');
+
+  panel.innerHTML = `
+    <div style="overflow-x:auto;">
+      <table class="liqtotals-table">
+        <thead><tr><th>Coin</th><th>1h (long/short)</th><th>8h (long/short)</th><th>24h (long/short)</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="4" style="text-align:center;color:var(--faint)">No data returned.</td></tr>'}</tbody>
+      </table>
+    </div>`;
+  note.textContent = coinalyzeUpdatedAt ? `Updated ${timeAgo(coinalyzeUpdatedAt.getTime())} \u00b7 aggregated across exchanges` : '';
 }
 
 // ==================== Chip builders ====================
@@ -562,36 +745,10 @@ function renderPeriodChips(){
     }));
   });
 }
-function renderFeedScopeChips(){
-  const row = document.getElementById('feedScopeChips');
-  row.innerHTML = '';
-  [['all','All markets'], ['symbol', STATE.symbol.replace('USDT','') + ' only']].forEach(([key, label]) => {
-    row.appendChild(buildChip(key === STATE.feedScope, label, () => {
-      STATE.feedScope = key;
-      renderFeedScopeChips();
-      renderLiqFeed();
-    }));
-  });
-}
-function renderMinSizeChips(){
-  const row = document.getElementById('minSizeChips');
-  row.innerHTML = '';
-  MIN_SIZES.forEach(v => {
-    const label = v === 0 ? 'Any size' : '\u2265 ' + formatUSD(v);
-    row.appendChild(buildChip(v === STATE.minSize, label, () => {
-      STATE.minSize = v;
-      renderMinSizeChips();
-      renderLiqFeed();
-    }));
-  });
-}
 function onSymbolChange(){
   renderSymbolChips();
-  if(STATE.feedScope === 'symbol') renderFeedScopeChips();
   renderRatioTypeChips();
-  renderFeedScopeChips();
   fetchAll();
-  renderLiqFeed();
 }
 
 // ==================== Chart builder (generic sparkline) ====================
@@ -678,14 +835,6 @@ function renderStats(){
     renderStatCard('\u2696\ufe0f', 'linear-gradient(135deg,#ff5470,#c22d5c)', RATIO_TYPES[STATE.ratioType].label,
       latestRatio !== null ? latestRatio.toFixed(2) : '\u2014',
       latestLongPct !== null ? `<div class="stat-sub"><span class="pill up">${latestLongPct.toFixed(1)}% long</span><span class="pill down">${latestShortPct.toFixed(1)}% short</span></div>` : `<div class="stat-sub" style="color:var(--faint)">${latestLabel}</div>`
-    ),
-    renderStatCard('\ud83d\udc0b', 'linear-gradient(135deg,#35e0c0,#1c8f79)', 'Session Liq\u2019d \u2014 Longs',
-      formatUSD(sessionTotals.long),
-      '<div class="stat-sub" style="color:var(--faint)">forced sells, all markets</div>'
-    ),
-    renderStatCard('\u26a1', 'linear-gradient(135deg,#ff8a4c,#c2501a)', 'Session Liq\u2019d \u2014 Shorts',
-      formatUSD(sessionTotals.short),
-      '<div class="stat-sub" style="color:var(--faint)">forced buys, all markets</div>'
     ),
   ];
   document.getElementById('statSection').innerHTML = `<div class="stat-grid">${cards.join('')}</div>`;
@@ -891,114 +1040,6 @@ function renderSkeleton(){
   document.getElementById('fundingPanel').innerHTML = '<div class="skel-block" style="height:170px;border-radius:14px"></div>';
 }
 
-// ==================== Liquidation WebSocket ====================
-let ws = null, wsReconnectDelay = 1000, wsReconnectTimer = null;
-function setWsStatus(state, text){
-  const el = document.getElementById('wsStatus');
-  el.className = 'ws-status ' + state;
-  document.getElementById('wsStatusText').textContent = text;
-}
-function connectLiqStream(){
-  setWsStatus('connecting', 'Connecting');
-  try{
-    ws = new WebSocket(WS_URL);
-  }catch(err){
-    console.warn('[ws] construction failed:', err && err.message);
-    setWsStatus('down', 'Unavailable');
-    return;
-  }
-  ws.addEventListener('open', () => {
-    wsReconnectDelay = 1000;
-    setWsStatus('live', 'Live');
-  });
-  ws.addEventListener('message', (evt) => {
-    try{
-      const msg = JSON.parse(evt.data);
-      handleLiqMessage(msg);
-    }catch(err){ /* ignore malformed frame */ }
-  });
-  ws.addEventListener('close', () => {
-    setWsStatus('down', 'Reconnecting');
-    scheduleReconnect();
-  });
-  ws.addEventListener('error', () => {
-    setWsStatus('down', 'Reconnecting');
-  });
-}
-function scheduleReconnect(){
-  if(wsReconnectTimer) clearTimeout(wsReconnectTimer);
-  wsReconnectTimer = setTimeout(() => {
-    wsReconnectDelay = Math.min(wsReconnectDelay * 1.6, 30000);
-    connectLiqStream();
-  }, wsReconnectDelay + Math.random() * 500);
-}
-function handleLiqMessage(msg){
-  if(!msg || msg.e !== 'forceOrder' || !msg.o) return;
-  const o = msg.o;
-  const symbol = o.s;
-  const sideRaw = o.S; // SELL = long liquidated, BUY = short liquidated
-  const side = sideRaw === 'SELL' ? 'long' : 'short';
-  const qty = parseFloat(o.q || o.z || 0);
-  const price = parseFloat(o.ap || o.p || 0);
-  const valueUsd = qty * price;
-  const ts = msg.E || Date.now();
-  const whale = valueUsd >= WHALE_THRESHOLD_USD;
-
-  const event = { symbol, side, price, qty, valueUsd, ts, whale };
-  liqEvents.unshift(event);
-  if(liqEvents.length > MAX_STORED_LIQS) liqEvents.length = MAX_STORED_LIQS;
-  saveStoredLiqs();
-
-  sessionTotals[side] += valueUsd;
-  updateFeedTotals();
-
-  prependLiqRow(event);
-}
-function updateFeedTotals(){
-  const el = document.getElementById('feedTotals');
-  el.innerHTML = `Long liq\u2019d <b class="long">${formatUSD(sessionTotals.long)}</b> \u00b7 Short liq\u2019d <b class="short">${formatUSD(sessionTotals.short)}</b> <span style="color:var(--faint)">\u00b7 this session</span>`;
-}
-function passesFeedFilter(e){
-  if(STATE.feedScope === 'symbol' && e.symbol !== STATE.symbol) return false;
-  if(e.valueUsd < STATE.minSize) return false;
-  return true;
-}
-function liqRowHtml(e){
-  const sideLabel = e.side === 'long' ? 'Long Liq' : 'Short Liq';
-  return `
-    <div class="liq-row enter${e.whale ? ' whale' : ''}" data-symbol="${escapeHtml(e.symbol)}" data-value="${e.valueUsd}">
-      <div class="liq-side ${e.side}">${sideLabel}</div>
-      <div class="liq-body">
-        <div class="liq-top">
-          <span class="liq-symbol">${escapeHtml(e.symbol.replace('USDT',''))}${e.whale ? ' \ud83d\udc0b' : ''}</span>
-          <span class="liq-value">${formatUSD(e.valueUsd)}</span>
-        </div>
-        <div class="liq-meta"><span>${formatPrice(e.price)}</span><span>${formatQty(e.qty)} contracts</span><span class="liq-ts" data-ts="${e.ts}">${timeAgo(e.ts)}</span></div>
-      </div>
-    </div>`;
-}
-function prependLiqRow(e){
-  if(!passesFeedFilter(e)) return;
-  const list = document.getElementById('liqList');
-  if(list.querySelector('.empty-note')) list.innerHTML = '';
-  list.insertAdjacentHTML('afterbegin', liqRowHtml(e));
-  while(list.children.length > MAX_FEED_ROWS) list.removeChild(list.lastChild);
-}
-function renderLiqFeed(){
-  const list = document.getElementById('liqList');
-  const filtered = liqEvents.filter(passesFeedFilter).slice(0, MAX_FEED_ROWS);
-  if(!filtered.length){
-    list.innerHTML = '<div class="empty-note"><b>No liquidations match this filter yet.</b><br>Live events will appear here as they happen.</div>';
-    return;
-  }
-  list.innerHTML = filtered.map(liqRowHtml).join('');
-}
-setInterval(() => {
-  document.querySelectorAll('.liq-ts').forEach(el => {
-    el.textContent = timeAgo(parseInt(el.getAttribute('data-ts'), 10));
-  });
-}, 15000);
-
 // ==================== Collapsible sections (chevron + expand/collapse all) ====================
 // Each section keeps whatever collapsed/expanded state is authored in the
 // HTML (Ratio and Feed start open; Open Interest and Funding start
@@ -1048,20 +1089,15 @@ document.getElementById('noticeToggle').addEventListener('click', () => {
 renderSymbolChips();
 renderRatioTypeChips();
 renderPeriodChips();
-renderFeedScopeChips();
-renderMinSizeChips();
-
-liqEvents = loadStoredLiqs();
-liqEvents.forEach(e => { sessionTotals[e.side] += e.valueUsd; });
-updateFeedTotals();
-renderLiqFeed();
 
 loadCache();
 fetchAll();
-connectLiqStream();
+
+fetchCoinalyzeTotals();
 
 setInterval(fetchAll, REFRESH_INTERVAL_MS);
 setInterval(updateLastUpdatedLabel, 60000);
+setInterval(fetchCoinalyzeTotals, COINALYZE_REFRESH_INTERVAL_MS);
 </script>
 </body>
 </html>
