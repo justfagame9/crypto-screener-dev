@@ -90,6 +90,34 @@
   .status-pill.warn{color:var(--amber);background:rgba(245,166,35,.08);}
   .status-pill .dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0;}
 
+  /* ---- Chain selector chips ---- */
+  .chain-chip-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+  .chain-chip{display:inline-flex;align-items:center;gap:6px;font:600 10.5px var(--font-mono);padding:5px 10px;border-radius:20px;border:1px solid var(--border);background:var(--panel2);color:var(--muted);cursor:pointer;user-select:none;transition:border-color .15s,color .15s,background .15s;}
+  .chain-chip .sw{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.5;}
+  .chain-chip.active{color:var(--text);border-color:var(--accent-dim);background:rgba(53,224,192,.08);}
+  .chain-chip.active .sw{background:var(--accent);opacity:1;box-shadow:0 0 6px var(--accent);}
+  .chain-chip:hover{border-color:var(--blue);}
+
+  /* ---- Non-EVM custom address panel (BTC / SOL) ---- */
+  .addr-panel{padding:12px 14px;background:var(--panel2);border:1px solid var(--border);border-radius:12px;margin-bottom:10px;}
+  .addr-panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;}
+  .addr-panel-title{font:700 11px var(--font-mono);color:var(--text);text-transform:uppercase;letter-spacing:.04em;}
+  .addr-panel-note{font-size:11px;color:var(--muted);line-height:1.55;margin-bottom:8px;}
+  .addr-list{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;}
+  .addr-row{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 8px;}
+  .addr-row .addr-label{font:600 10.5px var(--font-mono);color:var(--text);flex-shrink:0;min-width:64px;}
+  .addr-row .addr-val{font:10.5px var(--font-mono);color:var(--faint);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .addr-row .addr-remove{background:transparent;border:none;color:var(--faint);cursor:pointer;font:700 13px var(--font-mono);padding:0 4px;flex-shrink:0;}
+  .addr-row .addr-remove:hover{color:var(--red);}
+  .addr-add-row{display:flex;gap:6px;flex-wrap:wrap;}
+  .addr-add-row input{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 9px;font:11.5px var(--font-mono);}
+  .addr-add-row input.addr-label-input{width:90px;flex-shrink:0;}
+  .addr-add-row input.addr-val-input{flex:1;min-width:160px;}
+  .addr-add-row input:focus{outline:none;border-color:var(--accent);}
+  .addr-add-row button{background:var(--accent);color:#06110E;border:none;border-radius:8px;padding:7px 12px;font:700 10.5px var(--font-display);cursor:pointer;}
+  .addr-add-row button:hover{filter:brightness(1.08);}
+  .addr-empty{font:10.5px var(--font-mono);color:var(--faint);padding:2px 0 6px;}
+
   /* ---- Key setup (Etherscan) ---- */
   .key-setup{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 14px;background:var(--panel2);border:1px solid var(--border);border-radius:12px;margin-bottom:10px;}
   .key-setup input{flex:1;min-width:170px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font:12px var(--font-mono);}
@@ -118,6 +146,7 @@
   .feed-meta a{color:var(--faint);text-decoration:none;}
   .feed-meta a:hover{color:var(--blue);}
   .feed-empty,.feed-error{font:11.5px var(--font-mono);color:var(--faint);padding:14px 2px;text-align:center;}
+  .feed-chain-tag{font:600 9px var(--font-mono);color:var(--faint);padding:2px 6px;border:1px solid var(--border);border-radius:5px;text-transform:uppercase;letter-spacing:.03em;}
 
   /* ---- Social accounts (fallback grid) ---- */
   .social-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
@@ -176,13 +205,15 @@
     <div class="section-head" data-toggle="sec-whale">
       <div class="section-title">
         <span class="si" style="background:linear-gradient(135deg,#5B8CFF,#2b4fb0)">🐋</span>
-        <span class="st-text"><b>Whale Transfers</b><small>Large exchange inflow / outflow · Ethereum</small></span>
+        <span class="st-text"><b>Whale Transfers</b><small id="whaleSubtitle">Large exchange inflow / outflow · Multi-chain</small></span>
       </div>
       <button class="section-toggle-btn" type="button" aria-expanded="true" aria-label="Toggle section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
     </div>
     <div class="section-body">
+      <div class="chain-chip-row" id="chainChipRow"></div>
       <div id="whaleKeySetup"></div>
-      <div class="section-note-inline">Tracks large ETH / USDT / USDC / WBTC moves in or out of a curated set of known Binance, Coinbase & Kraken hot wallets (threshold ≈ $250K). Inflow to an exchange is often a sell signal; outflow to cold storage is often accumulation. Not exhaustive — many whale moves happen off-chain or on other chains.</div>
+      <div id="nonEvmAddrPanel"></div>
+      <div class="section-note-inline">Tracks large native / stablecoin moves in or out of a curated set of known exchange wallets per chain (threshold ≈ $250K). Inflow to an exchange is often a sell signal; outflow to cold storage is often accumulation. Wallet lists are a small, best-effort sample — not exhaustive, and easy to get subtly wrong, especially for Bitcoin & Solana. Verify any address you rely on and add your own via the panel above.</div>
       <div class="feed-list" id="whaleFeed"></div>
     </div>
   </div>
@@ -208,9 +239,11 @@
       <button class="notice-toggle" id="noticeToggle" type="button" aria-expanded="false" aria-controls="noticeDetails" aria-label="Show more details">+</button>
     </div>
     <div class="notice-details" id="noticeDetails" hidden>
-      Whale transfers come directly from Etherscan (requires your own free API key — nothing is sent anywhere but Etherscan and your browser). The curated exchange wallet list is a small, well-known sample, not comprehensive, and doesn't cover other chains. The X/Twitter feed no longer uses Nitter-style mirrors — those were shut down for good after a cease-and-desist from X Corp in August 2026 (the project's own repository was archived days later). It now pulls from X's own public syndication/embed feed instead, the free JSON endpoint that normally powers "Embedded Timelines" on other websites. That feed isn't officially documented for this kind of use and X throttles or empties it for unauthenticated requests on and off, so treat it as best-effort — when it comes back empty, this section falls back to direct profile links instead of failing silently. This page doesn't place trades or hold positions. Nothing here is financial advice.
+      Whale transfers come from three places depending on the chain: Etherscan V2 for Ethereum, BNB Chain, Polygon, Arbitrum & Base (requires your own free Etherscan API key — one key covers all of these); mempool.space for Bitcoin (no key); and Solana's public RPC for Solana (no key). The EOA exchange wallet list is reused across all EVM chains since those addresses aren't chain-specific; Bitcoin and Solana each have their own small, editable, best-effort address list — not comprehensive, and worth double-checking yourself before relying on it. The X/Twitter feed no longer uses Nitter-style mirrors — those were shut down for good after a cease-and-desist from X Corp in August 2026 (the project's own repository was archived days later). It now pulls from X's own public syndication/embed feed instead, the free JSON endpoint that normally powers "Embedded Timelines" on other websites. That feed isn't officially documented for this kind of use and X throttles or empties it for unauthenticated requests on and off, so treat it as best-effort — when it comes back empty, this section falls back to direct profile links instead of failing silently. This page doesn't place trades or hold positions. Nothing here is financial advice.
       <div class="src-tags">
-        <span class="src-tag"><span class="dot"></span>Etherscan API</span>
+        <span class="src-tag"><span class="dot"></span>Etherscan V2 API (EVM chains)</span>
+        <span class="src-tag"><span class="dot"></span>mempool.space (Bitcoin)</span>
+        <span class="src-tag"><span class="dot"></span>Solana public RPC</span>
         <span class="src-tag"><span class="dot"></span>X syndication feed (best-effort)</span>
         <span class="src-tag"><span class="dot"></span>CoinGecko (USD pricing)</span>
       </div>
@@ -247,8 +280,9 @@ async function fetchJSONDirect(url, ms){
   if(!res.ok) throw new Error('HTTP ' + res.status);
   return res.json();
 }
-async function fetchCoinGeckoPrices(){
-  const url = 'https://api.coingecko.com/api/v3/simple/price?ids=ethereum,bitcoin&vs_currencies=usd';
+async function fetchCoinGeckoPrices(ids){
+  const idsParam = (ids && ids.length ? ids : ['ethereum', 'bitcoin']).join(',');
+  const url = `https://api.coingecko.com/api/v3/simple/price?ids=${idsParam}&vs_currencies=usd`;
   try{
     const res = await fetchWithTimeout(buildWorkerProxyUrl(url), PROXY_TIMEOUT_MS);
     if(!res.ok) throw new Error('worker responded ' + res.status);
@@ -293,7 +327,17 @@ let socialMode = 'unknown'; // 'live' | 'offline'
 let lastUpdated = null;
 let whaleStatus = 'idle'; // idle | nokey | loading | ok | error
 
-// ================= Whale transfers (Etherscan) =================
+// ================= Whale transfers (multi-chain) =================
+const CHAIN_SELECTION_STORAGE = 'ts-whale-chains';
+const BTC_ADDR_STORAGE = 'ts-whale-btc-addrs';
+const SOL_ADDR_STORAGE = 'ts-whale-sol-addrs';
+const MEMPOOL_API = 'https://mempool.space/api';
+const SOLANA_RPC = 'https://api.mainnet-beta.solana.com';
+
+// EOA hot/deposit wallets. These are plain externally-owned accounts, so the
+// SAME address is valid on every EVM chain (it's derived from a private key,
+// not deployed per-chain like a contract) — one list covers Ethereum, BSC,
+// Polygon, Arbitrum, Base, etc.
 const EXCHANGE_WALLETS = [
   { label: 'Binance', addr: '0xf977814e90da44bfa03b6295a0616a897441acec' },
   { label: 'Binance', addr: '0x3f5ce5fbfe3e9af3971dd833d26ba9b5c936f0be' },
@@ -304,17 +348,106 @@ const EXCHANGE_WALLETS = [
 const EXCHANGE_MAP = {};
 EXCHANGE_WALLETS.forEach(w => { EXCHANGE_MAP[w.addr.toLowerCase()] = w.label; });
 
-const TRACKED_TOKENS = {
-  '0xdac17f958d2ee523a2206206994597c13d831ec7': { symbol: 'USDT', stable: true },
-  '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48': { symbol: 'USDC', stable: true },
-  '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599': { symbol: 'WBTC', stable: false, priceRef: 'bitcoin' },
-};
+// Etherscan V2 unifies all EVM chains behind one API key via `chainid`.
+// Token contract addresses are NOT shared across chains (those are real
+// per-chain deployments), so each chain gets its own small token map.
+const EVM_CHAINS = [
+  {
+    id: 'eth', chainId: 1, label: 'Ethereum', nativeSymbol: 'ETH', priceId: 'ethereum',
+    explorer: 'https://etherscan.io/tx/',
+    tokens: {
+      '0xdac17f958d2ee523a2206206994597c13d831ec7': { symbol: 'USDT', stable: true },
+      '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48': { symbol: 'USDC', stable: true },
+      '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599': { symbol: 'WBTC', stable: false, priceRef: 'bitcoin' },
+    },
+  },
+  {
+    id: 'bsc', chainId: 56, label: 'BNB Chain', nativeSymbol: 'BNB', priceId: 'binancecoin',
+    explorer: 'https://bscscan.com/tx/',
+    tokens: {
+      '0x55d398326f99059ff775485246999027b3197955': { symbol: 'USDT', stable: true },
+      '0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d': { symbol: 'USDC', stable: true },
+    },
+  },
+  {
+    id: 'polygon', chainId: 137, label: 'Polygon', nativeSymbol: 'POL', priceId: 'matic-network',
+    explorer: 'https://polygonscan.com/tx/',
+    tokens: {
+      '0xc2132d05d31c914a87c6611c10748aeb04b58e8d': { symbol: 'USDT', stable: true },
+      '0x3c499c542cef5e3811e1192ce70d8cc03d5c3359': { symbol: 'USDC', stable: true },
+    },
+  },
+  {
+    id: 'arbitrum', chainId: 42161, label: 'Arbitrum', nativeSymbol: 'ETH', priceId: 'ethereum',
+    explorer: 'https://arbiscan.io/tx/',
+    tokens: {
+      '0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9': { symbol: 'USDT', stable: true },
+      '0xaf88d065e77c8cc2239327c5edb3a432268e5831': { symbol: 'USDC', stable: true },
+    },
+  },
+  {
+    id: 'base', chainId: 8453, label: 'Base', nativeSymbol: 'ETH', priceId: 'ethereum',
+    explorer: 'https://basescan.org/tx/',
+    tokens: {
+      '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913': { symbol: 'USDC', stable: true },
+    },
+  },
+];
+const EVM_CHAINS_BY_ID = {};
+EVM_CHAINS.forEach(c => { EVM_CHAINS_BY_ID[c.id] = c; });
+
+const NON_EVM_CHAINS = [
+  { id: 'btc', label: 'Bitcoin' },
+  { id: 'sol', label: 'Solana' },
+];
+const ALL_CHIPS = [...EVM_CHAINS.map(c => ({ id: c.id, label: c.label })), ...NON_EVM_CHAINS];
+const DEFAULT_CHAIN_SELECTION = ['eth', 'bsc', 'polygon', 'arbitrum', 'base'];
 
 function getEtherscanKey(){ return (localStorage.getItem(ETHERSCAN_KEY_STORAGE) || '').trim(); }
 
-async function fetchEtherscanList(address, action, key){
+function getChainSelection(){
+  try{
+    const raw = localStorage.getItem(CHAIN_SELECTION_STORAGE);
+    if(raw) return JSON.parse(raw);
+  }catch(e){ /* fall through to default */ }
+  return DEFAULT_CHAIN_SELECTION.slice();
+}
+function saveChainSelection(list){
+  try{ localStorage.setItem(CHAIN_SELECTION_STORAGE, JSON.stringify(list)); }catch(e){ /* storage unavailable */ }
+}
+
+// ---- Curated, editable, non-EVM address books (BTC has no account model
+// shared with EVM, and Solana wallets are a different curve entirely, so
+// both need their own address lists — kept editable in-page since these are
+// easy to get subtly wrong and go stale). ----
+function getBtcAddresses(){
+  try{
+    const raw = localStorage.getItem(BTC_ADDR_STORAGE);
+    if(raw) return JSON.parse(raw);
+  }catch(e){ /* fall through to default */ }
+  return [
+    { label: 'Binance', addr: '34xp4vRoCGJym3xR7yCVPFHoCNxv4Twseo' },
+    { label: 'Bitfinex', addr: '3JZq4atUahhuA9rLhXLMhhTo133J9rF97j' },
+  ];
+}
+function saveBtcAddresses(list){
+  try{ localStorage.setItem(BTC_ADDR_STORAGE, JSON.stringify(list)); }catch(e){ /* storage unavailable */ }
+}
+function getSolAddresses(){
+  try{
+    const raw = localStorage.getItem(SOL_ADDR_STORAGE);
+    if(raw) return JSON.parse(raw);
+  }catch(e){ /* fall through to default */ }
+  return [];
+}
+function saveSolAddresses(list){
+  try{ localStorage.setItem(SOL_ADDR_STORAGE, JSON.stringify(list)); }catch(e){ /* storage unavailable */ }
+}
+
+// ================= EVM (Etherscan V2, one key / all chains) =================
+async function fetchEtherscanList(address, action, key, chainId){
   const offset = action === 'txlist' ? 20 : 40;
-  const url = `https://api.etherscan.io/v2/api?chainid=1&module=account&action=${action}&address=${address}&page=1&offset=${offset}&sort=desc&apikey=${encodeURIComponent(key)}`;
+  const url = `https://api.etherscan.io/v2/api?chainid=${chainId}&module=account&action=${action}&address=${address}&page=1&offset=${offset}&sort=desc&apikey=${encodeURIComponent(key)}`;
   const json = await fetchJSONDirect(url, PROXY_TIMEOUT_MS);
   if(json.status === '0' && json.message && json.message !== 'No transactions found') {
     throw new Error(json.result || json.message);
@@ -322,7 +455,7 @@ async function fetchEtherscanList(address, action, key){
   return Array.isArray(json.result) ? json.result : [];
 }
 
-function buildFlowEvent(tx, kind, ethPrice, btcPrice){
+function buildFlowEvent(tx, kind, chainCfg, prices){
   const from = (tx.from || '').toLowerCase();
   const to = (tx.to || '').toLowerCase();
   const fromLabel = EXCHANGE_MAP[from];
@@ -332,15 +465,15 @@ function buildFlowEvent(tx, kind, ethPrice, btcPrice){
   let amount, symbol, usd;
   if(kind === 'native'){
     amount = Number(tx.value) / 1e18;
-    symbol = 'ETH';
-    usd = amount * (ethPrice || 0);
+    symbol = chainCfg.nativeSymbol;
+    usd = amount * (prices[chainCfg.priceId] || 0);
   }else{
-    const info = TRACKED_TOKENS[(tx.contractAddress || '').toLowerCase()];
+    const info = chainCfg.tokens[(tx.contractAddress || '').toLowerCase()];
     if(!info) return null;
     const decimals = Number(tx.tokenDecimal) || 18;
     amount = Number(tx.value) / Math.pow(10, decimals);
     symbol = info.symbol;
-    usd = info.stable ? amount : amount * (info.priceRef === 'bitcoin' ? (btcPrice || 0) : 0);
+    usd = info.stable ? amount : amount * (prices[info.priceRef] || 0);
   }
   if(!usd || usd < WHALE_USD_THRESHOLD) return null;
 
@@ -357,18 +490,193 @@ function buildFlowEvent(tx, kind, ethPrice, btcPrice){
   }
 
   return {
-    hash: tx.hash,
+    chain: chainCfg.id, chainLabel: chainCfg.label,
+    hash: tx.hash, txUrl: chainCfg.explorer + tx.hash,
     flow, flowLabelHtml,
     amount, symbol, usd,
     timeStamp: Number(tx.timeStamp) || 0,
   };
 }
 
+async function loadEvmChain(chainCfg, key, prices){
+  const out = [];
+  const seen = new Set();
+  // Small batches to stay within Etherscan's free-tier rate limit — this
+  // runs once per selected chain, sequentially, since all chains share the
+  // same key's quota under Etherscan V2.
+  const batchSize = 2;
+  for(let i = 0; i < EXCHANGE_WALLETS.length; i += batchSize){
+    const batch = EXCHANGE_WALLETS.slice(i, i + batchSize);
+    const results = await Promise.allSettled(batch.map(async w => {
+      const [native, tokens] = await Promise.all([
+        fetchEtherscanList(w.addr, 'txlist', key, chainCfg.chainId).catch(() => []),
+        fetchEtherscanList(w.addr, 'tokentx', key, chainCfg.chainId).catch(() => []),
+      ]);
+      return { native, tokens };
+    }));
+    results.forEach(r => {
+      if(r.status !== 'fulfilled') return;
+      r.value.native.forEach(tx => {
+        const ev = buildFlowEvent(tx, 'native', chainCfg, prices);
+        if(ev && !seen.has(ev.hash)){ seen.add(ev.hash); out.push(ev); }
+      });
+      r.value.tokens.forEach(tx => {
+        const ev = buildFlowEvent(tx, 'token', chainCfg, prices);
+        if(ev && !seen.has(ev.hash + ev.symbol)){ seen.add(ev.hash + ev.symbol); out.push(ev); }
+      });
+    });
+    if(i + batchSize < EXCHANGE_WALLETS.length) await new Promise(r => setTimeout(r, 450));
+  }
+  return out;
+}
+
+// ================= Bitcoin (mempool.space, keyless) =================
+async function fetchBtcAddressTxs(addr){
+  const url = `${MEMPOOL_API}/address/${addr}/txs`;
+  try{
+    return await fetchJSONDirect(url, PROXY_TIMEOUT_MS);
+  }catch(directErr){
+    const res = await fetchWithTimeout(buildWorkerProxyUrl(url), PROXY_TIMEOUT_MS);
+    if(!res.ok) throw new Error('worker HTTP ' + res.status);
+    return res.json();
+  }
+}
+
+function buildBtcEvent(tx, addrMap, btcPrice){
+  // UTXO model: a tx can have many inputs/outputs, so sum only the value
+  // that actually touches a tracked address, then check which side(s) it's on.
+  let inFromTracked = 0, outToTracked = 0, trackedInLabel = null, trackedOutLabel = null;
+  (tx.vin || []).forEach(v => {
+    const a = v.prevout && v.prevout.scriptpubkey_address;
+    if(a && addrMap[a]){ inFromTracked += (v.prevout.value || 0); trackedInLabel = addrMap[a]; }
+  });
+  (tx.vout || []).forEach(v => {
+    const a = v.scriptpubkey_address;
+    if(a && addrMap[a]){ outToTracked += (v.value || 0); trackedOutLabel = addrMap[a]; }
+  });
+  if(!trackedInLabel && !trackedOutLabel) return null;
+
+  const satoshis = trackedInLabel ? inFromTracked : outToTracked;
+  const amount = satoshis / 1e8;
+  const usd = amount * (btcPrice || 0);
+  if(!usd || usd < WHALE_USD_THRESHOLD) return null;
+
+  let flow, flowLabelHtml;
+  if(trackedInLabel && trackedOutLabel){
+    flow = 'x2x';
+    flowLabelHtml = `${escapeHtml(trackedInLabel)} ⇄ ${escapeHtml(trackedOutLabel)}`;
+  }else if(trackedOutLabel){
+    flow = 'in';
+    flowLabelHtml = `Unknown → ${escapeHtml(trackedOutLabel)}`;
+  }else{
+    flow = 'out';
+    flowLabelHtml = `${escapeHtml(trackedInLabel)} → Unknown`;
+  }
+
+  const ts = (tx.status && tx.status.confirmed) ? tx.status.block_time : Math.floor(Date.now() / 1000);
+  return {
+    chain: 'btc', chainLabel: 'Bitcoin',
+    hash: tx.txid, txUrl: `https://mempool.space/tx/${tx.txid}`,
+    flow, flowLabelHtml, amount, symbol: 'BTC', usd, timeStamp: ts,
+  };
+}
+
+async function loadBtcChain(btcPrice){
+  const addresses = getBtcAddresses();
+  if(!addresses.length) return [];
+  const addrMap = {};
+  addresses.forEach(a => { addrMap[a.addr] = a.label; });
+  const out = [];
+  const results = await Promise.allSettled(addresses.map(a => fetchBtcAddressTxs(a.addr)));
+  results.forEach(r => {
+    if(r.status !== 'fulfilled' || !Array.isArray(r.value)) return;
+    r.value.forEach(tx => {
+      const ev = buildBtcEvent(tx, addrMap, btcPrice);
+      if(ev) out.push(ev);
+    });
+  });
+  return out;
+}
+
+// ================= Solana (public RPC, keyless) =================
+async function solanaRpc(method, params){
+  const body = JSON.stringify({ jsonrpc: '2.0', id: 1, method, params });
+  try{
+    const res = await fetchWithTimeout(SOLANA_RPC, PROXY_TIMEOUT_MS, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    if(json.error) throw new Error(json.error.message || 'rpc error');
+    return json.result;
+  }catch(directErr){
+    const res = await fetchWithTimeout(buildWorkerProxyUrl(SOLANA_RPC), PROXY_TIMEOUT_MS, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
+    if(!res.ok) throw new Error('worker HTTP ' + res.status);
+    const json = await res.json();
+    if(json.error) throw new Error(json.error.message || 'rpc error');
+    return json.result;
+  }
+}
+
+async function loadSolAddress(entry, solPrice){
+  const out = [];
+  const sigs = await solanaRpc('getSignaturesForAddress', [entry.addr, { limit: 8 }]).catch(() => []);
+  if(!Array.isArray(sigs) || !sigs.length) return out;
+  // Sequential on purpose — gentle on the free public RPC, which is
+  // aggressively rate-limited for anonymous callers.
+  for(const s of sigs){
+    if(s.err) continue;
+    const tx = await solanaRpc('getTransaction', [s.signature, { maxSupportedTransactionVersion: 0 }]).catch(() => null);
+    if(!tx || !tx.meta || !tx.transaction) continue;
+    const keys = (tx.transaction.message.accountKeys || []).map(k => typeof k === 'string' ? k : k.pubkey);
+    const idx = keys.indexOf(entry.addr);
+    if(idx === -1) continue;
+    const pre = tx.meta.preBalances[idx], post = tx.meta.postBalances[idx];
+    const deltaLamports = post - pre;
+    const amount = Math.abs(deltaLamports) / 1e9;
+    const usd = amount * (solPrice || 0);
+    if(!usd || usd < WHALE_USD_THRESHOLD) continue;
+    const flow = deltaLamports > 0 ? 'in' : 'out';
+    const flowLabelHtml = flow === 'in'
+      ? `Unknown → ${escapeHtml(entry.label)}`
+      : `${escapeHtml(entry.label)} → Unknown`;
+    out.push({
+      chain: 'sol', chainLabel: 'Solana',
+      hash: s.signature, txUrl: `https://solscan.io/tx/${s.signature}`,
+      flow, flowLabelHtml, amount, symbol: 'SOL', usd,
+      timeStamp: s.blockTime || Math.floor(Date.now() / 1000),
+    });
+  }
+  return out;
+}
+
+async function loadSolChain(solPrice){
+  const addresses = getSolAddresses();
+  if(!addresses.length) return [];
+  const out = [];
+  for(const a of addresses){
+    const evs = await loadSolAddress(a, solPrice).catch(() => []);
+    out.push(...evs);
+  }
+  return out;
+}
+
+// ================= Orchestration =================
 async function loadWhale(){
   const key = getEtherscanKey();
+  const chains = getChainSelection();
   renderWhaleKeySetup(key);
+  renderNonEvmAddrPanel(chains);
 
-  if(!key){
+  if(!chains.length){
+    whaleStatus = 'noselect';
+    renderWhale();
+    return;
+  }
+
+  const evmChains = EVM_CHAINS.filter(c => chains.includes(c.id));
+  const wantsBtc = chains.includes('btc');
+  const wantsSol = chains.includes('sol');
+
+  if(evmChains.length && !key && !wantsBtc && !wantsSol){
     whaleStatus = 'nokey';
     renderWhale();
     return;
@@ -377,42 +685,47 @@ async function loadWhale(){
   whaleStatus = 'loading';
   if(!whaleEvents.length) renderWhale();
 
+  let anyFailure = false;
+  const collected = [];
   try{
-    const priceData = await fetchCoinGeckoPrices().catch(() => null);
-    const ethPrice = priceData && priceData.ethereum ? priceData.ethereum.usd : null;
-    const btcPrice = priceData && priceData.bitcoin ? priceData.bitcoin.usd : null;
+    const priceIds = ['ethereum', 'bitcoin', 'solana', 'binancecoin', 'matic-network'];
+    const priceData = await fetchCoinGeckoPrices(priceIds).catch(() => null);
+    const prices = {};
+    priceIds.forEach(id => { prices[id] = (priceData && priceData[id]) ? priceData[id].usd : null; });
 
-    const seenHash = new Set();
-    const collected = [];
-
-    // Small batches to stay within Etherscan's free-tier rate limit.
-    const batchSize = 2;
-    for(let i = 0; i < EXCHANGE_WALLETS.length; i += batchSize){
-      const batch = EXCHANGE_WALLETS.slice(i, i + batchSize);
-      const results = await Promise.allSettled(batch.map(async w => {
-        const [native, tokens] = await Promise.all([
-          fetchEtherscanList(w.addr, 'txlist', key).catch(() => []),
-          fetchEtherscanList(w.addr, 'tokentx', key).catch(() => []),
-        ]);
-        return { native, tokens };
-      }));
-      results.forEach(r => {
-        if(r.status !== 'fulfilled') return;
-        r.value.native.forEach(tx => {
-          const ev = buildFlowEvent(tx, 'native', ethPrice, btcPrice);
-          if(ev && !seenHash.has(ev.hash)){ seenHash.add(ev.hash); collected.push(ev); }
-        });
-        r.value.tokens.forEach(tx => {
-          const ev = buildFlowEvent(tx, 'token', ethPrice, btcPrice);
-          if(ev && !seenHash.has(ev.hash + ev.symbol)){ seenHash.add(ev.hash + ev.symbol); collected.push(ev); }
-        });
-      });
-      if(i + batchSize < EXCHANGE_WALLETS.length) await new Promise(r => setTimeout(r, 450));
+    // EVM chains run sequentially — they share one Etherscan key's rate limit.
+    if(key && evmChains.length){
+      for(const c of evmChains){
+        try{
+          collected.push(...(await loadEvmChain(c, key, prices)));
+        }catch(err){
+          anyFailure = true;
+          console.warn('[whale] ' + c.label + ' load failed:', err && err.message);
+        }
+      }
     }
 
-    collected.sort((a, b) => b.timeStamp - a.timeStamp);
-    whaleEvents = collected.slice(0, 20);
-    whaleStatus = 'ok';
+    // BTC / Solana use separate free providers, so they can run in parallel.
+    const otherJobs = [];
+    if(wantsBtc) otherJobs.push(loadBtcChain(prices.bitcoin));
+    if(wantsSol) otherJobs.push(loadSolChain(prices.solana));
+    if(otherJobs.length){
+      const otherSettled = await Promise.allSettled(otherJobs);
+      otherSettled.forEach(r => {
+        if(r.status === 'fulfilled') collected.push(...r.value);
+        else anyFailure = true;
+      });
+    }
+
+    const seen = new Set();
+    const deduped = collected.filter(ev => {
+      const k = ev.chain + ev.hash + ev.symbol;
+      if(seen.has(k)) return false;
+      seen.add(k); return true;
+    });
+    deduped.sort((a, b) => b.timeStamp - a.timeStamp);
+    whaleEvents = deduped.slice(0, 25);
+    whaleStatus = whaleEvents.length ? 'ok' : (anyFailure ? 'error' : 'ok');
   }catch(err){
     console.warn('[whale] load failed:', err && err.message);
     whaleStatus = whaleEvents.length ? 'ok' : 'error';
@@ -425,7 +738,7 @@ function renderWhaleKeySetup(key){
   if(key){
     el.innerHTML = `
       <div class="key-setup">
-        <span class="status-pill live"><span class="dot"></span>Etherscan key active</span>
+        <span class="status-pill live"><span class="dot"></span>Etherscan key active (covers all EVM chains above)</span>
         <button class="key-clear" id="whaleKeyClear" type="button">Remove key</button>
       </div>`;
     document.getElementById('whaleKeyClear').addEventListener('click', () => {
@@ -438,7 +751,7 @@ function renderWhaleKeySetup(key){
       <div class="key-setup">
         <input type="text" id="whaleKeyInput" placeholder="Paste your free Etherscan API key…" autocomplete="off" spellcheck="false">
         <button id="whaleKeySave" type="button">Enable</button>
-        <div class="key-note">Free, takes ~1 minute: create an account at <a href="https://etherscan.io/register" target="_blank" rel="noopener">etherscan.io/register</a>, then generate a key under <a href="https://etherscan.io/myapikey" target="_blank" rel="noopener">My API Keys</a>. It's stored only in this browser's local storage and sent straight to Etherscan, never through any proxy.</div>
+        <div class="key-note">Free, takes ~1 minute: create an account at <a href="https://etherscan.io/register" target="_blank" rel="noopener">etherscan.io/register</a>, then generate a key under <a href="https://etherscan.io/myapikey" target="_blank" rel="noopener">My API Keys</a>. One key now covers every EVM chain above (Etherscan V2) — Bitcoin and Solana below don't need it. Stored only in this browser's local storage and sent straight to Etherscan, never through any proxy.</div>
       </div>`;
     const save = () => {
       const val = document.getElementById('whaleKeyInput').value.trim();
@@ -451,10 +764,89 @@ function renderWhaleKeySetup(key){
   }
 }
 
+function renderChainChips(){
+  const el = document.getElementById('chainChipRow');
+  const selected = getChainSelection();
+  el.innerHTML = ALL_CHIPS.map(c => `<span class="chain-chip ${selected.includes(c.id) ? 'active' : ''}" data-chain="${c.id}"><span class="sw"></span>${escapeHtml(c.label)}</span>`).join('');
+  el.querySelectorAll('.chain-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const id = chip.dataset.chain;
+      let sel = getChainSelection();
+      sel = sel.includes(id) ? sel.filter(x => x !== id) : sel.concat([id]);
+      saveChainSelection(sel);
+      renderChainChips();
+      whaleEvents = whaleEvents.filter(ev => sel.includes(ev.chain));
+      loadWhale();
+    });
+  });
+}
+
+function buildAddrPanelHtml(kind, title, list, placeholder){
+  const rows = list.length
+    ? list.map((a, i) => `
+      <div class="addr-row">
+        <span class="addr-label">${escapeHtml(a.label)}</span>
+        <span class="addr-val">${escapeHtml(a.addr)}</span>
+        <button class="addr-remove" data-kind="${kind}" data-idx="${i}" type="button" aria-label="Remove">×</button>
+      </div>`).join('')
+    : `<div class="addr-empty">No addresses yet${kind === 'sol' ? ' — Solana exchange wallets aren\u2019t hardcoded here since they\u2019re easy to get wrong. Paste verified ones (e.g. from Solscan\u2019s labelled accounts or Arkham) below' : ''}.</div>`;
+  return `
+    <div class="addr-panel" data-panel="${kind}">
+      <div class="addr-panel-head"><span class="addr-panel-title">${escapeHtml(title)}</span></div>
+      <div class="addr-panel-note">Curated locally in this browser — add or remove exchange wallets to track. Verify any address before relying on it.</div>
+      <div class="addr-list">${rows}</div>
+      <div class="addr-add-row">
+        <input type="text" class="addr-label-input" data-kind="${kind}" placeholder="Label (e.g. Binance)">
+        <input type="text" class="addr-val-input" data-kind="${kind}" placeholder="${escapeHtml(placeholder)}">
+        <button class="addr-add-btn" data-kind="${kind}" type="button">Add</button>
+      </div>
+    </div>`;
+}
+
+function wireAddrPanel(kind, getFn, saveFn){
+  document.querySelectorAll(`.addr-remove[data-kind="${kind}"]`).forEach(btn => {
+    btn.addEventListener('click', () => {
+      const list = getFn();
+      list.splice(Number(btn.dataset.idx), 1);
+      saveFn(list);
+      whaleEvents = whaleEvents.filter(ev => ev.chain !== kind);
+      loadWhale();
+    });
+  });
+  const addBtn = document.querySelector(`.addr-add-btn[data-kind="${kind}"]`);
+  if(!addBtn) return;
+  addBtn.addEventListener('click', () => {
+    const labelInput = document.querySelector(`.addr-label-input[data-kind="${kind}"]`);
+    const valInput = document.querySelector(`.addr-val-input[data-kind="${kind}"]`);
+    const label = labelInput.value.trim() || 'Custom';
+    const addr = valInput.value.trim();
+    if(!addr) return;
+    const list = getFn();
+    list.push({ label, addr });
+    saveFn(list);
+    labelInput.value = ''; valInput.value = '';
+    loadWhale();
+  });
+}
+
+function renderNonEvmAddrPanel(chains){
+  const el = document.getElementById('nonEvmAddrPanel');
+  const panels = [];
+  if(chains.includes('btc')) panels.push(buildAddrPanelHtml('btc', 'Bitcoin addresses', getBtcAddresses(), 'Bitcoin address (bc1… / 3… / 1…)'));
+  if(chains.includes('sol')) panels.push(buildAddrPanelHtml('sol', 'Solana addresses', getSolAddresses(), 'Solana address (base58)'));
+  el.innerHTML = panels.join('');
+  if(chains.includes('btc')) wireAddrPanel('btc', getBtcAddresses, saveBtcAddresses);
+  if(chains.includes('sol')) wireAddrPanel('sol', getSolAddresses, saveSolAddresses);
+}
+
 function renderWhale(){
   const el = document.getElementById('whaleFeed');
+  if(whaleStatus === 'noselect'){
+    el.innerHTML = `<div class="feed-empty">Select at least one chain above to track whale transfers.</div>`;
+    return;
+  }
   if(whaleStatus === 'nokey'){
-    el.innerHTML = `<div class="feed-empty">Add a free Etherscan API key above to turn on live whale tracking.</div>`;
+    el.innerHTML = `<div class="feed-empty">Add a free Etherscan API key above to turn on tracking for the selected EVM chain(s). Bitcoin and Solana don't need a key — just addresses.</div>`;
     return;
   }
   if(whaleStatus === 'loading' && !whaleEvents.length){
@@ -462,7 +854,7 @@ function renderWhale(){
     return;
   }
   if(whaleStatus === 'error' && !whaleEvents.length){
-    el.innerHTML = `<div class="feed-error">Couldn't load whale transfers this refresh — check your API key or try again shortly.</div>`;
+    el.innerHTML = `<div class="feed-error">Couldn't load whale transfers this refresh — check your API key/addresses or try again shortly.</div>`;
     return;
   }
   if(!whaleEvents.length){
@@ -472,7 +864,7 @@ function renderWhale(){
   el.innerHTML = whaleEvents.map(ev => {
     const badgeClass = ev.flow === 'in' ? 'in' : ev.flow === 'out' ? 'out' : 'x2x';
     const badgeText = ev.flow === 'in' ? 'INFLOW' : ev.flow === 'out' ? 'OUTFLOW' : 'EX ⇄ EX';
-    const icon = ev.symbol === 'ETH' ? 'Ξ' : ev.symbol === 'WBTC' ? '₿' : '$';
+    const icon = ev.symbol === 'BTC' ? '₿' : ev.symbol === 'SOL' ? '◎' : ev.symbol === 'ETH' ? 'Ξ' : ev.symbol === 'WBTC' ? '₿' : ev.symbol === 'BNB' ? 'B' : ev.symbol === 'POL' ? 'P' : '$';
     return `
     <div class="feed-row">
       <span class="feed-icon" style="background:linear-gradient(135deg,#5B8CFF,#2b4fb0)">${icon}</span>
@@ -481,17 +873,17 @@ function renderWhale(){
           <span class="flow-badge ${badgeClass}">${badgeText}</span>
           <span class="feed-amount">${fmtNum(ev.amount, ev.amount >= 1000 ? 0 : 3)} ${escapeHtml(ev.symbol)}</span>
           <span class="feed-usd">≈ ${fmtCompactUsd(ev.usd)}</span>
+          <span class="feed-chain-tag">${escapeHtml(ev.chainLabel)}</span>
         </div>
         <div class="feed-meta">
           <span>${ev.flowLabelHtml}</span>
           <span class="feed-time">${agoFromSeconds(ev.timeStamp)}</span>
-          <a href="https://etherscan.io/tx/${ev.hash}" target="_blank" rel="noopener">View tx ↗</a>
+          <a href="${ev.txUrl}" target="_blank" rel="noopener">View tx ↗</a>
         </div>
       </div>
     </div>`;
   }).join('');
 }
-
 // ================= X / Twitter crypto pulse =================
 const ACCOUNTS = [
   { handle: 'whale_alert', name: 'Whale Alert', role: 'Tracker' },
@@ -645,9 +1037,8 @@ function renderSocial(){
     return;
   }
 
-  statusEl.innerHTML = `<span class="status-pill offline"><span class="dot"></span>Live feed unavailable — showing accounts to follow directly</span>`;
+  statusEl.innerHTML = '';
   feedEl.innerHTML = `
-    <div class="section-note-inline" style="padding-top:0;">Nitter-style mirrors are gone for good after X Corp's August 2026 cease-and-desist, and X's own free syndication feed is unreliable for unauthenticated requests. Tap an account below to open it directly on X (or in the X app, if installed).</div>
     <div class="social-grid">
       ${ACCOUNTS.map((a, i) => `
         <a class="social-chip" href="https://x.com/${escapeHtml(a.handle)}" target="_blank" rel="noopener">
@@ -753,7 +1144,9 @@ toggleAllBtn.addEventListener('click', () => {
 updateToggleAllLabel();
 
 loadCache();
+renderChainChips();
 renderWhaleKeySetup(getEtherscanKey());
+renderNonEvmAddrPanel(getChainSelection());
 loadAll();
 setInterval(loadAll, REFRESH_INTERVAL_MS);
 setInterval(updateLastUpdatedLabel, 60000);
