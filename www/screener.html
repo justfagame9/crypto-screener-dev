@@ -679,6 +679,7 @@
           <div class="analysis-meta-row">
             <span class="analysis-ltp"><span class="ltp-label">LTP</span><span class="ltp-value" id="analysisLTP">—</span></span>
             <span class="analysis-setup setup-none" id="analysisSetupBox">—</span>
+            <span class="pill pill-both" id="analysisCfmBox" style="display:none;" title="Yesterday's breakout confirmed by today's candle">✓ CFM</span>
           </div>
         </div>
       </div>
@@ -1707,6 +1708,7 @@ async function openAnalysis(symbol){
   const setupBox = document.getElementById('analysisSetupBox');
   setupBox.textContent = row.setup ? row.setup : 'None';
   setupBox.className = 'analysis-setup ' + (row.setup === 'Long' ? 'setup-long' : row.setup === 'Short' ? 'setup-short' : 'setup-none');
+  document.getElementById('analysisCfmBox').style.display = row.setup && row.confirmed ? 'inline-block' : 'none';
   document.getElementById('analysisWatchlistBtn').innerHTML = watchlistButton(symbol);
   const tradePlanButton = document.getElementById('analysisTradePlan');
   tradePlanButton.style.display = row.setup ? 'inline-block' : 'none';
