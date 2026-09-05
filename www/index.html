@@ -1165,6 +1165,32 @@ function updateMoversLabel(){
 }
 setInterval(updateMoversLabel, 5000);
 
+// Tapping a mover chip opens the watchlist (rather than DeFi & TVL) and asks
+// it to collapse every coin group except the Top Movers section it also has,
+// since that's the whole reason for following the chip over there. The
+// watchlist iframe stays alive across visits once loaded (activatePage()
+// only toggles which .page is visible), so a postMessage is used instead of
+// a one-time query param - it works whether this is the iframe's first load
+// or its hundredth.
+function openWatchlistFocusedOnMovers(){
+  const iframe = document.getElementById('iframe-watchlist');
+  let alreadyLoaded = false;
+  try{
+    alreadyLoaded = !!(iframe && iframe.getAttribute('src') && iframe.contentDocument && iframe.contentDocument.readyState === 'complete');
+  }catch(e){ /* cross-origin or not ready - treat as not loaded */ }
+  activatePage('watchlist');
+  const sendFocusMessage = () => {
+    if(iframe && iframe.contentWindow){
+      iframe.contentWindow.postMessage({ type: 'ts-collapse-groups-except-topmovers' }, '*');
+    }
+  };
+  if(alreadyLoaded){
+    sendFocusMessage();
+  }else if(iframe){
+    iframe.addEventListener('load', sendFocusMessage, {once:true});
+  }
+}
+
 function buildMoverChip(coin, dir){
   const chip = document.createElement('div');
   chip.className = 'mover-chip ' + dir;
@@ -1177,7 +1203,7 @@ function buildMoverChip(coin, dir){
       '<span class="mover-price">' + formatMoverPrice(coin.current_price) + '</span>' +
     '</div>' +
     '<span class="mover-chg ' + dir + '">' + chgText + '</span>';
-  chip.addEventListener('click', () => activatePage('watchlist'));
+  chip.addEventListener('click', openWatchlistFocusedOnMovers);
   return chip;
 }
 

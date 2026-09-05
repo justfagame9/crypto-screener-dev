@@ -874,6 +874,24 @@ async function loadMovers(){
   setInterval(() => { if(!document.hidden) loadMovers(); }, MOVERS_REFRESH_MS);
 })();
 
+// index.html's home-screen Top Movers strip opens this page (see
+// activatePage('watchlist') there) and additionally posts this message so
+// the watchlist lands with every group collapsed except Top Movers itself -
+// the whole point of following a mover chip here is to see that section.
+function collapseAllGroupsExceptTopMovers(){
+  groups.forEach(g => collapsedGroups.add(g.id));
+  if(ungroupedEnabled) collapsedGroups.add(UNGROUPED_ID);
+  collapsedGroups.delete(TOPMOVERS_ID);
+  // Matches the existing "collapse all groups" behaviour: tuck away each
+  // coin's own expanded detail view too, so nothing is left open underneath.
+  expandedCoins.clear();
+  renderAll();
+}
+window.addEventListener('message', (e) => {
+  if(!e.data || e.data.type !== 'ts-collapse-groups-except-topmovers') return;
+  collapseAllGroupsExceptTopMovers();
+});
+
 // Tracks the last price we actually rendered for each coin, purely so we can
 // flash green/red on the specific coins that moved this refresh instead of
 // re-flashing every row on every tick.
