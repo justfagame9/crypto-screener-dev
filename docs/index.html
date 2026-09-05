@@ -1177,7 +1177,7 @@ function buildMoverChip(coin, dir){
       '<span class="mover-price">' + formatMoverPrice(coin.current_price) + '</span>' +
     '</div>' +
     '<span class="mover-chg ' + dir + '">' + chgText + '</span>';
-  chip.addEventListener('click', () => activatePage('defi'));
+  chip.addEventListener('click', () => activatePage('watchlist'));
   return chip;
 }
 

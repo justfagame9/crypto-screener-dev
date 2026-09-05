@@ -252,6 +252,24 @@
   .coin-group .watch-list{margin-bottom:0;}
   .coin-group-empty{font:12px var(--font-mono);color:var(--faint);padding:10px 2px;}
 
+  /* ---- Top Movers section (mirrors defi.html's Market Movers panel,
+     rendered as its own collapsible group above the user's coin groups) ---- */
+  .movers-note{font:11px var(--font-mono);color:var(--faint);padding:0 2px 10px;}
+  .movers-grid{display:grid;grid-template-columns:1fr;gap:14px;}
+  @media(min-width:560px){ .movers-grid{grid-template-columns:1fr 1fr;} }
+  .movers-col-title{font:700 11px var(--font-mono);text-transform:uppercase;letter-spacing:.06em;padding:2px 2px 4px;}
+  .movers-col-title.gain{color:var(--accent);}
+  .movers-col-title.lose{color:var(--red);}
+  .mover-row{display:flex;align-items:center;gap:10px;padding:7px 2px;}
+  .mover-row img{width:24px;height:24px;border-radius:50%;flex-shrink:0;background:var(--panel2);}
+  .mover-info{flex:1;min-width:0;}
+  .mover-name{font-size:12.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .mover-price{font:10.5px var(--font-mono);color:var(--faint);}
+  .chg-pill{font:600 10px var(--font-mono);padding:1px 5px;border-radius:6px;white-space:nowrap;flex-shrink:0;}
+  .chg-pill.up{color:var(--accent);background:rgba(53,224,192,.1);}
+  .chg-pill.down{color:var(--red);background:rgba(255,84,112,.1);}
+  .chg-pill.flat{color:var(--muted);background:rgba(139,147,163,.1);}
+
   /* ---- Group manager (add / remove / reorder groups) ---- */
   .group-manager{
     background:var(--panel);border:1px solid var(--border);border-radius:12px;
@@ -763,6 +781,98 @@ function rangeBar(low, high, current){
     <div class="range-track"><div class="range-marker" style="left:${pct.toFixed(1)}%"></div></div>
     <div class="range-labels"><span>${formatPrice(low)}</span><span>${formatPrice(high)}</span></div>`;
 }
+function formatPct(n){
+  if(typeof n !== 'number' || !isFinite(n)) return '—';
+  return (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
+}
+function pctClass(n){
+  if(typeof n !== 'number' || !isFinite(n)) return 'flat';
+  return n > 0 ? 'up' : (n < 0 ? 'down' : 'flat');
+}
+
+// ---------------- Top Movers (same CoinGecko markets data + gainers/losers
+// split as defi.html's "Market Movers" panel, surfaced here too as its own
+// collapsible section so it's visible without leaving the watchlist) ----------------
+const TOPMOVERS_ID = 'topmovers';
+const MOVERS_URL = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&price_change_percentage=24h&sparkline=false';
+const MOVERS_CACHE_KEY = 'crypto-watchlist-movers-cache-v1';
+const MOVERS_REFRESH_MS = 5 * 60 * 1000; // 5 min - CoinGecko's free tier rate-limits aggressively
+let moversData = null;   // last successfully fetched top-100-by-market-cap list
+let moversLastTs = null;
+
+function readMoversCache(){
+  try{
+    const raw = localStorage.getItem(MOVERS_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch(err){ return null; }
+}
+function writeMoversCache(list){
+  try{ localStorage.setItem(MOVERS_CACHE_KEY, JSON.stringify({ data: list, ts: Date.now() })); }catch(err){ /* not critical */ }
+}
+function renderTopMoversSection(){
+  const isCollapsed = collapsedGroups.has(TOPMOVERS_ID);
+  return `
+    <div class="coin-group ${isCollapsed ? 'collapsed' : ''}" data-group-id="${TOPMOVERS_ID}">
+      <button type="button" class="coin-group-header" onclick="toggleGroupCollapse('${TOPMOVERS_ID}')" aria-expanded="${!isCollapsed}">
+        <span class="coin-group-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+        <span class="coin-group-name">🚀 Top Movers</span>
+      </button>
+      <div class="coin-group-body">
+        <div class="movers-note">Top 100 coins by market cap · 24h</div>
+        <div class="movers-grid" id="moversPanel"></div>
+      </div>
+    </div>`;
+}
+function renderMoversPanel(){
+  const panel = document.getElementById('moversPanel');
+  if(!panel) return; // section currently collapsed's DOM is still present, but guard just in case
+  if(!Array.isArray(moversData) || !moversData.length){
+    panel.innerHTML = '<div class="coin-group-empty">Market mover data unavailable this refresh.</div>';
+    return;
+  }
+  const withChange = moversData.filter(c => typeof c.price_change_percentage_24h === 'number');
+  const gainers = withChange.slice().sort((a,b) => b.price_change_percentage_24h - a.price_change_percentage_24h).slice(0,5);
+  const losers = withChange.slice().sort((a,b) => a.price_change_percentage_24h - b.price_change_percentage_24h).slice(0,5);
+  const renderCol = (title, cls, coins) => `
+    <div>
+      <div class="movers-col-title ${cls}">${title}</div>
+      ${coins.map(c => `
+        <div class="mover-row">
+          <img src="${escapeHtml(c.image||'')}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">
+          <div class="mover-info">
+            <div class="mover-name">${escapeHtml(c.name)} <span style="color:var(--faint)">${escapeHtml((c.symbol||'').toUpperCase())}</span></div>
+            <div class="mover-price">$${(c.current_price||0) < 1 ? (c.current_price||0).toFixed(4) : (c.current_price||0).toLocaleString(undefined,{maximumFractionDigits:2})}</div>
+          </div>
+          <span class="chg-pill ${pctClass(c.price_change_percentage_24h)}">${formatPct(c.price_change_percentage_24h)}</span>
+        </div>`).join('')}
+    </div>`;
+  panel.innerHTML = renderCol('Top Gainers', 'gain', gainers) + renderCol('Top Losers', 'lose', losers);
+}
+async function loadMovers(){
+  try{
+    const data = await fetchJSON(MOVERS_URL);
+    if(!Array.isArray(data)) throw new Error('Unexpected CoinGecko response shape');
+    moversData = data;
+    moversLastTs = Date.now();
+    writeMoversCache(data);
+    renderMoversPanel();
+  }catch(err){
+    console.warn('[top movers] fetch failed:', err && err.message);
+    if(!moversLastTs){
+      const panel = document.getElementById('moversPanel');
+      if(panel) panel.innerHTML = '<div class="coin-group-empty">Market mover data unavailable this refresh.</div>';
+    }
+  }
+}
+(function initMovers(){
+  const cached = readMoversCache();
+  if(cached && Array.isArray(cached.data) && cached.data.length){
+    moversData = cached.data;
+    moversLastTs = cached.ts;
+  }
+  loadMovers();
+  setInterval(() => { if(!document.hidden) loadMovers(); }, MOVERS_REFRESH_MS);
+})();
 
 // Tracks the last price we actually rendered for each coin, purely so we can
 // flash green/red on the specific coins that moved this refresh instead of
@@ -1363,9 +1473,11 @@ function renderAll(){
   let bodyHtml = '';
   if(!ungroupedEnabled){
     // Default behaviour: BTC + any other ungrouped coin sit in one flat
-    // list up top, real groups render as collapsible sections below.
+    // list up top, then Top Movers, then real groups render as collapsible
+    // sections below.
     const ungrouped = [...btc, ...others.filter(isCoinUngrouped)].sort(byRank);
     bodyHtml += `<div class="watch-list">${ungrouped.map(renderRow).join('')}</div>`;
+    bodyHtml += renderTopMoversSection();
     bodyHtml += groups.map(g => {
       const coinsInGroup = others.filter(c => Array.isArray(coinGroups[c.binanceSymbol]) && coinGroups[c.binanceSymbol].includes(g.id)).sort(byRank);
       return renderGroupSection(g.id, g.name, coinsInGroup, false);
@@ -1373,21 +1485,34 @@ function renderAll(){
   }else{
     // BTC still sits alone up top; every other coin - grouped or not - now
     // lives in a collapsible section, including a dedicated "Ungrouped" one
-    // that can be dragged anywhere in the group order.
+    // that can be dragged anywhere in the group order. Top Movers always
+    // renders right after the Ungrouped section (wherever the user has it
+    // positioned) and before the remaining named groups; if Ungrouped isn't
+    // in the order at all, Top Movers goes straight above the groups.
     bodyHtml += `<div class="watch-list">${btc.sort(byRank).map(renderRow).join('')}</div>`;
-    bodyHtml += getCombinedOrder().map(item => {
+    const orderedSections = getCombinedOrder().map(item => {
       if(item.isUngroupedSection){
         const coinsInSection = others.filter(isCoinUngrouped).sort(byRank);
-        return renderGroupSection(UNGROUPED_ID, UNGROUPED_LABEL, coinsInSection, true);
+        return { html: renderGroupSection(UNGROUPED_ID, UNGROUPED_LABEL, coinsInSection, true), isUngroupedSection: true };
       }
       const coinsInGroup = others.filter(c => Array.isArray(coinGroups[c.binanceSymbol]) && coinGroups[c.binanceSymbol].includes(item.id)).sort(byRank);
-      return renderGroupSection(item.id, item.name, coinsInGroup, false);
-    }).join('');
+      return { html: renderGroupSection(item.id, item.name, coinsInGroup, false), isUngroupedSection: false };
+    });
+    const ungroupedIdx = orderedSections.findIndex(s => s.isUngroupedSection);
+    if(ungroupedIdx === -1){
+      bodyHtml += renderTopMoversSection();
+      bodyHtml += orderedSections.map(s => s.html).join('');
+    }else{
+      bodyHtml += orderedSections.slice(0, ungroupedIdx + 1).map(s => s.html).join('');
+      bodyHtml += renderTopMoversSection();
+      bodyHtml += orderedSections.slice(ungroupedIdx + 1).map(s => s.html).join('');
+    }
   }
 
   el.innerHTML = bodyHtml;
   renderPulseStrip(state.tickers);
   updateToggleAllGroupsBtn();
+  renderMoversPanel();
 }
 
 function renderSkeleton(){
