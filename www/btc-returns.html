@@ -243,6 +243,7 @@
   body.asset-eth .price-icon{background:linear-gradient(135deg,#627EEA,#3C4FA1);box-shadow:0 6px 16px rgba(98,126,234,.28);}
 
   /* ---- Asset toggle ---- */
+  .asset-toggle-row{margin-bottom:14px;}
   .asset-toggle{
     display:inline-flex;align-items:center;background:var(--panel);border:1px solid var(--border);
     border-radius:20px;padding:2px;gap:2px;flex-shrink:0;
@@ -263,14 +264,16 @@
   <div class="topheader">
     <div class="eyebrow"><span class="dot"></span><span id="pageTitle">Bitcoin Returns</span></div>
     <div class="header-right">
-      <div class="asset-toggle" id="assetToggle">
-        <button class="asset-toggle-btn active" data-asset="BTC" type="button">BTC</button>
-        <button class="asset-toggle-btn" data-asset="ETH" type="button">ETH</button>
-      </div>
       <span class="updated-label" id="updatedLabel"></span>
       <button class="refresh-btn" id="refreshBtn" aria-label="Refresh">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
       </button>
+    </div>
+  </div>
+  <div class="asset-toggle-row">
+    <div class="asset-toggle" id="assetToggle">
+      <button class="asset-toggle-btn active" data-asset="BTC" type="button">BTC</button>
+      <button class="asset-toggle-btn" data-asset="ETH" type="button">ETH</button>
     </div>
   </div>
 
