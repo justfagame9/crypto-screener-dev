@@ -273,7 +273,6 @@
       </button>
     </div>
   </div>
-  <p class="sub" id="subText">Monthly, quarterly, half-yearly &amp; yearly BTC performance — full history, computed live from market price data.</p>
 
   <div id="content"></div>
 
@@ -291,7 +290,7 @@
 
   <div class="notice">
     <div class="notice-summary">
-      <b>Historical performance, not a prediction.</b>
+      <b id="noticeHeadline">Historical performance, not a prediction.</b>
       <button class="notice-toggle" id="noticeToggle" type="button" aria-expanded="false" aria-controls="noticeDetails" aria-label="Show more details">+</button>
     </div>
     <div class="notice-details" id="noticeDetails" hidden>
@@ -954,8 +953,8 @@ function applyAssetChrome(){
   const pageTitle = document.getElementById('pageTitle');
   if(pageTitle) pageTitle.textContent = `${asset.name} Returns`;
   document.title = `${asset.name} Returns`;
-  const subText = document.getElementById('subText');
-  if(subText) subText.textContent = `Monthly, quarterly, half-yearly & yearly ${asset.label} performance — full history, computed live from market price data.`;
+  const noticeHeadline = document.getElementById('noticeHeadline');
+  if(noticeHeadline) noticeHeadline.textContent = `${asset.name} historical performance, not a prediction.`;
   const noticePair = document.getElementById('noticePair');
   if(noticePair) noticePair.textContent = `${asset.label}/USD`;
   const srcTagText = document.getElementById('srcTagText');
