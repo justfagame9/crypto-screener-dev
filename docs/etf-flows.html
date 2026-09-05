@@ -131,6 +131,12 @@
   .fund-table td{padding:11px 16px;text-align:right;border-bottom:1px solid var(--border-soft);white-space:nowrap;}
   .fund-table tr:last-child td{border-bottom:none;}
   .fund-table tbody tr:hover td{background:var(--panel2);}
+  .fund-table th:first-child, .fund-table td:first-child{
+    position:sticky;left:0;z-index:2;background:var(--panel);
+    box-shadow:4px 0 8px -4px rgba(0,0,0,.35);
+  }
+  .fund-table th:first-child{z-index:3;}
+  .fund-table tbody tr:hover td:first-child{background:var(--panel2);}
   .fund-name-cell{display:flex;flex-direction:column;gap:1px;}
   .fund-issuer{font-weight:600;color:var(--text);font-family:var(--font-display);font-size:13px;}
   .fund-ticker{font-size:10.5px;color:var(--faint);}

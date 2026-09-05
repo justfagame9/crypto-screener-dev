@@ -439,12 +439,6 @@
     font:700 11px var(--font-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
   }
   .movers-updated{font-family:var(--font-mono);font-size:10px;color:var(--faint);}
-  .movers-source-link{
-    font:600 10px var(--font-mono);color:var(--faint);text-decoration:none;
-    display:flex;align-items:center;gap:4px;
-  }
-  .movers-source-link:active{color:var(--accent);}
-  .movers-source-link svg{width:10px;height:10px;}
   .movers-track-wrap{
     position:relative;overflow:hidden;border-radius:14px;
     -webkit-mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent);
@@ -704,10 +698,6 @@
               <span class="movers-eyebrow-label">Top Movers · 24h</span>
               <span class="movers-updated" id="moversUpdated"></span>
             </div>
-            <a class="movers-source-link" href="https://www.coingecko.com/en/coins/trending" target="_blank" rel="noopener" title="Data from CoinGecko markets API">
-              CoinGecko
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H8M17 7V16"/></svg>
-            </a>
           </div>
           <div class="movers-track-wrap">
             <div class="movers-track gainers" id="moversTrackGainers"></div>
