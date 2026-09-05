@@ -399,20 +399,20 @@
   }
   .ticker-row::-webkit-scrollbar{display:none;}
   .ticker-card{
-    flex:0 0 auto;min-width:112px;
-    display:flex;flex-direction:column;gap:5px;
-    padding:10px 12px;border-radius:14px;
+    flex:0 0 auto;display:flex;align-items:center;gap:8px;
+    min-width:150px;padding:9px 13px;border-radius:14px;
     background:var(--panel);border:1px solid var(--border-soft);
     cursor:pointer;transition:border-color .15s ease,transform .1s ease;
   }
   .ticker-card:active{transform:scale(.96);}
   .ticker-card.up{border-color:rgba(53,224,192,.28);}
   .ticker-card.down{border-color:rgba(255,84,112,.28);}
+  .ticker-card-body{min-width:0;flex:1;display:flex;flex-direction:column;gap:1px;}
   .ticker-sym{font:700 11.5px var(--font-ui);color:var(--text);letter-spacing:.01em;}
-  .ticker-price{font:600 14px var(--font-mono);color:var(--text);transition:color .3s ease;}
+  .ticker-price{font:600 12px var(--font-mono);color:var(--text);transition:color .3s ease;white-space:nowrap;}
   .ticker-price.flash-up{color:var(--accent);}
   .ticker-price.flash-down{color:var(--red);}
-  .ticker-chg{font:600 11px var(--font-mono);}
+  .ticker-chg{font:700 12px var(--font-mono);white-space:nowrap;}
   .ticker-chg.up{color:var(--accent);}
   .ticker-chg.down{color:var(--red);}
   .ticker-card.skeleton .ticker-price,
@@ -426,11 +426,13 @@
     font-size:11px;color:var(--faint);padding:8px 2px;
   }
 
-  /* ---- Top Movers rolling strip ---- */
-  .movers-section{margin:0 0 18px;position:relative;z-index:1;}
+  /* ---- Top Movers rolling strip (2 rows: gainers on top, losers below) ---- */
+  .movers-section{
+    display:flex;flex-direction:column;gap:8px;
+    margin:0 0 18px;position:relative;z-index:1;
+  }
   .movers-eyebrow{
     display:flex;align-items:center;justify-content:space-between;
-    padding:0 2px 8px;
   }
   .movers-eyebrow-left{display:flex;align-items:center;gap:7px;}
   .movers-eyebrow-label{
@@ -452,10 +454,17 @@
     display:flex;gap:8px;width:max-content;
     animation:moversScroll 34s linear infinite;
   }
+  .movers-track.losers{
+    animation-name:moversScrollReverse;
+  }
   .movers-track.paused{animation-play-state:paused;}
   @keyframes moversScroll{
     0%{transform:translateX(0);}
     100%{transform:translateX(-50%);}
+  }
+  @keyframes moversScrollReverse{
+    0%{transform:translateX(-50%);}
+    100%{transform:translateX(0);}
   }
   .mover-chip{
     flex:0 0 auto;display:flex;align-items:center;gap:8px;
@@ -701,7 +710,10 @@
             </a>
           </div>
           <div class="movers-track-wrap">
-            <div class="movers-track" id="moversTrack"></div>
+            <div class="movers-track gainers" id="moversTrackGainers"></div>
+          </div>
+          <div class="movers-track-wrap">
+            <div class="movers-track losers" id="moversTrackLosers"></div>
           </div>
         </div>
 
@@ -1033,8 +1045,10 @@ function renderTicker(map, opts){
     }
 
     card.innerHTML =
-      '<span class="ticker-sym">' + coin.symbol + '</span>' +
-      '<span class="ticker-price">' + priceText + '</span>' +
+      '<div class="ticker-card-body">' +
+        '<span class="ticker-sym">' + coin.symbol + '</span>' +
+        '<span class="ticker-price">' + priceText + '</span>' +
+      '</div>' +
       '<span class="ticker-chg ' + dirClass + '">' + chgText + '</span>';
     card.addEventListener('click', () => activatePage('watchlist'));
     tickerRow.appendChild(card);
@@ -1105,11 +1119,23 @@ document.addEventListener('visibilitychange', () => {
 const MOVERS_URL = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&price_change_percentage=24h&sparkline=false';
 const MOVERS_CACHE_KEY = 'ts_home_movers_cache_v1';
 const MOVERS_REFRESH_MS = 5 * 60 * 1000; // 5 min - CoinGecko's free tier rate-limits aggressively
-const MOVERS_COUNT = 8; // top 8 gainers + top 8 losers
+// Shared with trading-settings.html (Top Movers Count field) - same key name,
+// so a change saved there takes effect here without any other plumbing.
+const MOVERS_COUNT_STORAGE_KEY = 'crypto-screener-movers-count';
+const MOVERS_COUNT_DEFAULT = 5;
+const MOVERS_COUNT_MIN = 3;
+const MOVERS_COUNT_MAX = 8;
+
+function getMoversCount(){
+  let n = parseInt(localStorage.getItem(MOVERS_COUNT_STORAGE_KEY), 10);
+  if(!Number.isFinite(n)) return MOVERS_COUNT_DEFAULT;
+  return Math.min(MOVERS_COUNT_MAX, Math.max(MOVERS_COUNT_MIN, n));
+}
 
 const moversSection = document.getElementById('moversSection');
-const moversTrack = document.getElementById('moversTrack');
 const moversUpdatedEl = document.getElementById('moversUpdated');
+const moversTrackGainers = document.getElementById('moversTrackGainers');
+const moversTrackLosers = document.getElementById('moversTrackLosers');
 
 function readMoversCache(){
   try{
@@ -1127,6 +1153,8 @@ function formatMoverPrice(n){
 }
 
 let moversLastTs = null;
+let moversLastRaw = null; // last successfully fetched full list, so changing the
+                           // count in Settings can re-render instantly without a re-fetch
 function updateMoversLabel(){
   moversUpdatedEl.textContent = moversLastTs ? formatTickerUpdatedLabel(moversLastTs) : '';
 }
@@ -1148,30 +1176,34 @@ function buildMoverChip(coin, dir){
   return chip;
 }
 
+// Fills one row's track with a coin list, duplicated back-to-back so the
+// CSS marquee (translateX -50%/0%) loops seamlessly with no visible seam.
+function fillMoversTrack(trackEl, coins, dir){
+  trackEl.innerHTML = '';
+  [0, 1].forEach(() => {
+    coins.forEach(coin => trackEl.appendChild(buildMoverChip(coin, dir)));
+  });
+}
+
 function renderMoversStrip(list){
   moversSection.classList.remove('skeleton');
+  moversLastRaw = list;
   const withChange = list.filter(c => typeof c.price_change_percentage_24h === 'number');
   if(!withChange.length){
-    moversTrack.style.animation = 'none';
-    moversTrack.innerHTML = '<div class="movers-error">Top movers unavailable right now</div>';
+    moversTrackGainers.style.animation = 'none';
+    moversTrackLosers.style.animation = 'none';
+    moversTrackGainers.innerHTML = '<div class="movers-error">Top movers unavailable right now</div>';
+    moversTrackLosers.innerHTML = '';
     return;
   }
-  const gainers = withChange.slice().sort((a,b) => b.price_change_percentage_24h - a.price_change_percentage_24h).slice(0, MOVERS_COUNT);
-  const losers = withChange.slice().sort((a,b) => a.price_change_percentage_24h - b.price_change_percentage_24h).slice(0, MOVERS_COUNT);
-  const ordered = [];
-  const max = Math.max(gainers.length, losers.length);
-  for(let i = 0; i < max; i++){
-    if(gainers[i]) ordered.push({ coin: gainers[i], dir: 'up' });
-    if(losers[i]) ordered.push({ coin: losers[i], dir: 'down' });
-  }
+  const count = getMoversCount();
+  const gainers = withChange.slice().sort((a,b) => b.price_change_percentage_24h - a.price_change_percentage_24h).slice(0, count);
+  const losers = withChange.slice().sort((a,b) => a.price_change_percentage_24h - b.price_change_percentage_24h).slice(0, count);
 
-  moversTrack.innerHTML = '';
-  // Render the sequence twice back-to-back so the CSS marquee (translateX -50%)
-  // loops seamlessly with no visible seam or reset jump.
-  [0, 1].forEach(() => {
-    ordered.forEach(({coin, dir}) => moversTrack.appendChild(buildMoverChip(coin, dir)));
-  });
-  moversTrack.style.animation = '';
+  fillMoversTrack(moversTrackGainers, gainers, 'up');
+  fillMoversTrack(moversTrackLosers, losers, 'down');
+  moversTrackGainers.style.animation = '';
+  moversTrackLosers.style.animation = '';
 }
 
 async function loadMovers(){
@@ -1185,8 +1217,10 @@ async function loadMovers(){
   }catch(err){
     console.warn('[home movers] fetch failed:', err && err.message);
     if(!moversLastTs){
-      moversTrack.style.animation = 'none';
-      moversTrack.innerHTML = '<div class="movers-error">Top movers unavailable right now</div>';
+      moversTrackGainers.style.animation = 'none';
+      moversTrackLosers.style.animation = 'none';
+      moversTrackGainers.innerHTML = '<div class="movers-error">Top movers unavailable right now</div>';
+      moversTrackLosers.innerHTML = '';
     }
   }
 }
@@ -1206,10 +1240,21 @@ setInterval(() => {
 document.addEventListener('visibilitychange', () => {
   if(!document.hidden && currentPage === 'home') loadMovers();
 });
-// Pause the auto-scroll while the user is touching/pointing at the strip so
+// The Settings page (trading-settings.html) lives in its own iframe; when it
+// writes MOVERS_COUNT_STORAGE_KEY, this top-level document gets a native
+// "storage" event (same-origin, different document) - re-render instantly
+// from the already-fetched list rather than waiting for the next refresh.
+window.addEventListener('storage', (e) => {
+  if(e.key === MOVERS_COUNT_STORAGE_KEY && moversLastRaw){
+    renderMoversStrip(moversLastRaw);
+  }
+});
+// Pause the auto-scroll while the user is touching/pointing at either row so
 // they can actually read a chip, resume once they let go.
-['pointerdown','touchstart'].forEach(evt => moversTrack.addEventListener(evt, () => moversTrack.classList.add('paused')));
-['pointerup','pointerleave','touchend','touchcancel'].forEach(evt => moversTrack.addEventListener(evt, () => moversTrack.classList.remove('paused')));
+[moversTrackGainers, moversTrackLosers].forEach(track => {
+  ['pointerdown','touchstart'].forEach(evt => track.addEventListener(evt, () => track.classList.add('paused')));
+  ['pointerup','pointerleave','touchend','touchcancel'].forEach(evt => track.addEventListener(evt, () => track.classList.remove('paused')));
+});
 
 /* ================= Home: recently visited ================= */
 const RECENT_KEY = 'ts_recent_pages_v1';
@@ -1318,6 +1363,12 @@ function activatePage(pageId){
   // that strip whenever we land back on Home so it reflects the latest order.
   if(pageId === 'home'){
     renderRecentVisited();
+    // Fallback in case a Settings change didn't produce a "storage" event
+    // (e.g. this browser doesn't fire it for same-tab iframes) - cheap to
+    // just re-render from the already-fetched list against the current count.
+    if(typeof moversLastRaw !== 'undefined' && moversLastRaw){
+      renderMoversStrip(moversLastRaw);
+    }
   }else{
     recordRecentVisit(pageId);
   }

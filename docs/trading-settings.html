@@ -149,6 +149,12 @@
         <p class="hint" style="margin:8px 0 0;">Used to group and label dates in other apps that need it — e.g. the Calendar decides what counts as "today" based on this.</p>
       </div>
 
+      <div class="field">
+        <label for="moversCount">Top Movers Count (Home screen)</label>
+        <input id="moversCount" type="number" min="3" max="8" step="1" placeholder="5" />
+        <p class="hint" style="margin:8px 0 0;">How many top gainers and top losers to show in the rolling Top Movers strip on Home. Choose between 3 and 8.</p>
+      </div>
+
       <div class="actions">
         <button class="secondary" type="button" id="resetBtn">Reset</button>
         <button class="primary" type="button" id="saveBtn">Save</button>
@@ -179,8 +185,15 @@
   // app that needs to group or label things by day agrees on the same
   // timezone, rather than each guessing from wherever it happens to run.
   const TIMEZONE_STORAGE_KEY = 'crypto-screener-display-timezone';
+  // Shared across apps too (index.html's Home-screen Top Movers strip reads
+  // this directly) so the count picked here takes effect without needing
+  // this settings page's own STORAGE_KEY blob to be parsed elsewhere.
+  const MOVERS_COUNT_STORAGE_KEY = 'crypto-screener-movers-count';
   const DEFAULT_TIMEZONE = 'Asia/Kolkata';
   const DEFAULT_PORTFOLIO = 1000;
+  const DEFAULT_MOVERS_COUNT = 5;
+  const MOVERS_COUNT_MIN = 3;
+  const MOVERS_COUNT_MAX = 8;
   const EXCHANGE_LINKS = {
     CoinDCX: 'https://coindcx.com/futures/B-',
     Binance: 'https://www.binance.com/en/futures/',
@@ -189,9 +202,16 @@
   const portfolioValueInput = document.getElementById('portfolioValue');
   const tradingExchangeSelect = document.getElementById('tradingExchange');
   const displayTimezoneSelect = document.getElementById('displayTimezone');
+  const moversCountInput = document.getElementById('moversCount');
   const saveBtn = document.getElementById('saveBtn');
   const resetBtn = document.getElementById('resetBtn');
   const statusEl = document.getElementById('status');
+
+  function clampMoversCount(n){
+    n = Math.round(n);
+    if(!Number.isFinite(n)) return DEFAULT_MOVERS_COUNT;
+    return Math.min(MOVERS_COUNT_MAX, Math.max(MOVERS_COUNT_MIN, n));
+  }
 
   function setStatus(message, type=''){
     statusEl.textContent = message;
@@ -354,17 +374,34 @@
       displayTimezoneSelect.value = DEFAULT_TIMEZONE;
       console.warn('Unable to load display timezone', error);
     }
+
+    // Top Movers count also lives under its own key (see MOVERS_COUNT_STORAGE_KEY)
+    // so index.html can read just this value directly, same pattern as timezone.
+    try{
+      const savedCount = parseInt(localStorage.getItem(MOVERS_COUNT_STORAGE_KEY), 10);
+      moversCountInput.value = String(Number.isFinite(savedCount) ? clampMoversCount(savedCount) : DEFAULT_MOVERS_COUNT);
+    }catch(error){
+      moversCountInput.value = String(DEFAULT_MOVERS_COUNT);
+      console.warn('Unable to load top movers count', error);
+    }
   }
 
   function saveSettings(){
     const portfolioValue = parseFloat(portfolioValueInput.value);
     const tradingExchange = tradingExchangeSelect.value;
     const displayTimezone = displayTimezoneSelect.value;
+    const moversCountRaw = parseInt(moversCountInput.value, 10);
 
     if(!Number.isFinite(portfolioValue) || portfolioValue <= 0){
       setStatus('Enter a valid portfolio value above 0.', 'error');
       return;
     }
+    if(!Number.isFinite(moversCountRaw) || moversCountRaw < MOVERS_COUNT_MIN || moversCountRaw > MOVERS_COUNT_MAX){
+      setStatus(`Top Movers count must be between ${MOVERS_COUNT_MIN} and ${MOVERS_COUNT_MAX}.`, 'error');
+      return;
+    }
+    const moversCount = clampMoversCount(moversCountRaw);
+    moversCountInput.value = String(moversCount);
 
     const settings = {
       portfolioValue,
@@ -374,6 +411,7 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
     localStorage.setItem(PORTFOLIO_STORAGE_KEY, String(portfolioValue));
     localStorage.setItem(TIMEZONE_STORAGE_KEY, displayTimezone);
+    localStorage.setItem(MOVERS_COUNT_STORAGE_KEY, String(moversCount));
     setStatus('Saved locally.', 'success');
   }
 
@@ -381,9 +419,11 @@
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(PORTFOLIO_STORAGE_KEY);
     localStorage.removeItem(TIMEZONE_STORAGE_KEY);
+    localStorage.removeItem(MOVERS_COUNT_STORAGE_KEY);
     portfolioValueInput.value = String(DEFAULT_PORTFOLIO);
     tradingExchangeSelect.value = 'CoinDCX';
     displayTimezoneSelect.value = DEFAULT_TIMEZONE;
+    moversCountInput.value = String(DEFAULT_MOVERS_COUNT);
     setStatus('Settings cleared.', 'success');
   }
 
