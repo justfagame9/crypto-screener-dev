@@ -58,6 +58,32 @@
     margin-bottom:18px;
   }
 
+  /* ---- Staleness banner ---- */
+  .stale-banner{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-family:var(--font-mono);
+    font-size:11px;
+    padding:8px 12px;
+    border-radius:10px;
+    margin-bottom:14px;
+    border:1px solid var(--border);
+    color:var(--muted);
+    background:var(--panel2);
+  }
+  .stale-banner.warn{
+    color:var(--amber);
+    border-color:rgba(245,166,35,.4);
+    background:rgba(245,166,35,.08);
+  }
+  .stale-banner.stale{
+    color:var(--red);
+    border-color:rgba(255,84,112,.4);
+    background:rgba(255,84,112,.08);
+  }
+  .stale-banner .dot2{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;}
+
   /* ---- Hero: next event ---- */
   .hero{
     background:linear-gradient(135deg, rgba(53,224,192,.08), rgba(91,140,255,.05));
@@ -337,6 +363,8 @@
     </button>
   </div>
 
+  <div id="staleBanner"></div>
+
   <div id="hero"></div>
 
   <div class="events-row">
@@ -359,7 +387,7 @@
     <summary>Sources checked &amp; methodology</summary>
     <ul class="src-list" id="sourceList"></ul>
     <div class="checked-note">
-      Dates come from primary sources (Federal Reserve, BLS, Census, BEA, ISM, Treasury, OPEC, official event sites, Congress.gov trackers) as of the "last verified" date below. Legislative, upgrade, and estimated-cadence dates in particular can shift — items marked <b>Tentative</b> have no locked date yet, and items with a ✓ have been directly confirmed against a primary source. This page does not call any live API; the event data is loaded fresh from this file every time the app is opened, and countdowns/Live-Upcoming-Past sorting then auto-refresh every 30 seconds in the background (or on tap of Refresh) for as long as the page stays open. Weekly initial jobless claims (every Thursday, 8:30am ET, from the Department of Labor) aren't listed as individual entries since they recur weekly — check dol.gov for the latest. DOGE and XRP already trade via several US spot ETFs launched in late 2025/early 2026, so this calendar tracks upcoming catalysts (conferences, network upgrades, macro prints) rather than day-to-day ETF flows for those two. Re-check primary sources before trading around any single date.
+      Dates come from primary sources (Federal Reserve, BLS, Census, BEA, ISM, Treasury, OPEC, official event sites, Congress.gov trackers) as of the "last verified" date shown in the banner at the top. Legislative, upgrade, and estimated-cadence dates in particular can shift — items marked <b>Tentative</b> have no locked date yet, and items with a ✓ have been directly confirmed against a primary source. This page has no backend, so it can't check the web itself on a schedule — it re-verifies only when someone edits this file (you, or Claude on request) after checking the live sources above. The banner turns amber after 7 days without a check and red after 14, as a nudge to ask for a re-verify rather than a guarantee anything changed. Countdowns and Live/Upcoming/Past sorting auto-refresh every 30 seconds in the background (or on tap of Refresh) for as long as the page stays open, but that only re-sorts today's data — it doesn't fetch anything new. Weekly initial jobless claims (every Thursday, 8:30am ET, from the Department of Labor) aren't listed as individual entries since they recur weekly — check dol.gov for the latest. DOGE and XRP already trade via several US spot ETFs launched in late 2025/early 2026, so this calendar tracks upcoming catalysts (conferences, network upgrades, macro prints) rather than day-to-day ETF flows for those two. Re-check primary sources before trading around any single date.
     </div>
   </details>
 
@@ -384,7 +412,7 @@
    (America/New_York) unless noted, converted to the user's local
    time for display.
    ============================================================ */
-const VERIFIED_THROUGH = "2026-08-30";
+const VERIFIED_THROUGH = "2026-09-05";
 
 const EVENTS = [
   {
@@ -403,8 +431,8 @@ const EVENTS = [
     category: "regulatory",
     impact: "high",
     verified: true,
-    date: "2026-09-15T12:00:00-04:00",
-    desc: "Procedural vote on the Digital Asset Market Clarity Act (H.R. 3633), the U.S. crypto market-structure bill. This is a cloture motion, not final passage — but it determines whether a floor vote happens at all this year.",
+    date: "2026-09-15T14:15:00-04:00",
+    desc: "Procedural cloture vote on the motion to proceed to the Digital Asset Market Clarity Act (H.R. 3633), the U.S. crypto market-structure bill — this is a procedural step, not final passage, and needs 60 votes to succeed. Analyst odds of passage this year have fallen sharply (Galaxy Research cut its estimate from ~50% to ~30% in early September) given the shrinking pre-midterm legislative calendar and unresolved ethics/stablecoin provisions.",
     source: { name: "CoinDesk / Congress.gov tracker", url: "https://www.coindesk.com/policy/2026/08/08/u-s-senate-opens-first-stage-of-crypto-clarity-act-voting-to-give-bill-a-chance-next-month" }
   },
   {
@@ -454,9 +482,9 @@ const EVENTS = [
     title: "US CPI — September 2026 data",
     category: "macro",
     impact: "high",
-    verified: false,
-    date: "2026-10-13T08:30:00-04:00",
-    desc: "Estimated release date based on the BLS's usual second-week-of-the-month cadence; the exact date had not yet been separately confirmed by the BLS as of Aug 30, 2026. Check bls.gov/schedule before trading around it.",
+    verified: true,
+    date: "2026-10-14T08:30:00-04:00",
+    desc: "Confirmed on the official BLS release calendar. Hot prints push back Fed cut expectations and tend to pressure BTC/ETH; cool prints do the opposite.",
     source: { name: "BLS release schedule", url: "https://www.bls.gov/schedule/news_release/cpi.htm" }
   },
   {
@@ -495,9 +523,19 @@ const EVENTS = [
     title: "US CPI — October 2026 data",
     category: "macro",
     impact: "high",
-    verified: false,
-    date: "2026-11-12T08:30:00-05:00",
-    desc: "Estimated release date based on the usual monthly cadence; not yet separately confirmed by the BLS as of Aug 30, 2026.",
+    verified: true,
+    date: "2026-11-10T08:30:00-05:00",
+    desc: "Confirmed on the official BLS release calendar.",
+    source: { name: "BLS release schedule", url: "https://www.bls.gov/schedule/news_release/cpi.htm" }
+  },
+  {
+    id: "cpi-nov",
+    title: "US CPI — November 2026 data",
+    category: "macro",
+    impact: "high",
+    verified: true,
+    date: "2026-12-10T08:30:00-05:00",
+    desc: "Confirmed on the official BLS release calendar. The last CPI print of the year, landing the day after the final FOMC meeting's decision — a hot or cool read here shapes rate-path expectations heading into January.",
     source: { name: "BLS release schedule", url: "https://www.bls.gov/schedule/news_release/cpi.htm" }
   },
   {
@@ -567,9 +605,9 @@ const EVENTS = [
     title: "US PPI — August 2026 data",
     category: "macro",
     impact: "medium",
-    verified: false,
+    verified: true,
     date: "2026-09-10T08:30:00-04:00",
-    desc: "Producer Price Index, the upstream-inflation read that typically lands the day before CPI. Estimated date based on the usual cadence; not separately confirmed by BLS as of Aug 30, 2026.",
+    desc: "Producer Price Index, the upstream-inflation read that lands the day before CPI this cycle. Confirmed on the official BLS release calendar.",
     source: { name: "BLS PPI schedule", url: "https://www.bls.gov/schedule/news_release/ppi.htm" }
   },
   {
@@ -577,9 +615,9 @@ const EVENTS = [
     title: "US Retail Sales — August 2026 data",
     category: "macro",
     impact: "medium",
-    verified: false,
-    date: "2026-09-17T08:30:00-04:00",
-    desc: "Census Bureau consumer-spending read. Estimated mid-month date based on the usual release cadence; check census.gov before trading around it.",
+    verified: true,
+    date: "2026-09-16T08:30:00-04:00",
+    desc: "Census Bureau consumer-spending read. Confirmed release date from the Census Bureau's Advance Monthly Retail Trade schedule.",
     source: { name: "Census retail sales schedule", url: "https://www.census.gov/retail/marts/www/martsdates.html" }
   },
   {
@@ -587,9 +625,9 @@ const EVENTS = [
     title: "US Housing Starts — August 2026 data",
     category: "macro",
     impact: "low",
-    verified: false,
+    verified: true,
     date: "2026-09-17T08:30:00-04:00",
-    desc: "Census/HUD new residential construction data, a secondary growth signal. Estimated date based on the usual mid-month cadence.",
+    desc: "Census/HUD new residential construction data, a secondary growth signal. Confirmed release date from the Census/HUD joint schedule.",
     source: { name: "Census new residential construction", url: "https://www.census.gov/construction/nrc/index.html" }
   },
   {
@@ -617,9 +655,9 @@ const EVENTS = [
     title: "ISM Manufacturing PMI — September 2026",
     category: "macro",
     impact: "medium",
-    verified: false,
+    verified: true,
     date: "2026-10-01T10:00:00-04:00",
-    desc: "Estimated for the first business day of October, ISM's usual release day. A print below 50 signals manufacturing contraction and can weigh on risk appetite broadly.",
+    desc: "Confirmed on ISM's official release calendar. A print below 50 signals manufacturing contraction and can weigh on risk appetite broadly.",
     source: { name: "ISM Report on Business", url: "https://www.ismworld.org/supply-management-news-and-reports/reports/ism-report-on-business/" }
   },
   {
@@ -627,9 +665,9 @@ const EVENTS = [
     title: "US Employment Situation — September 2026 (NFP + unemployment rate)",
     category: "macro",
     impact: "high",
-    verified: false,
+    verified: true,
     date: "2026-10-02T08:30:00-04:00",
-    desc: "Estimated for the first Friday of October, BLS's usual release day; not yet separately confirmed as of Aug 30, 2026.",
+    desc: "Confirmed on the official BLS release calendar.",
     source: { name: "BLS Employment Situation", url: "https://www.bls.gov/news.release/empsit.htm" }
   },
   {
@@ -658,9 +696,9 @@ const EVENTS = [
     title: "US GDP — Q3 2026 advance estimate",
     category: "macro",
     impact: "high",
-    verified: false,
+    verified: true,
     date: "2026-10-29T08:30:00-04:00",
-    desc: "BEA's first cut at Q3 growth. Estimated based on the usual ~4-week-after-quarter-end cadence; confirm on bea.gov closer to the date.",
+    desc: "BEA's first cut at Q3 growth. Confirmed on BEA's official release schedule (BEA 26-36).",
     source: { name: "BEA GDP release schedule", url: "https://www.bea.gov/news/schedule" }
   },
   {
@@ -699,9 +737,9 @@ const EVENTS = [
     title: "US Employment Situation — October 2026 (NFP + unemployment rate)",
     category: "macro",
     impact: "high",
-    verified: false,
+    verified: true,
     date: "2026-11-06T08:30:00-04:00",
-    desc: "Estimated for the first Friday of November, BLS's usual release day; not yet separately confirmed as of Aug 30, 2026.",
+    desc: "Confirmed on the official BLS release calendar.",
     source: { name: "BLS Employment Situation", url: "https://www.bls.gov/news.release/empsit.htm" }
   },
   {
@@ -730,9 +768,9 @@ const EVENTS = [
     title: "US Employment Situation — November 2026 (NFP + unemployment rate)",
     category: "macro",
     impact: "high",
-    verified: false,
+    verified: true,
     date: "2026-12-04T08:30:00-05:00",
-    desc: "Estimated for the first Friday of December, BLS's usual release day; not yet separately confirmed as of Aug 30, 2026.",
+    desc: "Confirmed on the official BLS release calendar.",
     source: { name: "BLS Employment Situation", url: "https://www.bls.gov/news.release/empsit.htm" }
   },
   {
@@ -831,11 +869,43 @@ function isSameDay(a, b){
   return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
 }
 
+// An event's day is only "complete" once we're past midnight following its
+// end date (not the instant its start/end time passes). This keeps events
+// visible for their entire calendar day, then drops them the next day.
+function isDayComplete(endDate, now){
+  const dayAfterEnd = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate() + 1);
+  return now >= dayAfterEnd;
+}
+
+// This file has no backend and can't check the web on its own — dates only
+// update when someone (you, or Claude on request) re-verifies them against
+// primary sources and edits this file. This banner just tells you how old
+// the last check is, so you know when it's worth asking for a re-verify.
+function renderStaleBanner(){
+  const el = document.getElementById('staleBanner');
+  if(!el) return;
+  const verified = new Date(VERIFIED_THROUGH + "T00:00:00");
+  const now = new Date();
+  const daysSince = Math.floor((now - verified) / 86400000);
+  let cls = '', msg = '';
+  if(daysSince < 7){
+    cls = '';
+    msg = `Last verified ${VERIFIED_THROUGH} (${daysSince}d ago) — dates checked against primary sources.`;
+  } else if(daysSince < 14){
+    cls = 'warn';
+    msg = `Last verified ${VERIFIED_THROUGH} (${daysSince}d ago) — worth a re-check soon, especially "Estimated" items.`;
+  } else {
+    cls = 'stale';
+    msg = `Last verified ${VERIFIED_THROUGH} (${daysSince}d ago) — this is stale. Ask Claude to re-verify against BLS/Fed/Census/etc. before trading around any date here.`;
+  }
+  el.innerHTML = `<div class="stale-banner ${cls}"><span class="dot2"></span>${msg}</div>`;
+}
+
 function renderHero(){
   const now = new Date();
   const upcoming = EVENTS
     .map(e => ({...e, _d: new Date(e.date), _end: e.endDate ? new Date(e.endDate) : new Date(e.date)}))
-    .filter(e => e._end >= now)
+    .filter(e => !isDayComplete(e._end, now))
     .sort((a,b) => a._d - b._d);
   const heroEl = document.getElementById('hero');
   if(!upcoming.length){
@@ -864,11 +934,13 @@ function formatFullDate(d){
 
 function render(){
   buildFilters();
+  renderStaleBanner();
   renderHero();
 
   const now = new Date();
   const list = EVENTS
     .map(e => ({...e, _d: new Date(e.date), _end: e.endDate ? new Date(e.endDate) : new Date(e.date)}))
+    .filter(e => !isDayComplete(e._end, now))
     .filter(e => activeFilter === "all" || e.category === activeFilter)
     .sort((a,b) => a._d - b._d);
 
