@@ -189,6 +189,11 @@
   .liqtotals-table th:first-child, .liqtotals-table td:first-child{text-align:left;}
   .liqtotals-table td{padding:10px 14px;border-bottom:1px solid var(--border-soft);font:600 12px var(--font-mono);text-align:right;white-space:nowrap;}
   .liqtotals-table tr:last-child td{border-bottom:none;}
+  .liqtotals-table th:first-child, .liqtotals-table td:first-child{
+    position:sticky;left:0;z-index:2;background:var(--panel);
+    box-shadow:4px 0 8px -4px rgba(0,0,0,.35);
+  }
+  .liqtotals-table th:first-child{z-index:3;}
   .liqtotals-coin{display:flex;align-items:center;gap:8px;font:700 12.5px var(--font-display);}
   .liqtotals-coin .swatch{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
   .liqtotals-long{color:var(--red);}

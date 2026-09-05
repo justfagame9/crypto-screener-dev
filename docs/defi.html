@@ -197,6 +197,47 @@
   .event-name{font-size:12.5px;font-weight:700;}
   .event-desc{font:10.5px var(--font-mono);color:var(--faint);margin-top:2px;}
 
+  /* ---- Crypto countdowns ---- */
+  .cd-tabs{display:flex;gap:8px;margin-bottom:12px;}
+  .cd-tab{
+    flex:1;background:var(--panel2);border:1px solid var(--border);color:var(--muted);
+    font:700 11.5px var(--font-mono);text-transform:uppercase;letter-spacing:.05em;
+    padding:9px;border-radius:9px;cursor:pointer;text-align:center;transition:all .15s;
+  }
+  .cd-tab:hover{color:var(--text);}
+  .cd-tab.active{color:#04110D;background:var(--accent);border-color:var(--accent);}
+  .cd-grid{display:grid;grid-template-columns:1fr;gap:10px;padding:14px;}
+  @media(min-width:700px){ .cd-grid{grid-template-columns:1fr 1fr;} }
+  .cd-card{
+    background:var(--panel2);border:1px solid var(--border);border-radius:12px;
+    padding:14px 16px;transition:border-color .15s, transform .15s;
+  }
+  .cd-card:hover{border-color:var(--border-soft);transform:translateY(-2px);}
+  .cd-card.cd-past{opacity:.78;}
+  .cd-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:12px;}
+  .cd-coin{display:flex;align-items:center;gap:9px;min-width:0;}
+  .cd-badge{
+    width:32px;height:32px;border-radius:9px;flex-shrink:0;color:#fff;
+    display:flex;align-items:center;justify-content:center;font:700 10.5px var(--font-mono);
+  }
+  .cd-name{font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .cd-sub{font:10px var(--font-mono);color:var(--faint);text-transform:uppercase;letter-spacing:.04em;margin-top:1px;}
+  .cd-type-chip{
+    font:700 9px var(--font-mono);text-transform:uppercase;letter-spacing:.03em;
+    padding:3px 8px;border-radius:20px;border:1px solid var(--border);color:var(--muted);flex-shrink:0;white-space:nowrap;
+  }
+  .cd-type-chip.halving{color:var(--amber);border-color:rgba(245,166,35,.35);background:rgba(245,166,35,.1);}
+  .cd-type-chip.fork{color:var(--violet);border-color:rgba(167,139,250,.35);background:rgba(167,139,250,.1);}
+  .cd-type-chip.upgrade{color:var(--blue);border-color:rgba(91,140,255,.35);background:rgba(91,140,255,.1);}
+  .cd-timer{display:flex;gap:6px;margin-bottom:10px;}
+  .cd-unit{flex:1;background:var(--bg);border:1px solid var(--border-soft);border-radius:8px;padding:7px 2px 6px;text-align:center;}
+  .cd-unit .num{font:700 16px var(--font-mono);color:var(--text);display:block;line-height:1.2;}
+  .cd-unit .lbl{font:8.5px var(--font-mono);color:var(--faint);text-transform:uppercase;letter-spacing:.05em;}
+  .cd-past-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .cd-check{font:700 11px var(--font-mono);color:var(--accent);}
+  .cd-ago{font:700 12px var(--font-mono);color:var(--faint);}
+  .cd-desc{font:11px var(--font-mono);color:var(--muted);line-height:1.5;}
+
   .fallback-panel{padding:20px 18px;text-align:center;}
   .fallback-panel .fp-icon{font-size:26px;margin-bottom:8px;}
   .fallback-panel .fp-title{font-size:13.5px;font-weight:700;margin-bottom:6px;}
@@ -352,6 +393,30 @@
     </div>
   </div>
 
+  <!-- Crypto Countdowns -->
+  <div class="section collapsed" id="sec-countdowns">
+    <div class="section-head toggleable" data-toggle="sec-countdowns">
+      <div class="section-title"><button class="section-toggle-btn" type="button" aria-expanded="false" aria-label="Toggle section"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button><span class="si">⏱️</span>Crypto Countdowns</div>
+    </div>
+    <div class="section-body">
+      <div class="section-note-inline">Live halving & network-upgrade countdowns, past and upcoming</div>
+      <div class="cd-tabs">
+        <button class="cd-tab active" id="cdTabUpcoming" type="button" data-tab="upcoming">Upcoming</button>
+        <button class="cd-tab" id="cdTabPast" type="button" data-tab="past">Past</button>
+      </div>
+      <div class="controls-row">
+        <select class="ctrl" id="cdTypeFilter">
+          <option value="all">All types</option>
+          <option value="halving">Halvings</option>
+          <option value="fork">Forks</option>
+          <option value="upgrade">Upgrades</option>
+        </select>
+      </div>
+      <div class="panel" id="countdownPanel"></div>
+      <div class="list-foot">Curated reference dates, ticking client-side · <a href="https://www.nicehash.com/countdown" target="_blank" rel="noopener">Full live tracker on NiceHash ↗</a></div>
+    </div>
+  </div>
+
   <div class="notice">
     <div class="notice-summary">
       <b>Reference data only, not financial advice.</b>
@@ -391,6 +456,143 @@ const GRADIENTS = [
   'linear-gradient(135deg,#f0c24b,#b8860b)', 'linear-gradient(135deg,#5b8cff,#2b4fb0)',
   'linear-gradient(135deg,#ff5470,#35e0c0)', 'linear-gradient(135deg,#4dd0e1,#0d7a8c)'
 ];
+
+// Curated halving / fork / upgrade dates, in the spirit of NiceHash's
+// countdown tracker (https://www.nicehash.com/countdown). There's no free,
+// CORS-friendly API for this data, so — same pattern as the Unlocks section
+// above — this is a hand-maintained reference list rather than a live fetch.
+// The countdowns themselves still tick in real time client-side against
+// these fixed dates. `estimated: true` marks dates without an on-chain-fixed
+// or officially confirmed schedule yet.
+const COUNTDOWN_EVENTS = [
+  { coin:'BTC', name:'Bitcoin', type:'halving', date:'2024-04-20T00:09:27Z', desc:'Block reward fell from 6.25 → 3.125 BTC at block 840,000.' },
+  { coin:'BTC', name:'Bitcoin', type:'halving', date:'2028-04-10T12:00:00Z', desc:'Block reward drop 3.125 → 1.5625 BTC at block 1,050,000.' },
+  { coin:'LTC', name:'Litecoin', type:'halving', date:'2023-08-02T00:00:00Z', desc:'Block reward fell from 12.5 → 6.25 LTC at block 2,520,000.' },
+  { coin:'LTC', name:'Litecoin', type:'halving', date:'2027-07-30T12:00:00Z', desc:'Block reward drop 6.25 → 3.125 LTC at block 3,360,000.' },
+  { coin:'BCH', name:'Bitcoin Cash', type:'halving', date:'2024-04-04T00:00:00Z', desc:'Block reward fell from 6.25 → 3.125 BCH.' },
+  { coin:'BCH', name:'Bitcoin Cash', type:'halving', date:'2028-04-03T12:00:00Z', desc:'Next Bitcoin Cash block reward halving at block 1,050,000.' },
+  { coin:'ZEC', name:'Zcash', type:'halving', date:'2024-11-23T12:00:00Z', desc:'Second Zcash block subsidy halving.' },
+  { coin:'ZEC', name:'Zcash', type:'halving', date:'2028-11-16T12:00:00Z', desc:'Third Zcash block subsidy halving at block 4,406,400.' },
+  { coin:'RVN', name:'Ravencoin', type:'halving', date:'2022-01-11T12:00:00Z', desc:'Block reward fell from 5000 → 2500 RVN.' },
+  { coin:'RVN', name:'Ravencoin', type:'halving', date:'2026-01-11T12:00:00Z', desc:'Block reward drop 2500 → 1250 RVN.' },
+  { coin:'ETC', name:'Ethereum Classic', type:'halving', date:'2026-09-15T12:00:00Z', desc:'Block reward halving ("ECIP-1017" era) at block 25,000,001.' },
+  { coin:'MONA', name:'Monacoin', type:'halving', date:'2026-11-20T12:00:00Z', desc:'Block reward halving at block 4,204,800.' },
+  { coin:'HNS', name:'Handshake', type:'halving', date:'2023-04-26T12:00:00Z', desc:'Handshake issuance halving event.' },
+  { coin:'HNS', name:'Handshake', type:'halving', date:'2025-08-01T12:00:00Z', desc:'Est. next Handshake issuance halving.', estimated:true },
+  { coin:'ETH', name:'Ethereum', type:'upgrade', date:'2022-09-15T06:42:42Z', desc:'The Merge — mainnet transition to proof-of-stake.' },
+  { coin:'ETH', name:'Ethereum', type:'upgrade', date:'2023-04-12T22:27:35Z', desc:'Shapella upgrade — enabled validator staking withdrawals.' },
+  { coin:'ETH', name:'Ethereum', type:'upgrade', date:'2024-03-13T13:55:35Z', desc:'Dencun upgrade — proto-danksharding via EIP-4844 blobs.' },
+  { coin:'ETH', name:'Ethereum', type:'upgrade', date:'2025-05-07T10:05:11Z', desc:'Pectra upgrade — account abstraction (EIP-7702) & higher staking limits.' },
+  { coin:'BTC', name:'Bitcoin', type:'fork', date:'2021-11-14T00:00:00Z', desc:'Taproot activation — Schnorr signatures & script upgrades.' },
+  { coin:'XMR', name:'Monero', type:'fork', date:'2022-07-16T12:00:00Z', desc:'Network upgrade activating tail emission (0.6 XMR/block minimum).' },
+];
+
+const COUNTDOWN_STATE = { tab: 'upcoming' };
+
+function cdFormatParts(diffMs){
+  const total = Math.max(0, Math.floor(diffMs / 1000));
+  return {
+    d: Math.floor(total / 86400),
+    h: Math.floor((total % 86400) / 3600),
+    m: Math.floor((total % 3600) / 60),
+    s: total % 60,
+  };
+}
+function cdPad(n){ return String(n).padStart(2, '0'); }
+function cdFormatAgo(diffMs){
+  const totalSec = Math.floor(diffMs / 1000);
+  const days = Math.floor(totalSec / 86400);
+  if(days >= 365) return `${(days / 365).toFixed(1)}y ago`;
+  if(days >= 30) return `${Math.floor(days / 30)}mo ago`;
+  if(days >= 1) return `${days}d ago`;
+  const hrs = Math.floor(totalSec / 3600);
+  if(hrs >= 1) return `${hrs}h ago`;
+  return 'moments ago';
+}
+function cdTypeLabel(t){ return t === 'halving' ? 'Halving' : (t === 'fork' ? 'Fork' : 'Upgrade'); }
+
+function renderCountdowns(){
+  const panel = document.getElementById('countdownPanel');
+  if(!panel) return;
+  const now = Date.now();
+  const typeFilter = document.getElementById('cdTypeFilter').value;
+  const withTs = COUNTDOWN_EVENTS.map((e, i) => Object.assign({ ts: new Date(e.date).getTime(), _i: i }, e));
+  let list = withTs.filter(e => typeFilter === 'all' || e.type === typeFilter);
+  if(COUNTDOWN_STATE.tab === 'upcoming'){
+    list = list.filter(e => e.ts > now).sort((a, b) => a.ts - b.ts);
+  }else{
+    list = list.filter(e => e.ts <= now).sort((a, b) => b.ts - a.ts);
+  }
+  if(!list.length){
+    panel.innerHTML = `<div class="empty-note">No ${COUNTDOWN_STATE.tab} events for this filter.</div>`;
+    return;
+  }
+  const cards = list.map(e => {
+    const grad = GRADIENTS[e._i % GRADIENTS.length];
+    const dateStr = new Date(e.ts).toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' });
+    const subLabel = e.estimated ? `Est. ${dateStr}` : dateStr;
+    if(COUNTDOWN_STATE.tab === 'upcoming'){
+      const { d, h, m, s } = cdFormatParts(e.ts - now);
+      return `
+        <div class="cd-card" data-ts="${e.ts}">
+          <div class="cd-top">
+            <div class="cd-coin">
+              <div class="cd-badge" style="background:${grad}">${escapeHtml(e.coin)}</div>
+              <div>
+                <div class="cd-name">${escapeHtml(e.name)}</div>
+                <div class="cd-sub">${escapeHtml(subLabel)}</div>
+              </div>
+            </div>
+            <div class="cd-type-chip ${e.type}">${cdTypeLabel(e.type)}</div>
+          </div>
+          <div class="cd-timer">
+            <div class="cd-unit"><span class="num cd-d">${d}</span><span class="lbl">Days</span></div>
+            <div class="cd-unit"><span class="num cd-h">${cdPad(h)}</span><span class="lbl">Hrs</span></div>
+            <div class="cd-unit"><span class="num cd-m">${cdPad(m)}</span><span class="lbl">Min</span></div>
+            <div class="cd-unit"><span class="num cd-s">${cdPad(s)}</span><span class="lbl">Sec</span></div>
+          </div>
+          <div class="cd-desc">${escapeHtml(e.desc)}</div>
+        </div>`;
+    }
+    return `
+      <div class="cd-card cd-past" data-ts="${e.ts}">
+        <div class="cd-top">
+          <div class="cd-coin">
+            <div class="cd-badge" style="background:${grad}">${escapeHtml(e.coin)}</div>
+            <div>
+              <div class="cd-name">${escapeHtml(e.name)}</div>
+              <div class="cd-sub">${escapeHtml(dateStr)}</div>
+            </div>
+          </div>
+          <div class="cd-type-chip ${e.type}">${cdTypeLabel(e.type)}</div>
+        </div>
+        <div class="cd-past-row">
+          <span class="cd-check">✓ Completed</span>
+          <span class="cd-ago">${cdFormatAgo(now - e.ts)}</span>
+        </div>
+        <div class="cd-desc">${escapeHtml(e.desc)}</div>
+      </div>`;
+  }).join('');
+  panel.innerHTML = `<div class="cd-grid">${cards}</div>`;
+}
+
+// Cheap per-second tick: only patch the four numeric spans in each upcoming
+// card instead of re-rendering the whole panel, so filtering/scroll position
+// isn't disturbed every second.
+function tickCountdowns(){
+  if(COUNTDOWN_STATE.tab !== 'upcoming') return;
+  const now = Date.now();
+  document.querySelectorAll('#countdownPanel .cd-card[data-ts]').forEach(card => {
+    const ts = Number(card.getAttribute('data-ts'));
+    const { d, h, m, s } = cdFormatParts(ts - now);
+    const dEl = card.querySelector('.cd-d'), hEl = card.querySelector('.cd-h'),
+          mEl = card.querySelector('.cd-m'), sEl = card.querySelector('.cd-s');
+    if(dEl) dEl.textContent = d;
+    if(hEl) hEl.textContent = cdPad(h);
+    if(mEl) mEl.textContent = cdPad(m);
+    if(sEl) sEl.textContent = cdPad(s);
+  });
+}
 
 // Reuse the same personal Cloudflare Worker used by the other pages in this
 // app (news.html, youtube.html, oil.html, ...) for CORS passthrough.
@@ -1020,6 +1222,20 @@ document.getElementById('protoSearch').addEventListener('input', (e) => { PROTO_
 document.getElementById('protoCategory').addEventListener('change', (e) => { PROTO_STATE.category = e.target.value; renderProtocols(); });
 document.getElementById('protoSort').addEventListener('change', (e) => { PROTO_STATE.sort = e.target.value; renderProtocols(); });
 
+document.getElementById('cdTabUpcoming').addEventListener('click', () => {
+  COUNTDOWN_STATE.tab = 'upcoming';
+  document.getElementById('cdTabUpcoming').classList.add('active');
+  document.getElementById('cdTabPast').classList.remove('active');
+  renderCountdowns();
+});
+document.getElementById('cdTabPast').addEventListener('click', () => {
+  COUNTDOWN_STATE.tab = 'past';
+  document.getElementById('cdTabPast').classList.add('active');
+  document.getElementById('cdTabUpcoming').classList.remove('active');
+  renderCountdowns();
+});
+document.getElementById('cdTypeFilter').addEventListener('change', renderCountdowns);
+
 document.getElementById('noticeToggle').addEventListener('click', () => {
   const btn = document.getElementById('noticeToggle');
   const details = document.getElementById('noticeDetails');
@@ -1050,6 +1266,9 @@ function setSectionCollapsed(sectionEl, collapsed){
     });
   });
 })();
+
+renderCountdowns();
+setInterval(tickCountdowns, 1000);
 
 loadCache();
 loadAll();
