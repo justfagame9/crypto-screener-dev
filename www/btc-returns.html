@@ -25,6 +25,7 @@
     --violet:#A78BFA;
     --orange:#FF8A4C;
     --btc:#F7931A;
+    --eth:#627EEA;
     --font-display:'Space Grotesk', sans-serif;
     --font-mono:'JetBrains Mono', monospace;
   }
@@ -237,21 +238,42 @@
   }
   .retry-btn:hover{border-color:var(--btc);color:var(--btc);}
 
+  /* ---- ETH mode: swap the shared accent color, everything else identical ---- */
+  body.asset-eth{--btc:var(--eth);}
+  body.asset-eth .price-icon{background:linear-gradient(135deg,#627EEA,#3C4FA1);box-shadow:0 6px 16px rgba(98,126,234,.28);}
+
+  /* ---- Asset toggle ---- */
+  .asset-toggle{
+    display:inline-flex;align-items:center;background:var(--panel);border:1px solid var(--border);
+    border-radius:20px;padding:2px;gap:2px;flex-shrink:0;
+  }
+  .asset-toggle-btn{
+    border:none;background:transparent;color:var(--muted);font:700 11px var(--font-mono);
+    padding:5px 12px;border-radius:18px;cursor:pointer;transition:background .15s,color .15s;
+  }
+  .asset-toggle-btn.active{background:rgba(247,147,26,.14);color:var(--btc);}
+  body.asset-eth .asset-toggle-btn.active{background:rgba(98,126,234,.16);}
+  .asset-toggle-btn:hover:not(.active){color:var(--text);}
+
 </style>
 </head>
 <body>
 <div class="wrap">
 
   <div class="topheader">
-    <div class="eyebrow"><span class="dot"></span>Bitcoin Returns</div>
+    <div class="eyebrow"><span class="dot"></span><span id="pageTitle">Bitcoin Returns</span></div>
     <div class="header-right">
+      <div class="asset-toggle" id="assetToggle">
+        <button class="asset-toggle-btn active" data-asset="BTC" type="button">BTC</button>
+        <button class="asset-toggle-btn" data-asset="ETH" type="button">ETH</button>
+      </div>
       <span class="updated-label" id="updatedLabel"></span>
       <button class="refresh-btn" id="refreshBtn" aria-label="Refresh">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
       </button>
     </div>
   </div>
-  <p class="sub">Monthly, quarterly, half-yearly &amp; yearly BTC performance — full history, computed live from market price data.</p>
+  <p class="sub" id="subText">Monthly, quarterly, half-yearly &amp; yearly BTC performance — full history, computed live from market price data.</p>
 
   <div id="content"></div>
 
@@ -273,9 +295,9 @@
       <button class="notice-toggle" id="noticeToggle" type="button" aria-expanded="false" aria-controls="noticeDetails" aria-label="Show more details">+</button>
     </div>
     <div class="notice-details" id="noticeDetails" hidden>
-      All returns are computed from BTC/USD close-price history, primarily Yahoo Finance's monthly candles (CoinGecko's daily history is used as an automatic fallback if Yahoo is unreachable). Periods still in progress (the current month/quarter/half/year) show a live, not-yet-final return and are marked "live". Past performance does not indicate future results — not financial advice.
+      All returns are computed from <span id="noticePair">BTC/USD</span> close-price history, primarily Yahoo Finance's monthly candles (CoinGecko's daily history is used as an automatic fallback if Yahoo is unreachable). Periods still in progress (the current month/quarter/half/year) show a live, not-yet-final return and are marked "live". Past performance does not indicate future results — not financial advice.
       <div class="src-tags">
-        <span class="src-tag"><span class="dot"></span>Source · Yahoo Finance (BTC-USD), CoinGecko fallback</span>
+        <span class="src-tag"><span class="dot"></span><span id="srcTagText">Source · Yahoo Finance (BTC-USD), CoinGecko fallback</span></span>
       </div>
     </div>
   </div>
@@ -286,7 +308,22 @@
 // ================= Config =================
 const REFRESH_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 const PROXY_TIMEOUT_MS = 10000;
-const CACHE_KEY = 'crypto-btc-returns-cache-v2'; // v2: switched primary source to Yahoo Finance
+
+// Per-asset config - BTC and ETH run through the exact same fetch/compute/
+// render pipeline, just parameterized by symbol/id/cache key.
+const ASSETS = {
+  BTC: {
+    label: 'BTC', name: 'Bitcoin', icon: '₿',
+    yahooSymbol: 'BTC-USD', geckoId: 'bitcoin',
+    cacheKey: 'crypto-btc-returns-cache-v2', // v2: switched primary source to Yahoo Finance
+  },
+  ETH: {
+    label: 'ETH', name: 'Ethereum',
+    icon: '<svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg"><path d="M11.944 17.97 4.58 13.62 11.943 24l7.37-10.38-7.372 4.35h.003zM12.056 0 4.69 12.223l7.365 4.354 7.365-4.35L12.056 0z" fill="#fff"/></svg>',
+    yahooSymbol: 'ETH-USD', geckoId: 'ethereum',
+    cacheKey: 'crypto-eth-returns-cache-v1',
+  },
+};
 
 // Same personal Cloudflare Worker used across the other pages in this app.
 // query1.finance.yahoo.com and api.coingecko.com are both already in the
@@ -350,12 +387,13 @@ async function fetchCoinGeckoFirst(url, ms){
   }
 }
 
-// ================= Fetch: Yahoo Finance BTC-USD (primary source) =================
+// ================= Fetch: Yahoo Finance (primary source) =================
 // Keyless, CORS-friendly, and already used successfully elsewhere in this
 // app (macro.html) via the same Worker/proxy chain. Monthly candles give us
 // exactly the granularity this page needs directly, with no resampling.
-async function fetchYahooChart(range, interval){
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/BTC-USD?range=${range}&interval=${interval}`;
+// symbol is e.g. 'BTC-USD' or 'ETH-USD'.
+async function fetchYahooChart(symbol, range, interval){
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=${range}&interval=${interval}`;
   let data;
   try{
     data = await fetchJSONDirect(url);
@@ -370,20 +408,21 @@ async function fetchYahooChart(range, interval){
     .map((t, i) => ({ t: t * 1000, date: new Date(t * 1000), price: closes[i] }))
     .filter(p => typeof p.price === 'number' && isFinite(p.price));
 }
-async function fetchMonthlyHistoryYahoo(){
-  const series = await fetchYahooChart('max', '1mo');
-  if(series.length < 6) throw new Error('Yahoo Finance returned too few BTC-USD monthly bars');
+async function fetchMonthlyHistoryYahoo(symbol){
+  const series = await fetchYahooChart(symbol, 'max', '1mo');
+  if(series.length < 6) throw new Error(`Yahoo Finance returned too few ${symbol} monthly bars`);
   return series;
 }
-async function fetchLatestPriceYahoo(){
-  const series = await fetchYahooChart('5d', '1d');
-  if(!series.length) throw new Error('Yahoo Finance returned no recent BTC-USD daily bars');
+async function fetchLatestPriceYahoo(symbol){
+  const series = await fetchYahooChart(symbol, '5d', '1d');
+  if(!series.length) throw new Error(`Yahoo Finance returned no recent ${symbol} daily bars`);
   return series[series.length - 1].price;
 }
 
 // ================= Fetch: CoinGecko full daily history (fallback source) =================
-async function fetchDailyHistoryCoinGecko(){
-  const url = 'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=max';
+// geckoId is e.g. 'bitcoin' or 'ethereum'.
+async function fetchDailyHistoryCoinGecko(geckoId){
+  const url = `https://api.coingecko.com/api/v3/coins/${geckoId}/market_chart?vs_currency=usd&days=max`;
   const data = await fetchCoinGeckoFirst(url, PROXY_TIMEOUT_MS);
   const prices = data && Array.isArray(data.prices) ? data.prices : null;
   if(!prices || prices.length < 30) throw new Error('Unexpected CoinGecko market_chart response shape');
@@ -393,12 +432,12 @@ async function fetchDailyHistoryCoinGecko(){
 // ================= Unified price history fetch =================
 // Yahoo Finance first (keyless, reliable in this app suite already); if
 // that's ever unreachable, fall back to CoinGecko's daily history.
-async function fetchPriceHistory(){
+async function fetchPriceHistory(asset){
   try{
-    return await fetchMonthlyHistoryYahoo();
+    return await fetchMonthlyHistoryYahoo(asset.yahooSymbol);
   }catch(errYahoo){
-    console.warn('[btc-returns] Yahoo Finance monthly history failed, falling back to CoinGecko:', errYahoo && errYahoo.message);
-    return await fetchDailyHistoryCoinGecko();
+    console.warn(`[crypto-returns] Yahoo Finance monthly history failed for ${asset.label}, falling back to CoinGecko:`, errYahoo && errYahoo.message);
+    return await fetchDailyHistoryCoinGecko(asset.geckoId);
   }
 }
 
@@ -463,12 +502,31 @@ function textColorFor(v){
 }
 
 // ================= State =================
+let currentAsset = 'BTC'; // 'BTC' | 'ETH' - which asset is currently displayed
 let dailyHistory = null;
 let periodData = null;   // { monthCloses, quarterCloses, halfCloses, yearCloses }
 let returnsData = null;  // { monthly, quarterly, halfYearly, yearly } - each ascending
 let lastUpdated = null;
 let activeTab = 'monthly';
-let currentBTCPrice = null;
+let currentPrice = null;
+
+// Snapshot of each asset's loaded data, so switching BTC<->ETH after both
+// have loaded once is instant (no refetch needed).
+const assetStore = {
+  BTC: { dailyHistory: null, periodData: null, returnsData: null, lastUpdated: null, currentPrice: null },
+  ETH: { dailyHistory: null, periodData: null, returnsData: null, lastUpdated: null, currentPrice: null },
+};
+function snapshotActiveIntoStore(){
+  assetStore[currentAsset] = { dailyHistory, periodData, returnsData, lastUpdated, currentPrice };
+}
+function restoreActiveFromStore(asset){
+  const s = assetStore[asset];
+  dailyHistory = s.dailyHistory;
+  periodData = s.periodData;
+  returnsData = s.returnsData;
+  lastUpdated = s.lastUpdated;
+  currentPrice = s.currentPrice;
+}
 
 // ================= Build derived stats =================
 function buildStats(){
@@ -521,7 +579,8 @@ function buildStats(){
 
 // ================= Render: header cards =================
 function renderTop(stats){
-  const price = currentBTCPrice;
+  const price = currentPrice;
+  const asset = ASSETS[currentAsset];
   const priceChip = (label, ret) => {
     const color = ret == null ? 'var(--faint)' : (ret >= 0 ? 'var(--accent)' : 'var(--red)');
     return `<div class="stat-chip">
@@ -544,10 +603,10 @@ function renderTop(stats){
   return `
     <div class="price-card">
       <div class="price-left">
-        <div class="price-icon">₿</div>
+        <div class="price-icon">${asset.icon}</div>
         <div>
           <div class="price-value">${price != null ? fmtUsd(price) : '—'}</div>
-          <div class="price-sub">BTC / USD · live</div>
+          <div class="price-sub">${asset.label} / USD · live</div>
         </div>
       </div>
       <div class="price-chip" style="background:${(stats.lastYear && stats.lastYear.ret>=0)?'rgba(53,224,192,.14)':'rgba(255,84,112,.14)'};color:${(stats.lastYear && stats.lastYear.ret>=0)?'var(--accent)':'var(--red)'}">
@@ -804,21 +863,21 @@ function updateLastUpdatedLabel(failed){
 // ---------------- Cache (stale-while-revalidate, same pattern as the other pages) ----------------
 function saveCache(){
   try{
-    localStorage.setItem(CACHE_KEY, JSON.stringify({
+    localStorage.setItem(ASSETS[currentAsset].cacheKey, JSON.stringify({
       lastUpdated: lastUpdated ? lastUpdated.toISOString() : null,
-      currentBTCPrice,
+      currentPrice,
       daily: dailyHistory.map(p => [p.t, p.price]) // compact form
     }));
   }catch(err){ /* storage unavailable or quota exceeded - not critical */ }
 }
 function loadCache(){
   try{
-    const raw = localStorage.getItem(CACHE_KEY);
+    const raw = localStorage.getItem(ASSETS[currentAsset].cacheKey);
     if(!raw) return false;
     const cached = JSON.parse(raw);
     if(!cached.daily || !cached.daily.length) return false;
     dailyHistory = cached.daily.map(p => ({ t: p[0], date: new Date(p[0]), price: p[1] }));
-    currentBTCPrice = cached.currentBTCPrice || dailyHistory[dailyHistory.length-1].price;
+    currentPrice = cached.currentPrice || dailyHistory[dailyHistory.length-1].price;
     lastUpdated = cached.lastUpdated ? new Date(cached.lastUpdated) : null;
     processHistory();
     return true;
@@ -847,28 +906,30 @@ async function loadAll(){
     renderSkeleton();
   }
 
+  const asset = ASSETS[currentAsset];
   try{
-    const history = await fetchPriceHistory();
+    const history = await fetchPriceHistory(asset);
     dailyHistory = history;
     processHistory();
     try{
-      currentBTCPrice = await fetchLatestPriceYahoo();
+      currentPrice = await fetchLatestPriceYahoo(asset.yahooSymbol);
     }catch(errPrice){
       // Fine to fall back to the latest bar in the history we already have -
       // it's only a little less fresh than a dedicated live-price call.
-      currentBTCPrice = history[history.length - 1].price;
+      currentPrice = history[history.length - 1].price;
     }
     lastUpdated = new Date();
     saveCache();
+    snapshotActiveIntoStore();
     renderAll();
     updateLastUpdatedLabel(false);
   }catch(err){
-    console.warn('[btc-returns] Price history load failed (Yahoo Finance + CoinGecko both unreachable):', err && err.message);
+    console.warn(`[crypto-returns] Price history load failed for ${asset.label} (Yahoo Finance + CoinGecko both unreachable):`, err && err.message);
     updateLastUpdatedLabel(true);
     if(!returnsData){
       document.getElementById('content').innerHTML = `
         <div class="error-state">
-          Couldn't load Bitcoin's price history right now (query1.finance.yahoo.com and
+          Couldn't load ${asset.name}'s price history right now (query1.finance.yahoo.com and
           api.coingecko.com were both unreachable).<br>
           If you have a Cloudflare Worker configured for this app, make sure
           query1.finance.yahoo.com is allowed through it. Check the console for details.
@@ -883,6 +944,54 @@ async function loadAll(){
 
 document.getElementById('refreshBtn').addEventListener('click', loadAll);
 
+// ---------------- Asset toggle (BTC / ETH) ----------------
+function applyAssetChrome(){
+  const asset = ASSETS[currentAsset];
+  document.body.classList.toggle('asset-eth', currentAsset === 'ETH');
+  document.querySelectorAll('.asset-toggle-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.asset === currentAsset);
+  });
+  const pageTitle = document.getElementById('pageTitle');
+  if(pageTitle) pageTitle.textContent = `${asset.name} Returns`;
+  document.title = `${asset.name} Returns`;
+  const subText = document.getElementById('subText');
+  if(subText) subText.textContent = `Monthly, quarterly, half-yearly & yearly ${asset.label} performance — full history, computed live from market price data.`;
+  const noticePair = document.getElementById('noticePair');
+  if(noticePair) noticePair.textContent = `${asset.label}/USD`;
+  const srcTagText = document.getElementById('srcTagText');
+  if(srcTagText) srcTagText.textContent = `Source · Yahoo Finance (${asset.yahooSymbol}), CoinGecko fallback`;
+}
+
+function switchAsset(next){
+  if(next === currentAsset) return;
+  snapshotActiveIntoStore();
+  currentAsset = next;
+  applyAssetChrome();
+
+  if(assetStore[next].dailyHistory){
+    // Already loaded once this session - switch instantly, then refresh quietly.
+    restoreActiveFromStore(next);
+    renderAll();
+    updateLastUpdatedLabel(false);
+    loadAll();
+  }else if(loadCache()){
+    // Nothing in-memory yet, but a previous session cached this asset.
+    renderAll();
+    updateLastUpdatedLabel(false);
+    loadAll();
+  }else{
+    dailyHistory = null; periodData = null; returnsData = null; lastUpdated = null; currentPrice = null;
+    renderSkeleton();
+    loadAll();
+  }
+}
+
+document.getElementById('assetToggle').addEventListener('click', (e) => {
+  const btn = e.target.closest('.asset-toggle-btn');
+  if(!btn) return;
+  switchAsset(btn.dataset.asset);
+});
+
 document.getElementById('noticeToggle').addEventListener('click', () => {
   const btn = document.getElementById('noticeToggle');
   const details = document.getElementById('noticeDetails');
@@ -892,6 +1001,7 @@ document.getElementById('noticeToggle').addEventListener('click', () => {
   btn.setAttribute('aria-expanded', String(willOpen));
 });
 
+applyAssetChrome();
 loadCache();
 loadAll();
 setInterval(loadAll, REFRESH_INTERVAL_MS);
