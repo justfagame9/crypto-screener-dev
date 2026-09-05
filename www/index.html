@@ -1122,6 +1122,7 @@ const MOVERS_REFRESH_MS = 5 * 60 * 1000; // 5 min - CoinGecko's free tier rate-l
 // Shared with trading-settings.html (Top Movers Count field) - same key name,
 // so a change saved there takes effect here without any other plumbing.
 const MOVERS_COUNT_STORAGE_KEY = 'crypto-screener-movers-count';
+const MOVERS_ENABLED_STORAGE_KEY = 'crypto-screener-movers-enabled';
 const MOVERS_COUNT_DEFAULT = 5;
 const MOVERS_COUNT_MIN = 3;
 const MOVERS_COUNT_MAX = 8;
@@ -1130,6 +1131,10 @@ function getMoversCount(){
   let n = parseInt(localStorage.getItem(MOVERS_COUNT_STORAGE_KEY), 10);
   if(!Number.isFinite(n)) return MOVERS_COUNT_DEFAULT;
   return Math.min(MOVERS_COUNT_MAX, Math.max(MOVERS_COUNT_MIN, n));
+}
+function isMoversEnabled(){
+  const v = localStorage.getItem(MOVERS_ENABLED_STORAGE_KEY);
+  return v === null ? true : v === 'true';
 }
 
 const moversSection = document.getElementById('moversSection');
@@ -1225,27 +1230,48 @@ async function loadMovers(){
   }
 }
 
-const moversCached = readMoversCache();
-if(moversCached && moversCached.data){
-  moversLastTs = moversCached.ts;
-  renderMoversStrip(moversCached.data);
-  updateMoversLabel();
-}else{
-  moversSection.classList.add('skeleton');
+// Single source of truth for "is the strip visible right now" - handles
+// initial load, the Settings toggle flipping on/off later (via the
+// "storage" listener below), and landing back on Home (activatePage's
+// fallback). Reuses whatever data is already in hand before hitting the
+// network, so flipping the toggle back on doesn't force an extra fetch.
+function applyMoversVisibility(){
+  if(!isMoversEnabled()){
+    moversSection.style.display = 'none';
+    return;
+  }
+  moversSection.style.display = '';
+  if(moversLastRaw){
+    renderMoversStrip(moversLastRaw);
+    updateMoversLabel();
+    return;
+  }
+  const cached = readMoversCache();
+  if(cached && cached.data){
+    moversLastTs = cached.ts;
+    renderMoversStrip(cached.data);
+    updateMoversLabel();
+  }else{
+    moversSection.classList.add('skeleton');
+  }
+  loadMovers();
 }
-loadMovers();
+
+applyMoversVisibility();
 setInterval(() => {
-  if(currentPage === 'home' && !document.hidden) loadMovers();
+  if(currentPage === 'home' && !document.hidden && isMoversEnabled()) loadMovers();
 }, MOVERS_REFRESH_MS);
 document.addEventListener('visibilitychange', () => {
-  if(!document.hidden && currentPage === 'home') loadMovers();
+  if(!document.hidden && currentPage === 'home' && isMoversEnabled()) loadMovers();
 });
 // The Settings page (trading-settings.html) lives in its own iframe; when it
-// writes MOVERS_COUNT_STORAGE_KEY, this top-level document gets a native
-// "storage" event (same-origin, different document) - re-render instantly
-// from the already-fetched list rather than waiting for the next refresh.
+// writes either key, this top-level document gets a native "storage" event
+// (same-origin, different document) - react instantly rather than waiting
+// for the next refresh or a page revisit.
 window.addEventListener('storage', (e) => {
-  if(e.key === MOVERS_COUNT_STORAGE_KEY && moversLastRaw){
+  if(e.key === MOVERS_ENABLED_STORAGE_KEY){
+    applyMoversVisibility();
+  }else if(e.key === MOVERS_COUNT_STORAGE_KEY && isMoversEnabled() && moversLastRaw){
     renderMoversStrip(moversLastRaw);
   }
 });
@@ -1365,9 +1391,9 @@ function activatePage(pageId){
     renderRecentVisited();
     // Fallback in case a Settings change didn't produce a "storage" event
     // (e.g. this browser doesn't fire it for same-tab iframes) - cheap to
-    // just re-render from the already-fetched list against the current count.
-    if(typeof moversLastRaw !== 'undefined' && moversLastRaw){
-      renderMoversStrip(moversLastRaw);
+    // just re-apply the current enabled/count state against data in hand.
+    if(typeof applyMoversVisibility === 'function'){
+      applyMoversVisibility();
     }
   }else{
     recordRecentVisit(pageId);

@@ -120,6 +120,18 @@
     font-family:var(--font-mono);font-size:11.5px;color:var(--text-faint);
     padding:14px;text-align:center;border:1px dashed var(--border);border-radius:10px;
   }
+  .checkbox-field{display:flex;align-items:center;gap:10px;}
+  .checkbox-field input[type="checkbox"]{
+    width:18px;height:18px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;
+  }
+  .checkbox-field label{
+    margin:0;font-family:var(--font-display);font-size:13.5px;font-weight:600;
+    text-transform:none;letter-spacing:normal;color:var(--text);cursor:pointer;
+  }
+  .subfield{
+    margin-top:14px;transition:opacity .15s ease;
+  }
+  .subfield.disabled{opacity:.45;pointer-events:none;}
 </style>
 </head>
 <body>
@@ -150,9 +162,24 @@
       </div>
 
       <div class="field">
-        <label for="moversCount">Top Movers Count (Home screen)</label>
-        <input id="moversCount" type="number" min="3" max="8" step="1" placeholder="5" />
-        <p class="hint" style="margin:8px 0 0;">How many top gainers and top losers to show in the rolling Top Movers strip on Home. Choose between 3 and 8.</p>
+        <div class="checkbox-field">
+          <input type="checkbox" id="moversEnabled" checked />
+          <label for="moversEnabled">Show Top Movers on Home screen</label>
+        </div>
+        <p class="hint" style="margin:8px 0 0;">Turn off to remove the rolling gainers/losers strip from Home entirely.</p>
+
+        <div class="subfield" id="moversCountField">
+          <label for="moversCount">Number of coins to show</label>
+          <select id="moversCount">
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5" selected>5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+          </select>
+          <p class="hint" style="margin:8px 0 0;">How many top gainers and top losers to show in the rolling strip.</p>
+        </div>
       </div>
 
       <div class="actions">
@@ -186,9 +213,10 @@
   // timezone, rather than each guessing from wherever it happens to run.
   const TIMEZONE_STORAGE_KEY = 'crypto-screener-display-timezone';
   // Shared across apps too (index.html's Home-screen Top Movers strip reads
-  // this directly) so the count picked here takes effect without needing
+  // this directly) so the choices made here take effect without needing
   // this settings page's own STORAGE_KEY blob to be parsed elsewhere.
   const MOVERS_COUNT_STORAGE_KEY = 'crypto-screener-movers-count';
+  const MOVERS_ENABLED_STORAGE_KEY = 'crypto-screener-movers-enabled';
   const DEFAULT_TIMEZONE = 'Asia/Kolkata';
   const DEFAULT_PORTFOLIO = 1000;
   const DEFAULT_MOVERS_COUNT = 5;
@@ -203,6 +231,8 @@
   const tradingExchangeSelect = document.getElementById('tradingExchange');
   const displayTimezoneSelect = document.getElementById('displayTimezone');
   const moversCountInput = document.getElementById('moversCount');
+  const moversEnabledInput = document.getElementById('moversEnabled');
+  const moversCountField = document.getElementById('moversCountField');
   const saveBtn = document.getElementById('saveBtn');
   const resetBtn = document.getElementById('resetBtn');
   const statusEl = document.getElementById('status');
@@ -212,6 +242,10 @@
     if(!Number.isFinite(n)) return DEFAULT_MOVERS_COUNT;
     return Math.min(MOVERS_COUNT_MAX, Math.max(MOVERS_COUNT_MIN, n));
   }
+  function updateMoversCountFieldState(){
+    moversCountField.classList.toggle('disabled', !moversEnabledInput.checked);
+  }
+  moversEnabledInput.addEventListener('change', updateMoversCountFieldState);
 
   function setStatus(message, type=''){
     statusEl.textContent = message;
@@ -375,8 +409,9 @@
       console.warn('Unable to load display timezone', error);
     }
 
-    // Top Movers count also lives under its own key (see MOVERS_COUNT_STORAGE_KEY)
-    // so index.html can read just this value directly, same pattern as timezone.
+    // Top Movers count/visibility also live under their own keys (see
+    // MOVERS_COUNT_STORAGE_KEY / MOVERS_ENABLED_STORAGE_KEY) so index.html
+    // can read them directly, same pattern as timezone.
     try{
       const savedCount = parseInt(localStorage.getItem(MOVERS_COUNT_STORAGE_KEY), 10);
       moversCountInput.value = String(Number.isFinite(savedCount) ? clampMoversCount(savedCount) : DEFAULT_MOVERS_COUNT);
@@ -384,24 +419,27 @@
       moversCountInput.value = String(DEFAULT_MOVERS_COUNT);
       console.warn('Unable to load top movers count', error);
     }
+    try{
+      const savedEnabled = localStorage.getItem(MOVERS_ENABLED_STORAGE_KEY);
+      moversEnabledInput.checked = savedEnabled === null ? true : savedEnabled === 'true';
+    }catch(error){
+      moversEnabledInput.checked = true;
+      console.warn('Unable to load top movers enabled flag', error);
+    }
+    updateMoversCountFieldState();
   }
 
   function saveSettings(){
     const portfolioValue = parseFloat(portfolioValueInput.value);
     const tradingExchange = tradingExchangeSelect.value;
     const displayTimezone = displayTimezoneSelect.value;
-    const moversCountRaw = parseInt(moversCountInput.value, 10);
+    const moversEnabled = moversEnabledInput.checked;
+    const moversCount = clampMoversCount(parseInt(moversCountInput.value, 10));
 
     if(!Number.isFinite(portfolioValue) || portfolioValue <= 0){
       setStatus('Enter a valid portfolio value above 0.', 'error');
       return;
     }
-    if(!Number.isFinite(moversCountRaw) || moversCountRaw < MOVERS_COUNT_MIN || moversCountRaw > MOVERS_COUNT_MAX){
-      setStatus(`Top Movers count must be between ${MOVERS_COUNT_MIN} and ${MOVERS_COUNT_MAX}.`, 'error');
-      return;
-    }
-    const moversCount = clampMoversCount(moversCountRaw);
-    moversCountInput.value = String(moversCount);
 
     const settings = {
       portfolioValue,
@@ -412,6 +450,7 @@
     localStorage.setItem(PORTFOLIO_STORAGE_KEY, String(portfolioValue));
     localStorage.setItem(TIMEZONE_STORAGE_KEY, displayTimezone);
     localStorage.setItem(MOVERS_COUNT_STORAGE_KEY, String(moversCount));
+    localStorage.setItem(MOVERS_ENABLED_STORAGE_KEY, String(moversEnabled));
     setStatus('Saved locally.', 'success');
   }
 
@@ -420,10 +459,13 @@
     localStorage.removeItem(PORTFOLIO_STORAGE_KEY);
     localStorage.removeItem(TIMEZONE_STORAGE_KEY);
     localStorage.removeItem(MOVERS_COUNT_STORAGE_KEY);
+    localStorage.removeItem(MOVERS_ENABLED_STORAGE_KEY);
     portfolioValueInput.value = String(DEFAULT_PORTFOLIO);
     tradingExchangeSelect.value = 'CoinDCX';
     displayTimezoneSelect.value = DEFAULT_TIMEZONE;
     moversCountInput.value = String(DEFAULT_MOVERS_COUNT);
+    moversEnabledInput.checked = true;
+    updateMoversCountFieldState();
     setStatus('Settings cleared.', 'success');
   }
 
