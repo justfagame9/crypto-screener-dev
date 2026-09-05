@@ -364,7 +364,6 @@
   }
   .home-card .home-title{display:block;font-size:13.5px;font-weight:700;color:var(--text);line-height:1.25;font-family:var(--font-ui);}
   .home-card .home-desc{display:block;font-size:11px;color:var(--muted);margin-top:2px;line-height:1.35;}
-  .home-card.hidden{display:none;}
 
   /* ---- Live ticker strip ---- */
   .ticker-section{margin:0 0 18px;position:relative;z-index:1;}
@@ -427,34 +426,55 @@
     font-size:11px;color:var(--faint);padding:8px 2px;
   }
 
-  /* ---- Search bar ---- */
-  .search-bar{
-    position:relative;margin:0 0 16px;z-index:1;
+  /* ---- Top Movers rolling strip ---- */
+  .movers-section{margin:0 0 18px;position:relative;z-index:1;}
+  .movers-eyebrow{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 2px 8px;
   }
-  .search-bar svg{
-    position:absolute;left:12px;top:50%;transform:translateY(-50%);
-    width:15px;height:15px;color:var(--faint);pointer-events:none;
+  .movers-eyebrow-left{display:flex;align-items:center;gap:7px;}
+  .movers-eyebrow-label{
+    font:700 11px var(--font-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
   }
-  .search-input{
-    width:100%;padding:11px 34px 11px 36px;border-radius:12px;
+  .movers-updated{font-family:var(--font-mono);font-size:10px;color:var(--faint);}
+  .movers-source-link{
+    font:600 10px var(--font-mono);color:var(--faint);text-decoration:none;
+    display:flex;align-items:center;gap:4px;
+  }
+  .movers-source-link:active{color:var(--accent);}
+  .movers-source-link svg{width:10px;height:10px;}
+  .movers-track-wrap{
+    position:relative;overflow:hidden;border-radius:14px;
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent);
+    mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent);
+  }
+  .movers-track{
+    display:flex;gap:8px;width:max-content;
+    animation:moversScroll 34s linear infinite;
+  }
+  .movers-track.paused{animation-play-state:paused;}
+  @keyframes moversScroll{
+    0%{transform:translateX(0);}
+    100%{transform:translateX(-50%);}
+  }
+  .mover-chip{
+    flex:0 0 auto;display:flex;align-items:center;gap:8px;
+    min-width:150px;padding:9px 13px;border-radius:14px;
     background:var(--panel);border:1px solid var(--border-soft);
-    color:var(--text);font:500 13.5px var(--font-ui);outline:none;
-    transition:border-color .15s ease;
+    cursor:pointer;
   }
-  .search-input::placeholder{color:var(--faint);}
-  .search-input:focus{border-color:var(--purple);}
-  .search-clear{
-    position:absolute;right:6px;top:50%;transform:translateY(-50%);
-    width:26px;height:26px;border:none;background:transparent;color:var(--faint);
-    display:none;align-items:center;justify-content:center;cursor:pointer;border-radius:50%;
-  }
-  .search-clear svg{width:14px;height:14px;}
-  .search-bar.has-value .search-clear{display:flex;}
-  .search-empty{
-    display:none;text-align:center;color:var(--muted);font-size:12.5px;
-    padding:32px 10px;
-  }
-  .search-empty.show{display:block;}
+  .mover-chip.up{border-color:rgba(53,224,192,.28);}
+  .mover-chip.down{border-color:rgba(255,84,112,.28);}
+  .mover-chip img{width:20px;height:20px;border-radius:50%;flex-shrink:0;background:var(--panel2);}
+  .mover-chip-body{min-width:0;flex:1;display:flex;flex-direction:column;gap:1px;}
+  .mover-chip-top{display:flex;align-items:baseline;gap:6px;}
+  .mover-sym{font:700 11.5px var(--font-ui);color:var(--text);letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .mover-price{font:600 10px var(--font-mono);color:var(--faint);white-space:nowrap;}
+  .mover-chg{font:700 12px var(--font-mono);white-space:nowrap;}
+  .mover-chg.up{color:var(--accent);}
+  .mover-chg.down{color:var(--red);}
+  .movers-error{font-size:11px;color:var(--faint);padding:8px 2px;}
+  .movers-section.skeleton .mover-chip{opacity:.5;}
 
   /* ---- Recently visited ---- */
   .recent-section{margin:0 0 18px;position:relative;z-index:1;}
@@ -499,9 +519,7 @@
   .section-toggle-btn svg{width:15px;height:15px;transition:transform .2s ease;}
   .category-section.collapsed .section-toggle-btn svg{transform:rotate(-90deg);}
   .category-section.collapsed .home-grid{display:none;}
-  #categoriesWrap.search-active .category-section.collapsed .home-grid{display:grid;}
   .category-section{margin:0 0 20px;}
-  .category-section.hidden{display:none;}
 
   .home-card[data-page="screener"] .home-icon{background:linear-gradient(135deg,#35e0c0,#1c8f79);}
   .home-card[data-page="defi"] .home-icon{background:linear-gradient(135deg,#35e0c0,#5b8cff);}
@@ -671,20 +689,26 @@
           <div class="ticker-row" id="tickerRow"></div>
         </div>
 
-        <div class="search-bar" id="searchBar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input class="search-input" id="searchInput" type="text" inputmode="search" autocomplete="off" placeholder="Search tools & pages…">
-          <button class="search-clear" id="searchClear" type="button" aria-label="Clear search">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
+        <div class="movers-section" id="moversSection">
+          <div class="movers-eyebrow">
+            <div class="movers-eyebrow-left">
+              <span class="movers-eyebrow-label">Top Movers · 24h</span>
+              <span class="movers-updated" id="moversUpdated"></span>
+            </div>
+            <a class="movers-source-link" href="https://www.coingecko.com/en/coins/trending" target="_blank" rel="noopener" title="Data from CoinGecko markets API">
+              CoinGecko
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H8M17 7V16"/></svg>
+            </a>
+          </div>
+          <div class="movers-track-wrap">
+            <div class="movers-track" id="moversTrack"></div>
+          </div>
         </div>
 
         <div class="recent-section hidden" id="recentSection">
           <div class="section-heading"><h3>Recently visited</h3></div>
           <div class="recent-row" id="recentRow"></div>
         </div>
-
-        <div class="search-empty" id="searchEmpty">No tools match your search.</div>
 
         <div id="categoriesWrap">
           <div class="category-section" data-category="markets">
@@ -1071,6 +1095,122 @@ document.addEventListener('visibilitychange', () => {
   if(!document.hidden && currentPage === 'home') loadTicker();
 });
 
+/* ================= Home: top gainers / losers rolling strip =================
+   Same source and endpoint defi.html's "Top Gainers / Top Losers" panel uses:
+   CoinGecko's /coins/markets endpoint (top 100 coins by market cap, with
+   24h % change attached). Re-fetched here directly (not read from the defi
+   iframe) so the strip works even before that page has ever been opened,
+   and reuses the same Worker + public-CORS-proxy fallback chain (tickerFetchJSON)
+   already defined above for the price ticker. */
+const MOVERS_URL = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&price_change_percentage=24h&sparkline=false';
+const MOVERS_CACHE_KEY = 'ts_home_movers_cache_v1';
+const MOVERS_REFRESH_MS = 5 * 60 * 1000; // 5 min - CoinGecko's free tier rate-limits aggressively
+const MOVERS_COUNT = 8; // top 8 gainers + top 8 losers
+
+const moversSection = document.getElementById('moversSection');
+const moversTrack = document.getElementById('moversTrack');
+const moversUpdatedEl = document.getElementById('moversUpdated');
+
+function readMoversCache(){
+  try{
+    const raw = localStorage.getItem(MOVERS_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+function writeMoversCache(list){
+  try{ localStorage.setItem(MOVERS_CACHE_KEY, JSON.stringify({ data:list, ts:Date.now() })); }catch(e){}
+}
+function formatMoverPrice(n){
+  const num = Number(n) || 0;
+  if(num >= 1) return '$' + num.toLocaleString('en-US', { maximumFractionDigits:2 });
+  return '$' + num.toLocaleString('en-US', { minimumFractionDigits:4, maximumFractionDigits:6 });
+}
+
+let moversLastTs = null;
+function updateMoversLabel(){
+  moversUpdatedEl.textContent = moversLastTs ? formatTickerUpdatedLabel(moversLastTs) : '';
+}
+setInterval(updateMoversLabel, 5000);
+
+function buildMoverChip(coin, dir){
+  const chip = document.createElement('div');
+  chip.className = 'mover-chip ' + dir;
+  const chg = coin.price_change_percentage_24h;
+  const chgText = (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%';
+  chip.innerHTML =
+    '<img src="' + (coin.image || '') + '" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">' +
+    '<div class="mover-chip-body">' +
+      '<div class="mover-chip-top"><span class="mover-sym">' + (coin.symbol || '').toUpperCase() + '</span></div>' +
+      '<span class="mover-price">' + formatMoverPrice(coin.current_price) + '</span>' +
+    '</div>' +
+    '<span class="mover-chg ' + dir + '">' + chgText + '</span>';
+  chip.addEventListener('click', () => activatePage('defi'));
+  return chip;
+}
+
+function renderMoversStrip(list){
+  moversSection.classList.remove('skeleton');
+  const withChange = list.filter(c => typeof c.price_change_percentage_24h === 'number');
+  if(!withChange.length){
+    moversTrack.style.animation = 'none';
+    moversTrack.innerHTML = '<div class="movers-error">Top movers unavailable right now</div>';
+    return;
+  }
+  const gainers = withChange.slice().sort((a,b) => b.price_change_percentage_24h - a.price_change_percentage_24h).slice(0, MOVERS_COUNT);
+  const losers = withChange.slice().sort((a,b) => a.price_change_percentage_24h - b.price_change_percentage_24h).slice(0, MOVERS_COUNT);
+  const ordered = [];
+  const max = Math.max(gainers.length, losers.length);
+  for(let i = 0; i < max; i++){
+    if(gainers[i]) ordered.push({ coin: gainers[i], dir: 'up' });
+    if(losers[i]) ordered.push({ coin: losers[i], dir: 'down' });
+  }
+
+  moversTrack.innerHTML = '';
+  // Render the sequence twice back-to-back so the CSS marquee (translateX -50%)
+  // loops seamlessly with no visible seam or reset jump.
+  [0, 1].forEach(() => {
+    ordered.forEach(({coin, dir}) => moversTrack.appendChild(buildMoverChip(coin, dir)));
+  });
+  moversTrack.style.animation = '';
+}
+
+async function loadMovers(){
+  try{
+    const data = await tickerFetchJSON(MOVERS_URL);
+    if(!Array.isArray(data)) throw new Error('Unexpected CoinGecko markets response shape');
+    renderMoversStrip(data);
+    moversLastTs = Date.now();
+    writeMoversCache(data);
+    updateMoversLabel();
+  }catch(err){
+    console.warn('[home movers] fetch failed:', err && err.message);
+    if(!moversLastTs){
+      moversTrack.style.animation = 'none';
+      moversTrack.innerHTML = '<div class="movers-error">Top movers unavailable right now</div>';
+    }
+  }
+}
+
+const moversCached = readMoversCache();
+if(moversCached && moversCached.data){
+  moversLastTs = moversCached.ts;
+  renderMoversStrip(moversCached.data);
+  updateMoversLabel();
+}else{
+  moversSection.classList.add('skeleton');
+}
+loadMovers();
+setInterval(() => {
+  if(currentPage === 'home' && !document.hidden) loadMovers();
+}, MOVERS_REFRESH_MS);
+document.addEventListener('visibilitychange', () => {
+  if(!document.hidden && currentPage === 'home') loadMovers();
+});
+// Pause the auto-scroll while the user is touching/pointing at the strip so
+// they can actually read a chip, resume once they let go.
+['pointerdown','touchstart'].forEach(evt => moversTrack.addEventListener(evt, () => moversTrack.classList.add('paused')));
+['pointerup','pointerleave','touchend','touchcancel'].forEach(evt => moversTrack.addEventListener(evt, () => moversTrack.classList.remove('paused')));
+
 /* ================= Home: recently visited ================= */
 const RECENT_KEY = 'ts_recent_pages_v1';
 const RECENT_MAX = 6;
@@ -1115,46 +1255,7 @@ function renderRecentVisited(){
   });
 }
 
-/* ================= Home: search filter ================= */
-const searchBarEl = document.getElementById('searchBar');
-const searchInput = document.getElementById('searchInput');
-const searchClearBtn = document.getElementById('searchClear');
-const searchEmptyEl = document.getElementById('searchEmpty');
-const categoriesWrapEl = document.getElementById('categoriesWrap');
 const categorySections = document.querySelectorAll('.category-section');
-
-function applySearchFilter(){
-  const q = searchInput.value.trim().toLowerCase();
-  searchBarEl.classList.toggle('has-value', q.length > 0);
-  categoriesWrapEl.classList.toggle('search-active', q.length > 0);
-
-  if(q){
-    recentSection.classList.add('hidden');
-  }else{
-    renderRecentVisited();
-  }
-
-  let anyVisible = false;
-  categorySections.forEach(section => {
-    let sectionHasVisible = false;
-    section.querySelectorAll('.home-card').forEach(card => {
-      const title = card.querySelector('.home-title').textContent.toLowerCase();
-      const desc = card.querySelector('.home-desc').textContent.toLowerCase();
-      const match = !q || title.includes(q) || desc.includes(q);
-      card.classList.toggle('hidden', !match);
-      if(match) sectionHasVisible = true;
-    });
-    section.classList.toggle('hidden', !sectionHasVisible);
-    if(sectionHasVisible) anyVisible = true;
-  });
-  searchEmptyEl.classList.toggle('show', q.length > 0 && !anyVisible);
-}
-searchInput.addEventListener('input', applySearchFilter);
-searchClearBtn.addEventListener('click', () => {
-  searchInput.value = '';
-  applySearchFilter();
-  searchInput.focus();
-});
 
 /* ================= Home: collapsible category sections ================= */
 function setCategoryCollapsed(sectionEl, collapsed){
