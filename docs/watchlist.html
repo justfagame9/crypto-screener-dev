@@ -423,8 +423,10 @@
 // Add more coins here later - symbol is the clean display ticker (no USDT
 // suffix), binanceSymbol is the exact USDT-M perpetual contract on Binance
 // Futures, coingeckoId is CoinGecko's internal id (used only for market-cap
-// rank + logo, never for price). Every coin (including the pinned defaults
-// below) can be removed via the swipe-to-delete gesture on its card.
+// rank + logo, never for price). Every coin (including the pinned ETH
+// default) can be removed via the swipe-to-delete gesture on its card -
+// except BTC, which is always kept on the watchlist and has no delete
+// option (see renderCoinRow's isBTC check and the guard in removeCoin).
 const DEFAULT_COINS = [
   { symbol: 'BTC', binanceSymbol: 'BTCUSDT', coingeckoId: 'bitcoin',  name: 'Bitcoin',  gradient: 'linear-gradient(135deg,#f7931a,#c9761a)', pinned: true },
   { symbol: 'ETH', binanceSymbol: 'ETHUSDT', coingeckoId: 'ethereum', name: 'Ethereum', gradient: 'linear-gradient(135deg,#8ea9ff,#5b6fd6)', pinned: true },
@@ -479,6 +481,8 @@ rebuildCoinsList();
 // re-renders right away so the row's space is reclaimed by the rest of the
 // list rather than left blank.
 function removeCoin(binanceSymbol){
+  if(binanceSymbol === 'BTCUSDT') return; // BTC always stays on the watchlist
+
   const coin = DEFAULT_COINS.find(c => c.binanceSymbol === binanceSymbol);
 
   const isDefault = !!coin;
@@ -1121,7 +1125,10 @@ document.addEventListener('pointerdown', (e) => {
 
 function renderCoinRow(coin, ticker, rankInfo){
   const isExpanded = expandedCoins.has(coin.binanceSymbol);
-  const deleteBg = `
+  // BTC is always available on the watchlist, so it gets no delete panel at
+  // all (nothing for the swipe gesture to reveal - see maxRevealFor below).
+  const isBTC = coin.binanceSymbol === 'BTCUSDT';
+  const deleteBg = isBTC ? '' : `
     <div class="watch-delete-bg">
       <button class="watch-delete-btn" type="button" aria-label="Delete ${coin.symbol} from watchlist" onclick="removeCoin('${coin.binanceSymbol}')">Delete</button>
     </div>`;
@@ -1441,7 +1448,8 @@ function renderSkeleton(){
 
   function maxRevealFor(item){
     const bg = item.querySelector('.watch-delete-bg');
-    const btn = bg && bg.querySelector('.watch-delete-btn');
+    if(!bg) return 0; // no delete panel on this card (BTC) - nothing to reveal
+    const btn = bg.querySelector('.watch-delete-btn');
     return btn ? btn.offsetWidth : 84;
   }
 
