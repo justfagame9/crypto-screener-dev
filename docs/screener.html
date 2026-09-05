@@ -621,8 +621,8 @@
 
 <div class="panel">
   <div class="filter-row">
-    <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">All</button>
-    <button class="filter-btn" data-filter="breakout" onclick="setFilter('breakout')">Breakouts Only</button>
+    <button class="filter-btn" data-filter="all" onclick="setFilter('all')">All</button>
+    <button class="filter-btn active" data-filter="breakout" onclick="setFilter('breakout')">Breakouts Only</button>
     <button class="filter-btn" data-filter="long" onclick="setFilter('long')">Long Only</button>
     <button class="filter-btn" data-filter="short" onclick="setFilter('short')">Short Only</button>
   </div>
@@ -726,7 +726,7 @@ const FAPI_HOSTS = [
 ];
 let activeHost = FAPI_HOSTS[0];
 let allResults = [];
-let currentFilter = 'all';
+let currentFilter = 'breakout';
 let sortKey = null;
 let sortDir = 1;
 let activeTrade = null;
@@ -1258,7 +1258,7 @@ async function runScreener(){
     allResults = scanned.filter(r => r.volToday > params.minVolume);
     const belowVolCount = scanned.length - allResults.length;
 
-    sortAndRender();
+    setFilter('breakout');
 
     const breakoutCount = allResults.filter(r => r.breakout !== '').length;
     const longCount = allResults.filter(r => r.setup === 'Long').length;
