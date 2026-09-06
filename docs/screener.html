@@ -460,6 +460,9 @@
   .funding-row span{font-weight:700;color:var(--text);}
   .funding-row span.funding-pos{color:var(--red);}
   .funding-row span.funding-neg{color:var(--accent);}
+  .tf-switch-row{margin-top:-4px;}
+  .tf-switch-link{color:var(--accent);text-decoration:none;font-weight:700;}
+  .tf-switch-link:hover{text-decoration:underline;}
   @media(max-width:700px){.analysis-grid{grid-template-columns:1fr;}.chart-wrap{height:340px;}}
   .analysis-cell{display:flex;align-items:center;gap:6px;}
   .info-btn{width:28px;height:28px;flex:0 0 28px;padding:0;border-radius:8px;border:1px solid var(--border);background:var(--panel2);color:var(--text);font-family:var(--font-mono);font-weight:700;font-size:12px;font-style:italic;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:none;}
@@ -731,6 +734,12 @@ let sortKey = null;
 let sortDir = 1;
 let activeTrade = null;
 let currentExchangeSymbol = null;
+// Caches the interval-correct setup row for whatever symbol/timeframe is
+// currently open in the analysis modal, so the Trade Plan button (and the
+// Daily<->4-Hour switch) use the setup actually shown on screen rather than
+// re-deriving it from allResults, which only reflects the main screener's
+// currently selected timeframe.
+let currentAnalysisRow = null;
 const PORTFOLIO_STORAGE_KEY = 'crypto-screener-portfolio-usdt';
 const TRADING_SETTINGS_KEY = 'crypto-screener-trading-settings';
 const DEFAULT_PORTFOLIO = 1000;
@@ -1683,7 +1692,7 @@ function drawAnalysisChart(candles, retracement, currentPrice, ema50Values, ema2
   context.strokeStyle='#ffffff'; context.setLineDash([2,3]); context.beginPath(); context.moveTo(pad.left,y(currentPrice)); context.lineTo(width-pad.right,y(currentPrice)); context.stroke(); context.setLineDash([]); context.fillStyle='#ffffff'; context.fillText('PRICE '+fmt(currentPrice),width-145,y(currentPrice)-5);
   context.fillStyle='#35e0c0'; context.font='10px JetBrains Mono, monospace'; context.fillText('EMA 50',pad.left+8,pad.top+12); context.fillStyle='#f5a623'; context.fillText('EMA 200',pad.left+65,pad.top+12);
 }
-async function openAnalysis(symbol){
+async function openAnalysis(symbol, intervalOverride){
   currentExchangeSymbol = symbol;
   const row = allResults.find(result => result.symbol === symbol);
   if(!row) return;
@@ -1691,7 +1700,9 @@ async function openAnalysis(symbol){
   // Use the interval the row was actually screened on (not whatever the timeframe
   // dropdown currently shows) so the Ichimoku setup label and the freshly-fetched
   // RSI/MACD/EMA/candles below are always describing the same timeframe.
-  const interval = row.interval || analysisInterval();
+  // intervalOverride lets the Daily<->4-Hour switch link on the Levels card
+  // reopen this same symbol on the other timeframe.
+  const interval = intervalOverride || row.interval || analysisInterval();
   const symbolLink = document.getElementById('analysisSymbolLink');
   symbolLink.textContent = symbol;
   symbolLink.href = tradingViewChartUrl(symbol, interval, source);
@@ -1706,13 +1717,18 @@ async function openAnalysis(symbol){
   document.getElementById('analysisLTP').textContent = '—';
   document.getElementById('analysisDetails').innerHTML = '';
   const setupBox = document.getElementById('analysisSetupBox');
-  setupBox.textContent = row.setup ? row.setup : 'None';
-  setupBox.className = 'analysis-setup ' + (row.setup === 'Long' ? 'setup-long' : row.setup === 'Short' ? 'setup-short' : 'setup-none');
-  document.getElementById('analysisCfmBox').style.display = row.setup && row.confirmed ? 'inline-block' : 'none';
-  document.getElementById('analysisWatchlistBtn').innerHTML = watchlistButton(symbol);
   const tradePlanButton = document.getElementById('analysisTradePlan');
-  tradePlanButton.style.display = row.setup ? 'inline-block' : 'none';
-  tradePlanButton.onclick = () => openTradePlan(symbol);
+  // row.setup/breakoutPrice/etc. describe whatever timeframe this symbol was
+  // originally screened on. If we're opening a *different* interval (via the
+  // Daily<->4-Hour switch link), that data doesn't apply here — show a neutral
+  // placeholder now and recompute the real interval-specific setup below.
+  const sameInterval = interval === row.interval;
+  setupBox.textContent = sameInterval ? (row.setup ? row.setup : 'None') : '…';
+  setupBox.className = 'analysis-setup ' + (sameInterval ? (row.setup === 'Long' ? 'setup-long' : row.setup === 'Short' ? 'setup-short' : 'setup-none') : 'setup-none');
+  document.getElementById('analysisCfmBox').style.display = sameInterval && row.setup && row.confirmed ? 'inline-block' : 'none';
+  document.getElementById('analysisWatchlistBtn').innerHTML = watchlistButton(symbol);
+  tradePlanButton.style.display = sameInterval && row.setup ? 'inline-block' : 'none';
+  tradePlanButton.onclick = () => openTradePlan(symbol, currentAnalysisRow);
   document.getElementById('analysisModal').classList.add('open');
   try{
     const fundingPromise = getFundingInfo(symbol, source).catch(() => null);
@@ -1725,7 +1741,37 @@ async function openAnalysis(symbol){
     const retracement = swingMove ? swingMove.midpoint : recentLow + (recentHigh - recentLow) * .5;
     const rsiValue = rsi(closes), macdValue = macd(closes), atrValue = atr(candles,14);
     const ema20Values = ema(warmupCloses,20), ema50Warmup = ema(warmupCloses,50), ema200Warmup = ema(warmupCloses,200), ema50Values = ema50Warmup.slice(-180), ema200Values = ema200Warmup.slice(-180), ema20 = ema20Values[ema20Values.length - 1], ema50 = ema50Warmup[ema50Warmup.length - 1], ema200 = ema200Warmup[ema200Warmup.length - 1];
-    const hasSetup = row.setup === 'Long' || row.setup === 'Short', isLong = row.setup === 'Long', currentPrice = Number.isFinite(row.priceToday) ? row.priceToday : closes[closes.length - 1];
+    // If this is a different interval than the row was screened on, recompute
+    // the Ichimoku setup fresh from the candles we just fetched for THIS
+    // interval, instead of carrying over the setup/breakout price from
+    // whichever timeframe the row originally came from.
+    let effectiveRow = row;
+    if(!sameInterval){
+      try{
+        const recomputeParams = {
+          tenkanLen: parseInt(document.getElementById('tenkanLen').value),
+          kijunLen: parseInt(document.getElementById('kijunLen').value),
+          senkouBLen: parseInt(document.getElementById('senkouBLen').value),
+          minVolume: parseFloat(document.getElementById('minVolume').value) || 0,
+          interval
+        };
+        effectiveRow = computeIchimokuSignal(symbol, warmupCandles, candles[candles.length - 1].close, recomputeParams);
+      }catch(e){
+        // Not enough history on this timeframe, or no valid read — treat as
+        // "no setup" rather than showing a setup/breakout price that belongs
+        // to a different timeframe.
+        effectiveRow = { symbol, confirmed:false, priceToday:candles[candles.length-1].close, breakoutPrice:null, entryPrice:candles[candles.length-1].close, cloudTop:NaN, cloudBottom:NaN, tenkanNow:NaN, kijunNow:NaN, breakout:'', setup:'', interval };
+      }
+      currentAnalysisRow = effectiveRow.setup ? effectiveRow : null;
+      setupBox.textContent = effectiveRow.setup ? effectiveRow.setup : 'None';
+      setupBox.className = 'analysis-setup ' + (effectiveRow.setup === 'Long' ? 'setup-long' : effectiveRow.setup === 'Short' ? 'setup-short' : 'setup-none');
+      document.getElementById('analysisCfmBox').style.display = effectiveRow.setup && effectiveRow.confirmed ? 'inline-block' : 'none';
+      tradePlanButton.style.display = effectiveRow.setup ? 'inline-block' : 'none';
+      tradePlanButton.onclick = () => openTradePlan(symbol, currentAnalysisRow);
+    } else {
+      currentAnalysisRow = row.setup ? row : null;
+    }
+    const hasSetup = effectiveRow.setup === 'Long' || effectiveRow.setup === 'Short', isLong = effectiveRow.setup === 'Long', currentPrice = Number.isFinite(effectiveRow.priceToday) ? effectiveRow.priceToday : closes[closes.length - 1];
     document.getElementById('analysisLTP').textContent = fmt(currentPrice);
     const dir = hasSetup ? (isLong ? 1 : -1) : null;
 
@@ -1735,7 +1781,7 @@ async function openAnalysis(symbol){
     const marketStructure = marketStructureAnalysis(candles,swings);
     const structureSide = /Bullish/.test(marketStructure.state) ? 1 : (/Bearish/.test(marketStructure.state) ? -1 : null);
     const emaSide = (ema20 > ema50 && ema50 > ema200) ? 1 : ((ema20 < ema50 && ema50 < ema200) ? -1 : null);
-    const cloudSide = Number.isFinite(row.cloudTop) && Number.isFinite(row.cloudBottom) ? (currentPrice > row.cloudTop ? 1 : (currentPrice < row.cloudBottom ? -1 : null)) : null;
+    const cloudSide = Number.isFinite(effectiveRow.cloudTop) && Number.isFinite(effectiveRow.cloudBottom) ? (currentPrice > effectiveRow.cloudTop ? 1 : (currentPrice < effectiveRow.cloudBottom ? -1 : null)) : null;
     const votes = [rsiSide, macdSide, structureSide, emaSide, cloudSide];
     const bullVotes = votes.filter(v => v === 1).length, bearVotes = votes.filter(v => v === -1).length, totalVotes = votes.filter(v => v !== null).length;
     const biasDir = bullVotes === bearVotes ? 0 : (bullVotes > bearVotes ? 1 : -1);
@@ -1744,16 +1790,16 @@ async function openAnalysis(symbol){
     // ---- ATR-based pullback buffer instead of a flat 3% ----
     const pullbackAtrMultiple = 1;
     const pullbackBuffer = Number.isFinite(atrValue) ? atrValue * pullbackAtrMultiple : null;
-    const breakoutDistPrice = hasSetup && row.breakoutPrice ? Math.abs(currentPrice - row.breakoutPrice) : null;
+    const breakoutDistPrice = hasSetup && effectiveRow.breakoutPrice ? Math.abs(currentPrice - effectiveRow.breakoutPrice) : null;
     const retraceDistPrice = Math.abs(currentPrice - retracement);
-    const breakoutDistPct = breakoutDistPrice !== null ? breakoutDistPrice / row.breakoutPrice * 100 : null;
+    const breakoutDistPct = breakoutDistPrice !== null ? breakoutDistPrice / effectiveRow.breakoutPrice * 100 : null;
     const retraceDistPct = retracement ? retraceDistPrice / retracement * 100 : null;
     const breakoutAtrX = pullbackBuffer && breakoutDistPrice !== null ? breakoutDistPrice / pullbackBuffer : null;
     const retraceAtrX = pullbackBuffer ? retraceDistPrice / pullbackBuffer : null;
     const needsPullback = hasSetup && pullbackBuffer !== null && ((breakoutDistPrice !== null && breakoutDistPrice >= pullbackBuffer) || retraceDistPrice >= pullbackBuffer);
     const retraceGood = hasSetup ? (isLong ? currentPrice >= retracement && currentPrice <= recentHigh : currentPrice <= retracement && currentPrice >= recentLow) : false;
 
-    const entry = hasSetup ? (row.entryPrice || row.priceToday) : null, stop = hasSetup ? (isLong ? row.cloudBottom : row.cloudTop) : null;
+    const entry = hasSetup ? (effectiveRow.entryPrice || effectiveRow.priceToday) : null, stop = hasSetup ? (isLong ? effectiveRow.cloudBottom : effectiveRow.cloudTop) : null;
     const target = hasSetup ? targetFor(entry,stop,isLong,2) : null;
 
     const emaCross = recentEmaCross(ema50Values,ema200Values,currentPrice,hasSetup,isLong);
@@ -1812,19 +1858,19 @@ async function openAnalysis(symbol){
 
     // Ichimoku
     const dirWord = isLong ? 'above' : 'below';
-    const ichimokuHeadline = row.breakout ? `${row.setup} — ${row.breakout} trigger` : (cloudSide === 1 ? 'Above Kumo, no trigger' : (cloudSide === -1 ? 'Below Kumo, no trigger' : 'Inside Kumo — no edge'));
+    const ichimokuHeadline = effectiveRow.breakout ? `${effectiveRow.setup} — ${effectiveRow.breakout} trigger` : (cloudSide === 1 ? 'Above Kumo, no trigger' : (cloudSide === -1 ? 'Below Kumo, no trigger' : 'Inside Kumo — no edge'));
     let ichimokuLine;
     if(hasSetup){
       // CK and PK both require price AND Chikou to already agree with the direction —
       // the only difference is which of the two legs is the one flipping today.
-      if(row.breakout === 'CK, PK'){
+      if(effectiveRow.breakout === 'CK, PK'){
         ichimokuLine = `Price broke ${dirWord} the Kumo and Chikou cleared ${dirWord} its own cloud on the same candle — full, simultaneous confirmation, the strongest version of this breakout.`;
-      } else if(row.breakout === 'CK'){
+      } else if(effectiveRow.breakout === 'CK'){
         ichimokuLine = `Price had already broken ${dirWord} the Kumo on an earlier candle; today it's the Chikou span crossing ${dirWord} its own cloud — the lagging leg catching up to confirm a move that was already underway, not a fresh price trigger.`;
-      } else if(row.breakout === 'PK'){
+      } else if(effectiveRow.breakout === 'PK'){
         ichimokuLine = `Chikou was already sitting ${dirWord} its own cloud from an earlier candle; today it's price breaking ${dirWord} the current Kumo — the fresh, leading leg of the move, with lagging confirmation already in place.`;
       } else {
-        ichimokuLine = `${row.setup} setup active.`;
+        ichimokuLine = `${effectiveRow.setup} setup active.`;
       }
       // Post-breakout price action: how far has price run since the trigger, and is
       // it worth chasing now or better to wait for a pullback (ATR-based, see the
@@ -1834,7 +1880,7 @@ async function openAnalysis(symbol){
       } else if(retraceGood){
         ichimokuLine += ` Price is still within a reasonable distance of the trigger (inside 1x ATR) — acceptable to engage without waiting for a deeper pullback.`;
       } else {
-        ichimokuLine += ` Price has slipped back through the swing midpoint against the ${row.setup.toLowerCase()} idea — follow-through has been weak, so treat this as unconfirmed until it reclaims that zone.`;
+        ichimokuLine += ` Price has slipped back through the swing midpoint against the ${effectiveRow.setup.toLowerCase()} idea — follow-through has been weak, so treat this as unconfirmed until it reclaims that zone.`;
       }
     } else {
       // No CK/PK trigger — give a full textbook read of where every Ichimoku
@@ -1860,7 +1906,7 @@ async function openAnalysis(symbol){
     const momentumAgree = rsiSide !== null && rsiSide === macdSide;
     let momentumLine = momentumAgree ? `RSI and MACD agree — momentum is ${rsiSide === 1 ? 'bullish' : 'bearish'}.` : 'RSI and MACD disagree — momentum is indecisive.';
     if((rsiTag === 'overbought' || rsiTag === 'oversold')) momentumLine += ` RSI is stretched, so a cooldown before the next leg wouldn't be unusual.`;
-    if(hasSetup){ const aligned = rsiSide === dir && macdSide === dir; momentumLine += ` ${aligned ? 'Aligned with' : 'Not fully aligned with'} the ${row.setup} idea.`; }
+    if(hasSetup){ const aligned = rsiSide === dir && macdSide === dir; momentumLine += ` ${aligned ? 'Aligned with' : 'Not fully aligned with'} the ${effectiveRow.setup} idea.`; }
 
     // Trend & Structure (EMA + BOS/CHoCH merged)
     const trendHeadline = `${emaSide === 1 ? 'Bullish' : emaSide === -1 ? 'Bearish' : 'Mixed'} EMA stack | ${marketStructure.state}`;
@@ -1868,7 +1914,7 @@ async function openAnalysis(symbol){
     let trendLine = emaSide === 1 ? `EMAs (${emaTriplet}) are stacked bullish (20>50>200) — trend is up.` : emaSide === -1 ? `EMAs (${emaTriplet}) are stacked bearish (20<50<200) — trend is down.` : `EMAs (${emaTriplet}) are tangled — no clean trend.`;
     trendLine += ` ${marketStructure.detail.split('.')[0]}.`;
     if(emaCross) trendLine += ` ${emaCross.type} ${emaCross.barsAgo === 0 ? 'just printed' : `${emaCross.barsAgo} bars ago`} near price — reinforces the move.`;
-    if(hasSetup && structureSide !== null && structureSide !== dir) trendLine += ` Note: structure disagrees with the ${row.setup} idea.`;
+    if(hasSetup && structureSide !== null && structureSide !== dir) trendLine += ` Note: structure disagrees with the ${effectiveRow.setup} idea.`;
 
     // Pullback zone (swing range + ATR distance)
     const pullbackHeadline = `Range ${formatAnalysisValue(recentLow)}–${formatAnalysisValue(recentHigh)} | mid ${formatAnalysisValue(retracement)} | ATR14 ${formatAnalysisValue(atrValue)}`;
@@ -1880,7 +1926,7 @@ async function openAnalysis(symbol){
     } else if(retraceGood){
       pullbackLine = `Holding inside the pullback zone (within 1× ATR of the swing midpoint) — a reasonable entry area, not chasing.`;
     } else {
-      pullbackLine = `Price is on the wrong side of the swing midpoint — the pullback so far looks deeper than healthy for this ${hasSetup ? row.setup.toLowerCase() : ''} idea.`;
+      pullbackLine = `Price is on the wrong side of the swing midpoint — the pullback so far looks deeper than healthy for this ${hasSetup ? effectiveRow.setup.toLowerCase() : ''} idea.`;
     }
 
     // Support/Resistance & Order Blocks (current TF + one glance at higher TF)
@@ -1902,8 +1948,11 @@ async function openAnalysis(symbol){
     const fundingClass = fundingRate === null ? '' : (fundingRate > 0 ? 'funding-pos' : (fundingRate < 0 ? 'funding-neg' : ''));
     const fundingRateText = fundingRate === null ? '—' : `${fundingRate >= 0 ? '+' : ''}${(fundingRate * 100).toFixed(4)}%`;
     const fundingLine = `<div class="funding-row">Funding: <span class="${fundingClass}">${fundingRateText}</span>${fundingCountdown ? ` in ${fundingCountdown}` : ''}</div>`;
+    const breakoutLine = hasSetup ? `<div class="funding-row">Breakout Price: <span>${formatAnalysisValue(effectiveRow.breakoutPrice)}</span></div>` : '';
+    const switchTargetInterval = interval === '1d' ? '4h' : (interval === '4h' ? '1d' : null);
+    const switchLine = switchTargetInterval ? `<div class="funding-row tf-switch-row"><a href="javascript:void(0)" class="tf-switch-link" onclick="switchAnalysisTimeframe('${symbol}','${switchTargetInterval}')">Switch to ${timeframeLabel(switchTargetInterval)} analysis →</a></div>` : '';
     const levels = hasSetup ? `<div class="analysis-levels"><div class="analysis-level entry"><b>Entry</b><span>${formatAnalysisValue(entry)}</span></div><div class="analysis-level stop"><b>Invalidation</b><span>${formatAnalysisValue(stop)}</span></div><div class="analysis-level target"><b>Target 2R</b><span>${formatAnalysisValue(target)}</span></div></div>` : '';
-    const levelsHeadline = hasSetup ? `Entry ${formatAnalysisValue(entry)} | Stop ${formatAnalysisValue(stop)} | Target ${formatAnalysisValue(target)}` : `Watch: Cloud ${formatAnalysisValue(row.cloudBottom)}–${formatAnalysisValue(row.cloudTop)} | EMA50 ${formatAnalysisValue(ema50)}`;
+    const levelsHeadline = hasSetup ? `Entry ${formatAnalysisValue(entry)} | Stop ${formatAnalysisValue(stop)} | Target ${formatAnalysisValue(target)}` : `Watch: Cloud ${formatAnalysisValue(effectiveRow.cloudBottom)}–${formatAnalysisValue(effectiveRow.cloudTop)} | EMA50 ${formatAnalysisValue(ema50)}`;
     const levelsLine = hasSetup ? 'Stop sits at the cloud boundary; target is a 2R (2x risk) objective. Check liquidity and exchange order rules before sizing.' : 'No active trigger — these are the levels that would need to break for a Long/Short signal to fire.';
 
     // Overall
@@ -1923,11 +1972,11 @@ async function openAnalysis(symbol){
     const decisionTitle = needsPullback ? 'Extended — wait for a pullback' : (!hasSetup ? `No trigger yet — ${biasLabel.toLowerCase()} lean (${bullVotes}/${totalVotes} factors)` : (fullyAligned ? 'Setup has multi-factor support' : (htfConflict ? 'Local signal fights the bigger trend' : 'Confirmation is mixed')));
     let decisionDetail;
     if(needsPullback){
-      decisionDetail = `${row.setup} trigger is valid but price is stretched from the trigger/midpoint. Wait for a pullback toward the zone above before entering.${htfInterval ? ` ${htfLine}` : ''}`;
+      decisionDetail = `${effectiveRow.setup} trigger is valid but price is stretched from the trigger/midpoint. Wait for a pullback toward the zone above before entering.${htfInterval ? ` ${htfLine}` : ''}`;
     } else if(!hasSetup){
       decisionDetail = `${bullVotes}/${totalVotes} indicators bullish, ${bearVotes}/${totalVotes} bearish. No Ichimoku CK/PK trigger is active, so this is a watchlist read, not a trade — wait for a confirmed breakout in the ${biasLabel !== 'Mixed' ? biasLabel.toLowerCase() : 'leading'} direction.${htfInterval ? ` ${htfLine}` : ''}`;
     } else {
-      decisionDetail = `${row.setup} ${row.breakout || 'Ichimoku'} setup, ${row.confirmed ? 'confirmed' : 'unconfirmed'}. ${momentumAgree ? 'Momentum agrees' : 'Momentum is mixed'}, trend/structure is ${structureSide === dir ? 'aligned' : 'not aligned'}. ${retraceGood ? 'Price location is favorable.' : 'Price location is not ideal.'}${htfInterval ? ` ${htfLine}` : ''}`;
+      decisionDetail = `${effectiveRow.setup} ${effectiveRow.breakout || 'Ichimoku'} setup, ${effectiveRow.confirmed ? 'confirmed' : 'unconfirmed'}. ${momentumAgree ? 'Momentum agrees' : 'Momentum is mixed'}, trend/structure is ${structureSide === dir ? 'aligned' : 'not aligned'}. ${retraceGood ? 'Price location is favorable.' : 'Price location is not ideal.'}${htfInterval ? ` ${htfLine}` : ''}`;
     }
 
     if(hasSetup && obInZone) decisionDetail += ' Price is also sitting inside a matching order block — a common re-test entry area.';
@@ -1967,7 +2016,7 @@ async function openAnalysis(symbol){
       htfLine += ` ${volSentence('Current TF', volInfo)} ${volSentence(htfLabel, volHtf)}`;
       if(hasSetup && volInfo && volInfo.ratio !== null){
         const volSupportsMove = volInfo.ratio >= 1.2 && (volInfo.isUpBar === isLong);
-        htfLine += volInfo.ratio >= 1.2 ? (volSupportsMove ? ` Volume backs the ${row.setup.toLowerCase()} idea.` : ` That volume came on the wrong-color bar for the ${row.setup.toLowerCase()} idea though — worth a second look.`) : '';
+        htfLine += volInfo.ratio >= 1.2 ? (volSupportsMove ? ` Volume backs the ${effectiveRow.setup.toLowerCase()} idea.` : ` That volume came on the wrong-color bar for the ${effectiveRow.setup.toLowerCase()} idea though — worth a second look.`) : '';
       }
     }
 
@@ -1980,7 +2029,7 @@ async function openAnalysis(symbol){
       ['Support/Resistance & Order Blocks', srHeadline, srLine],
       ['Pullback Zone — Swing Range / ATR(14)', pullbackHeadline, pullbackLine],
       ['CCI(34)', cciHeadline, cciLine],
-      ['Levels', levelsHeadline, `${levels}${fundingLine}${levelsLine}`]
+      ['Levels', levelsHeadline, `${levels}${breakoutLine}${fundingLine}${switchLine}${levelsLine}`]
     ];
     document.getElementById('analysisDetails').innerHTML =
       `<div class="analysis-decision ${decisionClass}"><div><strong>${decisionTitle}</strong><p>${decisionDetail}</p></div><span class="decision-tag">${decisionTag}</span></div>` +
@@ -1992,6 +2041,14 @@ async function openAnalysis(symbol){
 function closeAnalysis(event){
   if(event && event.target !== document.getElementById('analysisModal')) return;
   document.getElementById('analysisModal').classList.remove('open');
+}
+
+// Levels-card link: closes the Daily analysis window and reopens the same
+// symbol on 4-Hour, or vice versa, without touching the timeframe dropdown
+// that drives the main screener table.
+function switchAnalysisTimeframe(symbol, targetInterval){
+  closeAnalysis();
+  openAnalysis(symbol, targetInterval);
 }
 
 // Opens X/Twitter search for the coin's cashtag (e.g. BTCUSDT -> $BTC).
@@ -2154,9 +2211,9 @@ function openSelectedTradingExchange(){
   openExternalLink(href, EXCHANGE_APP_PACKAGES[selectedExchange], EXCHANGE_CUSTOM_SCHEMES[selectedExchange]);
 }
 
-function openTradePlan(symbol){
+function openTradePlan(symbol, rowOverride){
   currentExchangeSymbol = symbol;
-  activeTrade = allResults.find(r => r.symbol === symbol && r.setup);
+  activeTrade = rowOverride || allResults.find(r => r.symbol === symbol && r.setup);
   if(!activeTrade) return;
   const isLong = activeTrade.setup === 'Long';
   const entry = activeTrade.entryPrice;
