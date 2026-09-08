@@ -460,6 +460,9 @@
   .funding-row span{font-weight:700;color:var(--text);}
   .funding-row span.funding-pos{color:var(--red);}
   .funding-row span.funding-neg{color:var(--accent);}
+  .funding-row span.funding-interval-1h{font-weight:700;color:var(--red);}
+  .funding-row span.funding-interval-4h{color:var(--accent);}
+  .funding-row span.funding-interval-8h{color:var(--muted);}
   .tf-switch-row{margin-top:-4px;}
   .tf-switch-link{color:var(--accent);text-decoration:none;font-weight:700;}
   .tf-switch-link:hover{text-decoration:underline;}
@@ -982,6 +985,14 @@ function formatFundingInterval(hours){
   if(!Number.isFinite(hours) || hours <= 0) return null;
   const rounded = Math.round(hours * 100) / 100;
   return `${rounded}h`;
+}
+
+// Colour-codes the funding interval: bold red for 1h, green(accent) for 4h, grey for 8h.
+function fundingIntervalClassFor(hours){
+  if(!Number.isFinite(hours)) return '';
+  if(hours <= 1) return 'funding-interval-1h';
+  if(hours <= 4) return 'funding-interval-4h';
+  return 'funding-interval-8h';
 }
 
 // Dispatches to whichever exchange a given screened row actually came from,
@@ -1995,7 +2006,9 @@ async function openAnalysis(symbol, intervalOverride){
     const fundingClass = fundingRate === null ? '' : (fundingRate > 0 ? 'funding-pos' : (fundingRate < 0 ? 'funding-neg' : ''));
     const fundingRateText = fundingRate === null ? '—' : `${fundingRate >= 0 ? '+' : ''}${(fundingRate * 100).toFixed(4)}%`;
     const fundingIntervalText = funding ? formatFundingInterval(funding.intervalHours) : null;
-    const fundingLine = `<div class="funding-row">Funding: <span class="${fundingClass}">${fundingRateText}</span>${fundingCountdown ? ` in ${fundingCountdown}` : ''}${fundingIntervalText ? ` (${fundingIntervalText})` : ''}</div>`;
+    const fundingIntervalClass = fundingIntervalText ? fundingIntervalClassFor(funding.intervalHours) : '';
+    const fundingIntervalHtml = fundingIntervalText ? ` (<span class="${fundingIntervalClass}">${fundingIntervalText}</span>)` : '';
+    const fundingLine = `<div class="funding-row">Funding: <span class="${fundingClass}">${fundingRateText}</span>${fundingCountdown ? ` in ${fundingCountdown}` : ''}${fundingIntervalHtml}</div>`;
     const breakoutLine = hasSetup ? `<div class="funding-row">Breakout Price: <span>${formatAnalysisValue(effectiveRow.breakoutPrice)}</span></div>` : '';
     const switchTargetInterval = interval === '1d' ? '4h' : (interval === '4h' ? '1d' : null);
     const switchLine = switchTargetInterval ? `<div class="funding-row tf-switch-row"><a href="javascript:void(0)" class="tf-switch-link" onclick="switchAnalysisTimeframe('${symbol}','${switchTargetInterval}')">Switch to ${timeframeLabel(switchTargetInterval)} analysis →</a></div>` : '';
