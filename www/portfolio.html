@@ -559,10 +559,10 @@ a{color:inherit;}
           </div>
         </div>
         <div class="toggle-group toggle-group-sm" id="perfRange">
-          <button type="button" data-range="7" class="active">7D</button>
-          <button type="button" data-range="30">30D</button>
-          <button type="button" data-range="90">3M</button>
-          <button type="button" data-range="180">6M</button>
+          <button type="button" data-range="7" class="active">7d</button>
+          <button type="button" data-range="30">30d</button>
+          <button type="button" data-range="90">90d</button>
+          <button type="button" data-range="180">180d</button>
         </div>
         <div class="perf-meta" id="perfMeta">—</div>
         <div class="perf-chart" id="perfChart"></div>
@@ -880,10 +880,47 @@ function defaultState(){
 }
 let state = loadState();
 
+// Unions two arrays of {id,...} records, deduping by id. Entries already in
+// `a` win on an id collision (so re-importing the same backup twice, or a
+// backup that overlaps with what's already here, doesn't create duplicate
+// trades) — new records from `b` are appended after.
+function mergeById(a, b){
+  const out = [];
+  const seen = new Set();
+  (a||[]).concat(b||[]).forEach(item=>{
+    if(!item) return;
+    const key = item.id != null ? item.id : out.length + '-' + Math.random();
+    if(seen.has(key)) return;
+    seen.add(key);
+    out.push(item);
+  });
+  return out;
+}
 function mergeMarkets(base, parsed){
   const out = {};
   Object.keys(base).forEach(k=>{
-    out[k] = Object.assign({}, base[k], (parsed && parsed[k]) || {});
+    const b = base[k] || {};
+    const p = (parsed && parsed[k]) || {};
+    out[k] = Object.assign({}, b, p);
+    // Trade history (holdings + closed trades) is appended/deduped rather
+    // than one side wholesale replacing the other — this is what makes
+    // importing a second backup additive instead of destructive.
+    if(Array.isArray(b.holdings) || Array.isArray(p.holdings)){
+      out[k].holdings = mergeById(b.holdings, p.holdings);
+    }
+    if(Array.isArray(b.realized) || Array.isArray(p.realized)){
+      out[k].realized = mergeById(b.realized, p.realized);
+    }
+    // Cash balance/fees are a running total, not a history log, so they
+    // can't be safely unioned — keep whatever's already on this device
+    // unless it's still at its untouched default (0), in which case take
+    // the imported value.
+    if('cashBalance' in b || 'cashBalance' in p){
+      out[k].cashBalance = b.cashBalance || p.cashBalance || 0;
+    }
+    if('feesPaid' in b || 'feesPaid' in p){
+      out[k].feesPaid = b.feesPaid || p.feesPaid || 0;
+    }
   });
   return out;
 }
@@ -1565,8 +1602,7 @@ function renderPerfExpand(){
     if(isFY && !fyYears.includes(Number(perfExpandBarsPeriod.slice(3)))) perfExpandBarsPeriod = 7;
 
     const dayOpts = [7, 30, 60, 90, 180, 360];
-    const dayOptLabels = { 7:'7D', 30:'30D', 60:'2M', 90:'3M', 180:'6M', 360:'1Y' };
-    barsRow.innerHTML = dayOpts.map(d=>`<button type="button" data-days="${d}" class="${perfExpandBarsPeriod === d ? 'active' : ''}">${dayOptLabels[d]}</button>`).join('')
+    barsRow.innerHTML = dayOpts.map(d=>`<button type="button" data-days="${d}" class="${perfExpandBarsPeriod === d ? 'active' : ''}">${d}d</button>`).join('')
       + fyYears.map(y=>`<button type="button" data-fy="${y}" class="${perfExpandBarsPeriod === ('fy:'+y) ? 'active' : ''}">${fyLabel(y)}</button>`).join('');
 
     let buckets, trades = 0, withYear, showBarLabels;
@@ -3095,18 +3131,28 @@ document.getElementById('importFile').addEventListener('change', (e)=>{
     try{
       const parsed = JSON.parse(reader.result);
       if(!parsed.markets) throw new Error('bad shape');
-      if(!confirm('Import will replace your current portfolio on this device. Continue?')) return;
-      const base = defaultState();
-      state = Object.assign(base, parsed, {
-        settings: Object.assign(base.settings, parsed.settings||{}),
-        fx: Object.assign(base.fx, parsed.fx||{}),
-        markets: mergeMarkets(base.markets, parsed.markets)
+      if(!confirm('This will add the backup\'s holdings and closed trades to what\'s already on this device (duplicates are skipped). Continue?')) return;
+      const before = {
+        holdings: Object.values(state.markets).reduce((s,m)=>s+(m.holdings?m.holdings.length:0),0),
+        realized: Object.values(state.markets).reduce((s,m)=>s+(m.realized?m.realized.length:0),0)
+      };
+      state = Object.assign({}, state, parsed, {
+        settings: Object.assign({}, state.settings, parsed.settings||{}),
+        fx: Object.assign({}, state.fx, parsed.fx||{}),
+        markets: mergeMarkets(state.markets, parsed.markets)
       });
       saveState();
       applyTabVisibility();
       renderAll();
       closeModal(modalSettings);
-      toast('Backup imported', 'success');
+      const after = {
+        holdings: Object.values(state.markets).reduce((s,m)=>s+(m.holdings?m.holdings.length:0),0),
+        realized: Object.values(state.markets).reduce((s,m)=>s+(m.realized?m.realized.length:0),0)
+      };
+      const addedHoldings = after.holdings - before.holdings, addedRealized = after.realized - before.realized;
+      toast(addedHoldings || addedRealized
+        ? `Backup imported — +${addedHoldings} holding${addedHoldings===1?'':'s'}, +${addedRealized} closed trade${addedRealized===1?'':'s'}`
+        : 'Backup imported — no new trades found (already up to date)', 'success');
     }catch(err){
       toast('That file doesn\'t look like a Meridian backup', 'error');
     }
